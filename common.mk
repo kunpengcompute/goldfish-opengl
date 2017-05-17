@@ -102,6 +102,10 @@ EMUGL_EXPORT_TYPES := \
     STATIC_LIBRARIES \
     ADDITIONAL_DEPENDENCIES
 
+ifeq ($(PLATFORM_VERSION_CODENAME.PPR1),P)
+EMUGL_EXPORT_TYPES +=    HEADER_LIBRARIES
+endif
+
 # Initialize a module in our database
 # $1: Module name
 # $2: Module type
