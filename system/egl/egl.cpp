@@ -36,6 +36,12 @@
 #include "GL2Encoder.h"
 #endif
 
+#include <GLES3/gl31.h>
+
+#if PLATFORM_SDK_VERSION < 18
+#define override
+#endif
+
 #if PLATFORM_SDK_VERSION >= 16
 #include <system/window.h>
 #else // PLATFORM_SDK_VERSION >= 16
@@ -141,6 +147,18 @@ const char *  eglStrError(EGLint err)
         return ret; \
     }
 
+#define DEFINE_AND_VALIDATE_HOST_CONNECTION_FOR_TLS(ret, tls) \
+    HostConnection *hostCon = HostConnection::getWithThreadInfo(tls); \
+    if (!hostCon) { \
+        ALOGE("egl: Failed to get host connection\n"); \
+        return ret; \
+    } \
+    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
+    if (!rcEnc) { \
+        ALOGE("egl: Failed to get renderControl encoder context\n"); \
+        return ret; \
+    }
+
 #define VALIDATE_CONTEXT_RETURN(context,ret)  \
     if (!(context)) {                         \
         RETURN_ERROR(ret,EGL_BAD_CONTEXT);    \
@@ -156,7 +174,12 @@ const char *  eglStrError(EGLint err)
 // The one and only supported display object.
 static eglDisplay s_display;
 
-EGLContext_t::EGLContext_t(EGLDisplay dpy, EGLConfig config, EGLContext_t* shareCtx) :
+// Extra defines not in the official EGL spec yet,
+// but required in Android CTS.
+
+#define EGL_TIMESTAMPS_ANDROID 0x314D
+
+EGLContext_t::EGLContext_t(EGLDisplay dpy, EGLConfig config, EGLContext_t* shareCtx, int maj, int min) :
     dpy(dpy),
     config(config),
     read(EGL_NO_SURFACE),
@@ -164,17 +187,39 @@ EGLContext_t::EGLContext_t(EGLDisplay dpy, EGLConfig config, EGLContext_t* share
     shareCtx(shareCtx),
     rcContext(0),
     versionString(NULL),
-    vendorString(NULL),
+    majorVersion(maj),
+    minorVersion(min),
+    vendorString(NULL) ,
     rendererString(NULL),
     shaderVersionString(NULL),
     extensionString(NULL),
     deletePending(0),
     goldfishSyncFd(-1)
 {
+
+    DEFINE_HOST_CONNECTION;
+    switch (rcEnc->getGLESMaxVersion()) {
+        case GLES_MAX_VERSION_3_0:
+            deviceMajorVersion = 3;
+            deviceMinorVersion = 0;
+            break;
+        case GLES_MAX_VERSION_3_1:
+            deviceMajorVersion = 3;
+            deviceMinorVersion = 1;
+            break;
+        case GLES_MAX_VERSION_3_2:
+            deviceMajorVersion = 3;
+            deviceMinorVersion = 2;
+            break;
+        default:
+            deviceMajorVersion = 2;
+            deviceMinorVersion = 0;
+            break;
+    }
+
     flags = 0;
-    version = 1;
-    clientState = new GLClientState();
-    if (shareCtx)
+    clientState = new GLClientState(majorVersion, minorVersion);
+     if (shareCtx)
         sharedGroup = shareCtx->getSharedGroup();
     else
         sharedGroup = GLSharedGroupPtr(new GLSharedGroup());
@@ -234,6 +279,9 @@ struct egl_surface_t {
     EGLint      getTextureFormat() { return texFormat; }
     void        setTextureTarget(EGLint _texTarget) { texTarget = _texTarget; }
     EGLint      getTextureTarget() { return texTarget; }
+
+    virtual     void setCollectingTimestamps(EGLint collect) { }
+    virtual     EGLint isCollectingTimestamps() const { return EGL_FALSE; }
 
 private:
     //
@@ -296,6 +344,11 @@ struct egl_window_surface_t : public egl_surface_t {
     virtual void       setSwapInterval(int interval);
     virtual EGLBoolean swapBuffers();
 
+    virtual     void        setCollectingTimestamps(EGLint collect)
+        override { collectingTimestamps = (collect == EGL_TRUE) ? true : false; }
+    virtual     EGLint isCollectingTimestamps() const override { return collectingTimestamps ? EGL_TRUE : EGL_FALSE; }
+
+
 private:
     egl_window_surface_t(
             EGLDisplay dpy, EGLConfig config, EGLint surfType,
@@ -304,6 +357,7 @@ private:
 
     ANativeWindow*              nativeWindow;
     android_native_buffer_t*    buffer;
+    bool collectingTimestamps;
 };
 
 egl_window_surface_t::egl_window_surface_t (
@@ -311,7 +365,8 @@ egl_window_surface_t::egl_window_surface_t (
         ANativeWindow* window)
 :   egl_surface_t(dpy, config, surfType),
     nativeWindow(window),
-    buffer(NULL)
+    buffer(NULL),
+    collectingTimestamps(false)
 {
     // keep a reference on the window
     nativeWindow->common.incRef(&nativeWindow->common);
@@ -454,6 +509,11 @@ EGLBoolean egl_window_surface_t::swapBuffers()
 
     int presentFenceFd = -1;
 
+    if (buffer == NULL) {
+        ALOGE("egl_window_surface_t::swapBuffers called with NULL buffer");
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
 #if PLATFORM_SDK_VERSION <= 16
     rcEnc->rcFlushWindowColorBuffer(rcEnc, rcSurface);
     // equivalent to glFinish if no native sync
@@ -554,8 +614,7 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
         return EGL_FALSE;
     }
 
-    rcColorBuffer = rcEnc->rcCreateColorBuffer(rcEnc, getWidth(), getHeight(),
-            pixelFormat);
+    rcColorBuffer = rcEnc->rcCreateColorBuffer(rcEnc, getWidth(), getHeight(), pixelFormat);
     if (!rcColorBuffer) {
         ALOGE("rcCreateColorBuffer returned 0");
         return EGL_FALSE;
@@ -614,13 +673,6 @@ static const char *getGLString(int glEnum)
 
     if (!strPtr) {
         return NULL;
-    }
-
-    if (*strPtr != NULL) {
-        //
-        // string is already cached
-        //
-        return *strPtr;
     }
 
     //
@@ -812,6 +864,7 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay dpy, EGLConfig config, EGLint attribute
     }
     else
     {
+        ALOGD("%s: bad attrib 0x%x", __FUNCTION__, attribute);
         RETURN_ERROR(EGL_FALSE, EGL_BAD_ATTRIBUTE);
     }
 }
@@ -1060,6 +1113,9 @@ EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribu
             // ignored when creating the surface, return default
             *value = EGL_VG_ALPHA_FORMAT_NONPRE;
             break;
+        case EGL_TIMESTAMPS_ANDROID:
+            *value = surface->isCollectingTimestamps();
+            break;
         //TODO: complete other attributes
         default:
             ALOGE("eglQuerySurface %x  EGL_BAD_ATTRIBUTE", attribute);
@@ -1087,39 +1143,38 @@ EGLBoolean eglWaitClient()
     return eglWaitGL();
 }
 
+// We may need to trigger this directly from the TLS destructor.
+static EGLBoolean s_eglReleaseThreadImpl(EGLThreadInfo* tInfo) {
+    if (!tInfo) return EGL_TRUE;
+
+    tInfo->eglError = EGL_SUCCESS;
+    EGLContext_t* context = tInfo->currentContext;
+
+    if (!context) return EGL_TRUE;
+
+    // The following code is doing pretty much the same thing as
+    // eglMakeCurrent(&s_display, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)
+    // with the only issue that we do not require a valid display here.
+    DEFINE_AND_VALIDATE_HOST_CONNECTION_FOR_TLS(EGL_FALSE, tInfo);
+    // We are going to call makeCurrent on the null context and surface
+    // anyway once we are on the host, so skip rcMakeCurrent here.
+    // rcEnc->rcMakeCurrent(rcEnc, 0, 0, 0);
+    context->flags &= ~EGLContext_t::IS_CURRENT;
+    if (context->deletePending) {
+        if (context->rcContext) {
+            rcEnc->rcDestroyContext(rcEnc, context->rcContext);
+            context->rcContext = 0;
+        }
+        delete context;
+    }
+    tInfo->currentContext = 0;
+
+    return EGL_TRUE;
+}
+
 EGLBoolean eglReleaseThread()
 {
-    EGLThreadInfo *tInfo = getEGLThreadInfo();
-    if (tInfo) {
-        tInfo->eglError = EGL_SUCCESS;
-        EGLContext_t* context = tInfo->currentContext;
-        if (context) {
-            // The following code is doing pretty much the same thing as
-            // eglMakeCurrent(&s_display, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)
-            // with the only issue that we do not require a valid display here.
-            DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-            rcEnc->rcMakeCurrent(rcEnc, 0, 0, 0);
-             if (context->version == 2) {
-                hostCon->gl2Encoder()->setClientState(NULL);
-                hostCon->gl2Encoder()->setSharedGroup(GLSharedGroupPtr());
-            }
-            else {
-                hostCon->glEncoder()->setClientState(NULL);
-                hostCon->glEncoder()->setSharedGroup(GLSharedGroupPtr());
-            }
-            context->flags &= ~EGLContext_t::IS_CURRENT;
-
-            if (context->deletePending) {
-                if (context->rcContext) {
-                    rcEnc->rcDestroyContext(rcEnc, context->rcContext);
-                    context->rcContext = 0;
-                }
-                delete context;
-            }
-            tInfo->currentContext = 0;
-        }
-    }
-    return EGL_TRUE;
+    return s_eglReleaseThreadImpl(getEGLThreadInfo());
 }
 
 EGLSurface eglCreatePbufferFromClientBuffer(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint *attrib_list)
@@ -1153,7 +1208,6 @@ EGLBoolean eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute
     switch (attribute) {
     case EGL_MIPMAP_LEVEL:
         return true;
-        break;
     case EGL_MULTISAMPLE_RESOLVE:
     {
         if (value == EGL_MULTISAMPLE_RESOLVE_BOX) {
@@ -1164,7 +1218,6 @@ EGLBoolean eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute
             }
         }
         return true;
-        break;
     }
     case EGL_SWAP_BEHAVIOR:
         if (value == EGL_BUFFER_PRESERVED) {
@@ -1175,7 +1228,10 @@ EGLBoolean eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute
             }
         }
         return true;
-        break;
+    case EGL_TIMESTAMPS_ANDROID:
+        ALOGD("%s: set frame timestamps collecting %d\n", __func__, value);
+        p_surface->setCollectingTimestamps(value);
+        return true;
     default:
         ALOGW("%s: attr=0x%x not implemented", __FUNCTION__, attribute);
         setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_FALSE);
@@ -1249,18 +1305,126 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     VALIDATE_DISPLAY_INIT(dpy, EGL_NO_CONTEXT);
     VALIDATE_CONFIG(config, EGL_NO_CONTEXT);
 
-    EGLint version = 1; //default
+    EGLint majorVersion = 1; //default
+    EGLint minorVersion = 0;
+    EGLint context_flags = 0;
+    EGLint profile_mask = 0;
+    EGLint reset_notification_strategy = 0;
+
+    bool wantedMajorVersion = false;
+    bool wantedMinorVersion = false;
+
     while (attrib_list && attrib_list[0] != EGL_NONE) {
-        if (attrib_list[0] == EGL_CONTEXT_CLIENT_VERSION) {
-            version = attrib_list[1];
-        } else { // Only the attribute EGL_CONTEXT_CLIENT_VERSION may be specified.
+           EGLint attrib_val = attrib_list[1];
+        switch(attrib_list[0]) {
+        case EGL_CONTEXT_MAJOR_VERSION_KHR:
+            majorVersion = attrib_val;
+            wantedMajorVersion = true;
+            break;
+        case EGL_CONTEXT_MINOR_VERSION_KHR:
+            minorVersion = attrib_val;
+            wantedMinorVersion = true;
+            break;
+        case EGL_CONTEXT_FLAGS_KHR:
+            if ((attrib_val | EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR) ||
+                (attrib_val | EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR)  ||
+                (attrib_val | EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR)) {
+                context_flags = attrib_val;
+            } else {
+                RETURN_ERROR(EGL_NO_CONTEXT,EGL_BAD_ATTRIBUTE);
+            }
+            break;
+        case EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR:
+            if ((attrib_val | EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR) ||
+                (attrib_val | EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR)) {
+                profile_mask = attrib_val;
+            } else {
+                RETURN_ERROR(EGL_NO_CONTEXT,EGL_BAD_ATTRIBUTE);
+            }
+            break;
+        case EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR:
+            switch (attrib_val) {
+            case EGL_NO_RESET_NOTIFICATION_KHR:
+            case EGL_LOSE_CONTEXT_ON_RESET_KHR:
+                break;
+            default:
+                RETURN_ERROR(EGL_NO_CONTEXT,EGL_BAD_ATTRIBUTE);
+            }
+            reset_notification_strategy = attrib_val;
+            break;
+        default:
             setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_CONTEXT);
         }
         attrib_list+=2;
     }
 
-    // Currently only support GLES1 and 2
-    if (version != 1 && version != 2) {
+    // Support up to GLES 3.2 depending on advertised version from the host system.
+    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_CONTEXT);
+    if (rcEnc->getGLESMaxVersion() >= GLES_MAX_VERSION_3_0) {
+        if (!wantedMajorVersion) {
+            majorVersion = 1;
+            wantedMinorVersion = false;
+        }
+
+        if (wantedMajorVersion &&
+            majorVersion == 2) {
+            majorVersion = 3;
+            wantedMinorVersion = false;
+        }
+
+        if (majorVersion == 3 && !wantedMinorVersion) {
+            switch (rcEnc->getGLESMaxVersion()) {
+                case GLES_MAX_VERSION_3_0:
+                    minorVersion = 0;
+                    break;
+                case GLES_MAX_VERSION_3_1:
+                    minorVersion = 1;
+                    break;
+                case GLES_MAX_VERSION_3_2:
+                    minorVersion = 2;
+                    break;
+                default:
+                    minorVersion = 0;
+                    break;
+            }
+        }
+    } else {
+        if (!wantedMajorVersion) {
+            majorVersion = 1;
+        }
+    }
+
+    switch (majorVersion) {
+    case 1:
+    case 2:
+        break;
+    case 3:
+        if (rcEnc->getGLESMaxVersion() < GLES_MAX_VERSION_3_0) {
+            ALOGE("%s: EGL_BAD_CONFIG: no ES 3 support", __FUNCTION__);
+            setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
+        }
+        switch (minorVersion) {
+            case 0:
+                break;
+            case 1:
+                if (rcEnc->getGLESMaxVersion() < GLES_MAX_VERSION_3_1) {
+                    ALOGE("%s: EGL_BAD_CONFIG: no ES 3.1 support", __FUNCTION__);
+                    setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
+                }
+                break;
+            case 2:
+                if (rcEnc->getGLESMaxVersion() < GLES_MAX_VERSION_3_2) {
+                    ALOGE("%s: EGL_BAD_CONFIG: no ES 3.2 support", __FUNCTION__);
+                    setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
+                }
+                break;
+            default:
+                ALOGE("%s: EGL_BAD_CONFIG: Unknown ES version %d.%d",
+                      __FUNCTION__, majorVersion, minorVersion);
+                setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
+        }
+        break;
+    default:
         setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
     }
 
@@ -1273,25 +1437,31 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
             setErrorReturn(EGL_BAD_MATCH, EGL_NO_CONTEXT);
     }
 
-    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_CONTEXT);
     // We've created EGL context. Disconnecting
     // would be dangerous at this point.
     hostCon->setGrallocOnly(false);
 
-    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)config, rcShareCtx, version);
+    int rcMajorVersion = majorVersion;
+    if (majorVersion == 3 && minorVersion == 1) {
+        rcMajorVersion = 4;
+    }
+    if (majorVersion == 3 && minorVersion == 2) {
+        rcMajorVersion = 4;
+    }
+    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)config, rcShareCtx, rcMajorVersion);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);
     }
 
-    EGLContext_t * context = new EGLContext_t(dpy, config, shareCtx);
-    if (!context)
+    EGLContext_t * context = new EGLContext_t(dpy, config, shareCtx, majorVersion, minorVersion);
+    ALOGD("%s: %p: maj %d min %d rcv %d", __FUNCTION__, context, majorVersion, minorVersion, rcMajorVersion);
+    if (!context) {
+        ALOGE("could not alloc egl context!");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);
+    }
 
-    context->version = version;
     context->rcContext = rcContext;
-
-
     return context;
 }
 
@@ -1325,6 +1495,10 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     VALIDATE_SURFACE_RETURN(draw, EGL_FALSE);
     VALIDATE_SURFACE_RETURN(read, EGL_FALSE);
 
+    // Only place to initialize the TLS destructor; any
+    // thread can suddenly jump in any eglMakeCurrent
+    setTlsDestructor((tlsDtorCallback)s_eglReleaseThreadImpl);
+
     if ((read == EGL_NO_SURFACE && draw == EGL_NO_SURFACE) && (ctx != EGL_NO_CONTEXT))
         setErrorReturn(EGL_BAD_MATCH, EGL_FALSE);
     if ((read != EGL_NO_SURFACE || draw != EGL_NO_SURFACE) && (ctx == EGL_NO_CONTEXT))
@@ -1357,7 +1531,8 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     }
 
     if (context && (context->flags & EGLContext_t::IS_CURRENT) && (context != tInfo->currentContext)) {
-        //context is current to another thread
+        // context is current to another thread
+        ALOGE("%s: error: EGL_BAD_ACCESS: context %p current to another thread!\n", __FUNCTION__, context);
         setErrorReturn(EGL_BAD_ACCESS, EGL_FALSE);
     }
 
@@ -1369,15 +1544,75 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
 
     //Now make the local bind
     if (context) {
+
+        ALOGD("%s: %p: ver %d %d (tinfo %p)", __FUNCTION__, context, context->majorVersion, context->minorVersion, tInfo);
         // This is a nontrivial context.
         // The thread cannot be gralloc-only anymore.
         hostCon->setGrallocOnly(false);
         context->draw = draw;
         context->read = read;
         context->flags |= EGLContext_t::IS_CURRENT;
-        //set the client state
-        if (context->version == 2) {
-            hostCon->gl2Encoder()->setClientStateMakeCurrent(context->getClientState());
+        GLClientState* contextState =
+            context->getClientState();
+
+        if (!hostCon->gl2Encoder()->isInitialized()) {
+            s_display.gles2_iface()->init();
+            hostCon->gl2Encoder()->setInitialized();
+            ClientAPIExts::initClientFuncs(s_display.gles2_iface(), 1);
+        }
+        if (contextState->needsInitFromCaps()) {
+            // Need to set the version first if
+            // querying caps, or validation will trip incorrectly.
+            hostCon->gl2Encoder()->setVersion(
+                context->majorVersion,
+                context->minorVersion,
+                context->deviceMajorVersion,
+                context->deviceMinorVersion);
+            // Get caps for indexed buffers from host.
+            // Some need a current context.
+            int max_transform_feedback_separate_attribs = 0;
+            int max_uniform_buffer_bindings = 0;
+            int max_atomic_counter_buffer_bindings = 0;
+            int max_shader_storage_buffer_bindings = 0;
+            int max_vertex_attrib_bindings = 0;
+            int max_color_attachments = 1;
+            int max_draw_buffers = 1;
+            if (context->majorVersion > 2) {
+                s_display.gles2_iface()->getIntegerv(
+                        GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS, &max_transform_feedback_separate_attribs);
+                s_display.gles2_iface()->getIntegerv(
+                        GL_MAX_UNIFORM_BUFFER_BINDINGS, &max_uniform_buffer_bindings);
+                if (context->minorVersion > 0) {
+                    s_display.gles2_iface()->getIntegerv(
+                            GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, &max_atomic_counter_buffer_bindings);
+                    s_display.gles2_iface()->getIntegerv(
+                            GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &max_shader_storage_buffer_bindings);
+                    s_display.gles2_iface()->getIntegerv(
+                            GL_MAX_VERTEX_ATTRIB_BINDINGS, &max_vertex_attrib_bindings);
+                }
+                s_display.gles2_iface()->getIntegerv(
+                        GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
+                s_display.gles2_iface()->getIntegerv(
+                        GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+            }
+            contextState->initFromCaps(
+                    max_transform_feedback_separate_attribs,
+                    max_uniform_buffer_bindings,
+                    max_atomic_counter_buffer_bindings,
+                    max_shader_storage_buffer_bindings,
+                    max_vertex_attrib_bindings,
+                    max_color_attachments,
+                    max_draw_buffers);
+        }
+
+        // update the client state, share group, and version
+        if (context->majorVersion > 1) {
+            hostCon->gl2Encoder()->setClientStateMakeCurrent(
+                    contextState,
+                    context->majorVersion,
+                    context->minorVersion,
+                    context->deviceMajorVersion,
+                    context->deviceMinorVersion);
             hostCon->gl2Encoder()->setSharedGroup(context->getSharedGroup());
         }
         else {
@@ -1387,7 +1622,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     }
     else if (tInfo->currentContext) {
         //release ClientState & SharedGroup
-        if (tInfo->currentContext->version == 2) {
+        if (tInfo->currentContext->majorVersion > 1) {
             hostCon->gl2Encoder()->setClientState(NULL);
             hostCon->gl2Encoder()->setSharedGroup(GLSharedGroupPtr(NULL));
         }
@@ -1406,11 +1641,15 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
 
     //Check maybe we need to init the encoder, if it's first eglMakeCurrent
     if (tInfo->currentContext) {
-        if (tInfo->currentContext->version == 2) {
+        if (tInfo->currentContext->majorVersion  > 1) {
             if (!hostCon->gl2Encoder()->isInitialized()) {
                 s_display.gles2_iface()->init();
                 hostCon->gl2Encoder()->setInitialized();
                 ClientAPIExts::initClientFuncs(s_display.gles2_iface(), 1);
+            }
+            const char* exts = getGLString(GL_EXTENSIONS);
+            if (exts) {
+                hostCon->gl2Encoder()->setExtensions(exts);
             }
         }
         else {
@@ -1471,7 +1710,7 @@ EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGL
             *value = EGL_OPENGL_ES_API;
             break;
         case EGL_CONTEXT_CLIENT_VERSION:
-            *value = context->version;
+            *value = context->majorVersion;
             break;
         case EGL_RENDER_BUFFER:
             if (!context->draw)
@@ -1495,7 +1734,7 @@ EGLBoolean eglWaitGL()
         return EGL_FALSE;
     }
 
-    if (tInfo->currentContext->version == 2) {
+    if (tInfo->currentContext->majorVersion > 1) {
         s_display.gles2_iface()->finish();
     }
     else {
@@ -1524,10 +1763,10 @@ EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface eglSurface)
         setErrorReturn(EGL_BAD_DISPLAY, EGL_FALSE);
 
     // post the surface
-    d->swapBuffers();
+    EGLBoolean ret = d->swapBuffers();
 
     hostCon->flush();
-    return EGL_TRUE;
+    return ret;
 }
 
 EGLBoolean eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
@@ -1614,7 +1853,7 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
 
         return (EGLImageKHR)image;
     }
-    
+
     setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
 }
 

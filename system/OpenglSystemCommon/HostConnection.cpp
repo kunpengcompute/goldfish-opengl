@@ -50,12 +50,15 @@ HostConnection::~HostConnection()
 }
 
 HostConnection *HostConnection::get() {
+    return getWithThreadInfo(getEGLThreadInfo());
+}
+
+HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
 
     /* TODO: Make this configurable with a system property */
     const int useQemuPipe = USE_QEMU_PIPE;
 
     // Get thread info
-    EGLThreadInfo *tinfo = getEGLThreadInfo();
     if (!tinfo) {
         return NULL;
     }
@@ -80,6 +83,7 @@ HostConnection *HostConnection::get() {
                 return NULL;
             }
             con->m_stream = stream;
+            con->m_pipeFd = stream->getSocket();
         }
         else /* !useQemuPipe */
         {
@@ -152,6 +156,8 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         m_rcEnc = new ExtendedRCEncoderContext(m_stream, checksumHelper());
         setChecksumHelper(m_rcEnc);
         queryAndSetSyncImpl(m_rcEnc);
+        queryAndSetDmaImpl(m_rcEnc);
+        queryAndSetGLESMaxVersion(m_rcEnc);
         processPipeInit(m_rcEnc);
     }
     return m_rcEnc;
@@ -175,31 +181,36 @@ gl2_client_context_t *HostConnection::s_getGL2Context()
     return NULL;
 }
 
-std::string HostConnection::queryGLExtensions(ExtendedRCEncoderContext *rcEnc) {
-    if (m_glExtensions.size() > 0) return m_glExtensions;
-
-    std::string extensions_buffer;
-    int extensionSize = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS, NULL, 0);
-    if (extensionSize < 0) {
-
-        extensions_buffer.resize(-extensionSize);
-        extensionSize = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS,
-                                             &extensions_buffer[0], -extensionSize);
-
-        if (extensionSize <= 0) {
-            return std::string();
-        }
-
-        m_glExtensions += extensions_buffer;
-
+const std::string& HostConnection::queryGLExtensions(ExtendedRCEncoderContext *rcEnc) {
+    if (!m_glExtensions.empty()) {
         return m_glExtensions;
     }
 
-    return std::string();
+    // Extensions strings are usually quite long, preallocate enough here.
+    std::string extensions_buffer(1023, '\0');
+
+    // rcGetGLString() returns required size including the 0-terminator, so
+    // account it when passing/using the sizes.
+    int extensionSize = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS,
+                                             &extensions_buffer[0],
+                                             extensions_buffer.size() + 1);
+    if (extensionSize < 0) {
+        extensions_buffer.resize(-extensionSize);
+        extensionSize = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS,
+                                             &extensions_buffer[0],
+                                            -extensionSize + 1);
+    }
+
+    if (extensionSize > 0) {
+        extensions_buffer.resize(extensionSize - 1);
+        m_glExtensions.swap(extensions_buffer);
+    }
+
+    return m_glExtensions;
 }
 
 void HostConnection::setChecksumHelper(ExtendedRCEncoderContext *rcEnc) {
-    std::string glExtensions = queryGLExtensions(rcEnc);
+    const std::string& glExtensions = queryGLExtensions(rcEnc);
     // check the host supported version
     uint32_t checksumVersion = 0;
     const char* checksumPrefix = ChecksumCalculator::getMaxVersionStrPrefix();
@@ -218,8 +229,8 @@ void HostConnection::setChecksumHelper(ExtendedRCEncoderContext *rcEnc) {
 }
 
 void HostConnection::queryAndSetSyncImpl(ExtendedRCEncoderContext *rcEnc) {
-    std::string glExtensions = queryGLExtensions(rcEnc);
-#if PLATFORM_SDK_VERSION <= 16
+    const std::string& glExtensions = queryGLExtensions(rcEnc);
+#if PLATFORM_SDK_VERSION <= 16 || (!defined(__i386__) && !defined(__x86_64__))
     rcEnc->setSyncImpl(SYNC_IMPL_NONE);
 #else
     if (glExtensions.find(kRCNativeSync) != std::string::npos) {
@@ -228,4 +239,34 @@ void HostConnection::queryAndSetSyncImpl(ExtendedRCEncoderContext *rcEnc) {
         rcEnc->setSyncImpl(SYNC_IMPL_NONE);
     }
 #endif
+}
+
+void HostConnection::queryAndSetDmaImpl(ExtendedRCEncoderContext *rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+#if PLATFORM_SDK_VERSION <= 16 || (!defined(__i386__) && !defined(__x86_64__))
+    rcEnc->setDmaImpl(DMA_IMPL_NONE);
+#else
+    if (glExtensions.find(kDmaExtStr_v1) != std::string::npos) {
+        rcEnc->setDmaImpl(DMA_IMPL_v1);
+    } else {
+        rcEnc->setDmaImpl(DMA_IMPL_NONE);
+    }
+#endif
+}
+
+void HostConnection::queryAndSetGLESMaxVersion(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kGLESMaxVersion_2) != std::string::npos) {
+        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_2);
+    } else if (glExtensions.find(kGLESMaxVersion_3_0) != std::string::npos) {
+        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_0);
+    } else if (glExtensions.find(kGLESMaxVersion_3_1) != std::string::npos) {
+        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_1);
+    } else if (glExtensions.find(kGLESMaxVersion_3_2) != std::string::npos) {
+        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_2);
+    } else {
+        ALOGW("Unrecognized GLES max version string in extensions: %s",
+              glExtensions.c_str());
+        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_2);
+    }
 }

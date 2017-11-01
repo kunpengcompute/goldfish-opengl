@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "renderControl_client_context.h"
 
-#ifndef GL_TRUE
 extern "C" {
 	GLint rcGetRendererVersion();
 	EGLint rcGetEGLVersion(EGLint* major, EGLint* minor);
@@ -40,9 +39,10 @@ extern "C" {
 	void rcFlushWindowColorBufferAsync(uint32_t windowSurface);
 	int rcDestroySyncKHR(uint64_t sync);
 	void rcSetPuid(uint64_t puid);
+	int rcUpdateColorBufferDMA(uint32_t colorbuffer, GLint x, GLint y, GLint width, GLint height, GLenum format, GLenum type, void* pixels, uint32_t pixels_size);
+	uint32_t rcCreateColorBufferDMA(uint32_t width, uint32_t height, GLenum internalFormat, int frameworkFormat);
 };
 
-#endif
 #ifndef GET_CONTEXT
 static renderControl_client_context_t::CONTEXT_ACCESSOR_TYPE *getCurrentContext = NULL;
 void renderControl_client_context_t::setContextAccessor(CONTEXT_ACCESSOR_TYPE *f) { getCurrentContext = f; }
@@ -251,5 +251,17 @@ void rcSetPuid(uint64_t puid)
 {
 	GET_CONTEXT;
 	ctx->rcSetPuid(ctx, puid);
+}
+
+int rcUpdateColorBufferDMA(uint32_t colorbuffer, GLint x, GLint y, GLint width, GLint height, GLenum format, GLenum type, void* pixels, uint32_t pixels_size)
+{
+	GET_CONTEXT;
+	return ctx->rcUpdateColorBufferDMA(ctx, colorbuffer, x, y, width, height, format, type, pixels, pixels_size);
+}
+
+uint32_t rcCreateColorBufferDMA(uint32_t width, uint32_t height, GLenum internalFormat, int frameworkFormat)
+{
+	GET_CONTEXT;
+	return ctx->rcCreateColorBufferDMA(ctx, width, height, internalFormat, frameworkFormat);
 }
 

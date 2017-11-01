@@ -24,6 +24,18 @@ EMUGL_COMMON_INCLUDES := $(EMUGL_PATH)/host/include/libOpenglRender $(EMUGL_PATH
 #
 EMUGL_COMMON_CFLAGS := -DWITH_GLES2 -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
+ifeq (O, $(PLATFORM_VERSION_CODENAME))
+EMUGL_COMMON_CFLAGS += -DGOLDFISH_HIDL_GRALLOC
+endif
+
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -gt 25 && echo isApi26OrHigher),isApi26OrHigher)
+EMUGL_COMMON_CFLAGS += -DGOLDFISH_HIDL_GRALLOC
+endif
+
+ifdef IS_AT_LEAST_OPD1
+    EMUGL_COMMON_CFLAGS += -DEMULATOR_OPENGL_POST_O=1
+endif
+
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -lt 18 && echo PreJellyBeanMr2),PreJellyBeanMr2)
     ifeq ($(ARCH_ARM_HAVE_TLS_REGISTER),true)
         EMUGL_COMMON_CFLAGS += -DHAVE_ARM_TLS_REGISTER
@@ -34,6 +46,7 @@ ifeq ($(shell test $(PLATFORM_SDK_VERSION) -lt 16 && echo PreJellyBean),PreJelly
     EMUGL_COMMON_CFLAGS += -DALOGE=LOGE
     EMUGL_COMMON_CFLAGS += -DALOGW=LOGW
     EMUGL_COMMON_CFLAGS += -DALOGD=LOGD
+    EMUGL_COMMON_CFLAGS += -DALOGV=LOGV
 endif
 
 # Uncomment the following line if you want to enable debug traces

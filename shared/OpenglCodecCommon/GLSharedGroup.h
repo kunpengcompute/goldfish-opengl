@@ -22,10 +22,16 @@
 #define GL_APIENTRYP
 #endif
 
+#include "TextureSharedData.h"
+
 #include <GLES/gl.h>
 #include <GLES/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,13 +41,26 @@
 #include <utils/String8.h>
 #include <utils/threads.h>
 #include "FixedBuffer.h"
+#include "IndexRangeCache.h"
 #include "SmartPtr.h"
 
 struct BufferData {
     BufferData();
     BufferData(GLsizeiptr size, void * data);
-    GLsizeiptr  m_size;
-    FixedBuffer m_fixedBuffer;    
+
+    // General buffer state
+    GLsizeiptr m_size;
+    GLenum m_usage;
+
+    // Mapped buffer state
+    bool m_mapped;
+    GLbitfield m_mappedAccess;
+    GLintptr m_mappedOffset;
+    GLsizeiptr m_mappedLength;
+
+    // Internal bookkeeping
+    FixedBuffer m_fixedBuffer; // actual buffer is shadowed here
+    IndexRangeCache m_indexRangeCache;
 };
 
 class ProgramData {
@@ -95,25 +114,51 @@ struct ShaderData {
     typedef android::List<android::String8> StringList;
     StringList samplerExternalNames;
     int refcount;
+    std::vector<std::string> sources;
+};
+
+class ShaderProgramData {
+public:
+    ShaderProgramData() {
+        shaderData = new ShaderData();
+        programData = new ProgramData();
+    }
+    ~ShaderProgramData() {
+        delete shaderData;
+        delete programData;
+    }
+    ShaderData* shaderData;
+    ProgramData* programData;
 };
 
 class GLSharedGroup {
 private:
+    SharedTextureDataMap m_textureRecs;
     android::DefaultKeyedVector<GLuint, BufferData*> m_buffers;
     android::DefaultKeyedVector<GLuint, ProgramData*> m_programs;
     android::DefaultKeyedVector<GLuint, ShaderData*> m_shaders;
+    android::DefaultKeyedVector<uint32_t, ShaderProgramData*> m_shaderPrograms;
+    std::map<GLuint, uint32_t> m_shaderProgramIdMap;
+
     mutable android::Mutex m_lock;
 
     void refShaderDataLocked(ssize_t shaderIdx);
     void unrefShaderDataLocked(ssize_t shaderIdx);
 
+    uint32_t m_shaderProgramId;
+
 public:
     GLSharedGroup();
     ~GLSharedGroup();
-    bool isObject(GLuint obj);
+    bool isShaderOrProgramObject(GLuint obj);
     BufferData * getBufferData(GLuint bufferId);
+    SharedTextureDataMap* getTextureData();
     void    addBufferData(GLuint bufferId, GLsizeiptr size, void * data);
     void    updateBufferData(GLuint bufferId, GLsizeiptr size, void * data);
+    void    setBufferUsage(GLuint bufferId, GLenum usage);
+    void    setBufferMapped(GLuint bufferId, bool mapped);
+    GLenum    getBufferUsage(GLuint bufferId);
+    bool    isBufferMapped(GLuint bufferId);
     GLenum  subUpdateBufferData(GLuint bufferId, GLintptr offset, GLsizeiptr size, void * data);
     void    deleteBufferData(GLuint);
 
@@ -133,10 +178,22 @@ public:
     GLint   getNextSamplerUniform(GLuint program, GLint index, GLint* val, GLenum* target) const;
     bool    setSamplerUniform(GLuint program, GLint appLoc, GLint val, GLenum* target);
 
+    bool    isShader(GLuint shader);
     bool    addShaderData(GLuint shader);
     // caller must hold a reference to the shader as long as it holds the pointer
     ShaderData* getShaderData(GLuint shader);
     void    unrefShaderData(GLuint shader);
+
+    // For separable shader programs.
+    uint32_t addNewShaderProgramData();
+    void associateGLShaderProgram(GLuint shaderProgramName, uint32_t shaderProgramId);
+    ShaderProgramData* getShaderProgramDataById(uint32_t id);
+    ShaderProgramData* getShaderProgramData(GLuint shaderProgramName);
+    void deleteShaderProgramDataById(uint32_t id);
+    void deleteShaderProgramData(GLuint shaderProgramName);
+    void initShaderProgramData(GLuint shaderProgram, GLuint numIndices);
+    void setShaderProgramIndexInfo(GLuint shaderProgram, GLuint index, GLint base, GLint size, GLenum type, const char* name);
+    void setupShaderProgramLocationShiftWAR(GLuint shaderProgram);
 };
 
 typedef SmartPtr<GLSharedGroup> GLSharedGroupPtr; 

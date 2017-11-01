@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2015 The Android Open Source Project
+* Copyright (C) 2016 The Android Open Source Project
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -13,32 +13,30 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#ifndef __COMMON_EGL_IMAGE_H
-#define __COMMON_EGL_IMAGE_H
+#ifndef _GL_TEXTURE_SHARED_DATA_H_
+#define _GL_TEXTURE_SHARED_DATA_H_
 
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include <GLES/gl.h>
+#include <map>
 
-#if PLATFORM_SDK_VERSION >= 16
-#if EMULATOR_OPENGL_POST_O >= 1
-#include <nativebase/nativebase.h>
-#endif
-#include <cutils/native_handle.h>
-#else // PLATFORM_SDK_VERSION >= 16
-#include <private/ui/android_natives_priv.h>
-#endif // PLATFORM_SDK_VERSION >= 16
-
-struct EGLImage_t
-{
-    EGLDisplay dpy;
-    EGLenum target;
-
-    union
-    {
-        android_native_buffer_t *native_buffer;
-        uint32_t host_egl_image;
-    };
+struct TextureDims {
+    std::map<GLsizei, GLsizei> widths;
+    std::map<GLsizei, GLsizei> heights;
+    std::map<GLsizei, GLsizei> depths;
 };
+
+struct TextureRec {
+    GLuint id;
+    GLenum target;
+    GLint internalformat;
+    GLenum format;
+    GLenum type;
+    GLsizei multisamples;
+    TextureDims* dims;
+    bool immutable;
+    bool boundEGLImage;
+};
+
+typedef std::map<GLuint, TextureRec*> SharedTextureDataMap;
 
 #endif
