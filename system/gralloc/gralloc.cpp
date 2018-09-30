@@ -21,14 +21,19 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include <sys/mman.h>
+
+#if PLATFORM_SDK_VERSION < 28
 #include "gralloc_cb.h"
+#else
+#include "../../shared/OpenglCodecCommon/gralloc_cb.h"
+#endif
+
 #include "goldfish_dma.h"
 #include "FormatConversions.h"
 #include "HostConnection.h"
 #include "ProcessPipe.h"
 #include "ThreadInfo.h"
 #include "glUtils.h"
-#include <utils/CallStack.h>
 #include <cutils/log.h>
 #include <cutils/properties.h>
 
@@ -1184,7 +1189,7 @@ static int gralloc_lock(gralloc_module_t const* module,
             // host failed the color buffer sync - probably since it was already
             // locked for write access. fail the lock.
             ALOGE("gralloc_lock cacheFlush failed postCount=%d sw_read=%d\n",
-                 postCount, sw_read);
+                 (int)postCount, sw_read);
             return -EBUSY;
         }
 

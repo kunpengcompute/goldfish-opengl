@@ -21,7 +21,9 @@
 #include "QemuPipeStream.h"
 #include "TcpStream.h"
 #include "ThreadInfo.h"
+
 #include "gralloc_cb.h"
+
 #ifdef VIRTIO_GPU
 #include "VirtioGpuStream.h"
 #endif
