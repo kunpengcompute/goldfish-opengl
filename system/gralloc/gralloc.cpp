@@ -802,7 +802,9 @@ static int gralloc_free(alloc_device_t* dev,
         int32_t openCount = 1;
         int32_t* openCountPtr = &openCount;
 
-        if (isHidlGralloc) { openCountPtr = getOpenCountPtr(cb); }
+        if (isHidlGralloc && cb->ashmemBase) {
+            openCountPtr = getOpenCountPtr(cb);
+        }
 
         if (*openCountPtr > 0) {
             DEFINE_AND_VALIDATE_HOST_CONNECTION;
@@ -956,7 +958,7 @@ static int fb_close(struct hw_device_t *dev)
 {
     fb_device_t *fbdev = (fb_device_t *)dev;
 
-    delete fbdev;
+    free(fbdev);
 
     return 0;
 }
