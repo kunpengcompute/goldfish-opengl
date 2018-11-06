@@ -18,6 +18,9 @@
 #include <errno.h>
 #include <string.h>
 
+#include "HostConnection.h"
+#include "VkEncoder.h"
+
 namespace {
 
 int OpenDevice(const hw_module_t* module, const char* id, hw_device_t** device);
@@ -43,11 +46,37 @@ int CloseDevice(struct hw_device_t* /*device*/) {
     return 0;
 }
 
+#define VK_HOST_CONNECTION \
+    HostConnection *hostCon = HostConnection::get(); \
+    if (!hostCon) { \
+        ALOGE("vulkan: Failed to get host connection\n"); \
+        return VK_ERROR_DEVICE_LOST; \
+    } \
+    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
+    if (!rcEnc) { \
+        ALOGE("vulkan: Failed to get renderControl encoder context\n"); \
+        return VK_ERROR_DEVICE_LOST; \
+    } \
+    VkEncoder *vkEnc = hostCon->vkEncoder(); \
+    if (!vkEnc) { \
+        ALOGE("vulkan: Failed to get Vulkan encoder\n"); \
+        return VK_ERROR_DEVICE_LOST; \
+    } \
+
 VKAPI_ATTR
 VkResult EnumerateInstanceExtensionProperties(
     const char* layer_name,
     uint32_t* count,
     VkExtensionProperties* properties) {
+
+    ALOGD("%s: call from goldfish_vulkan\n", __func__);
+    VK_HOST_CONNECTION;
+
+    ALOGD("%s: yolo this call as a test.\n", __func__);
+    VkResult res = vkEnc->vkEnumerateInstanceExtensionProperties(nullptr, count, properties);
+    ALOGD("%s: yolo done. res == VK_SUCCESS? %d count: %u\n",
+          __func__, res == VK_SUCCESS,
+          *count);
 
     if (layer_name) {
         ALOGW(
@@ -56,7 +85,6 @@ VkResult EnumerateInstanceExtensionProperties(
             layer_name);
     }
 
-    *count = 0;
     return VK_SUCCESS;
 }
 
@@ -65,6 +93,7 @@ VkResult CreateInstance(const VkInstanceCreateInfo* create_info,
                         const VkAllocationCallbacks* allocator,
                         VkInstance* out_instance) {
     ALOGD("%s: goldfish vkCreateInstance\n", __func__);
+    VK_HOST_CONNECTION;
 
     return VK_ERROR_OUT_OF_HOST_MEMORY;
 }

@@ -13,6 +13,8 @@
 // limitations under the License.
 #include "VulkanStream.h"
 
+#include "IOStream.h"
+
 #include "android/base/Pool.h"
 
 #include <vector>
@@ -24,7 +26,7 @@ namespace goldfish_vk {
 
 class VulkanStream::Impl : public android::base::Stream {
 public:
-    Impl() { }
+    Impl(IOStream* stream) : mStream(stream) { }
 
     ~Impl() { }
 
@@ -39,43 +41,17 @@ public:
         *ptrAddr = mPool.alloc(bytes);
     }
 
-    void loadStringInPlace(char **forOutput) {
-        size_t len = this->getBe32();
-
-        *forOutput = mPool.allocArray<char>(len + 1);
-
-        memset(*forOutput, 0x0, len + 1);
-
-        if (len > 0)
-        {
-            this->read(*forOutput, len);
-        }
-    }
-
-    void loadStringArrayInPlace(char*** forOutput) {
-        size_t count = this->getBe32();
-
-        if (!count) {
-            *forOutput = nullptr;
-            return;
-        }
-
-        *forOutput = mPool.allocArray<char *>(count);
-
-        char **stringsForOutput = *forOutput;
-
-        for (size_t i = 0; i < count; i++) {
-            loadStringInPlace(stringsForOutput + i);
-        }
-    }
-
     ssize_t write(const void *buffer, size_t size) override {
         return bufferedWrite(buffer, size);
     }
 
     ssize_t read(void *buffer, size_t size) override {
         commitWrite();
-        return readFully(buffer, size);
+        if (!mStream->readFully(buffer, size)) {
+            ALOGE("FATAL: Could not read back %zu bytes", size);
+            abort();
+        }
+        return size;
     }
 
 private:
@@ -93,19 +69,23 @@ private:
             abort();
         }
 
+        int written =
+            mStream->writeFully(mWriteBuffer.data(), mWritePos);
+
+        if (written) {
+            ALOGE("FATAL: Did not write exactly %zu bytes!",
+                  mWritePos);
+            abort();
+        }
         mWritePos = 0;
     }
 
     ssize_t bufferedWrite(const void *buffer, size_t size) {
         if (size > remainingWriteBufferSize()) {
-            mWriteBuffer.resize(1 << (mWritePos + size));
+            mWriteBuffer.resize((mWritePos + size) << 1);
         }
         memcpy(mWriteBuffer.data() + mWritePos, buffer, size);
         mWritePos += size;
-        return size;
-    }
-
-    ssize_t readFully(void *buffer, size_t size) {
         return size;
     }
 
@@ -113,9 +93,13 @@ private:
 
     size_t mWritePos = 0;
     std::vector<uint8_t> mWriteBuffer;
+    IOStream* mStream = nullptr;
 };
 
-VulkanStream::VulkanStream() : mImpl(new VulkanStream::Impl()) {}
+VulkanStream::VulkanStream(IOStream *stream) :
+    mImpl(new VulkanStream::Impl(stream)) { }
+
+VulkanStream::~VulkanStream() = default;
 
 bool VulkanStream::valid() {
     return mImpl->valid();
@@ -126,12 +110,32 @@ void VulkanStream::alloc(void** ptrAddr, size_t bytes) {
 }
 
 void VulkanStream::loadStringInPlace(char** forOutput) {
-    mImpl->loadStringInPlace(forOutput);
+    size_t len = getBe32();
+
+    alloc((void**)forOutput, len + 1);
+
+    memset(*forOutput, 0x0, len + 1);
+
+    if (len > 0) read(*forOutput, len);
 }
 
 void VulkanStream::loadStringArrayInPlace(char*** forOutput) {
-    mImpl->loadStringArrayInPlace(forOutput);
+    size_t count = getBe32();
+
+    if (!count) {
+        *forOutput = nullptr;
+        return;
+    }
+
+    alloc((void**)forOutput, count * sizeof(char*));
+
+    char **stringsForOutput = *forOutput;
+
+    for (size_t i = 0; i < count; i++) {
+        loadStringInPlace(stringsForOutput + i);
+    }
 }
+
 
 ssize_t VulkanStream::read(void *buffer, size_t size) {
     return mImpl->read(buffer, size);
@@ -139,6 +143,24 @@ ssize_t VulkanStream::read(void *buffer, size_t size) {
 
 ssize_t VulkanStream::write(const void *buffer, size_t size) {
     return mImpl->write(buffer, size);
+}
+
+VulkanCountingStream::VulkanCountingStream() : VulkanStream(nullptr) { }
+VulkanCountingStream::~VulkanCountingStream() = default;
+
+ssize_t VulkanCountingStream::read(void *buffer, size_t size) {
+    m_read += size;
+    return size;
+}
+
+ssize_t VulkanCountingStream::write(const void *buffer, size_t size) {
+    m_written += size;
+    return size;
+}
+
+void VulkanCountingStream::rewind() {
+    m_written = 0;
+    m_read = 0;
 }
 
 } // namespace goldfish_vk
