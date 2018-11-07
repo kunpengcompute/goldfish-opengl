@@ -28,6 +28,8 @@
 #include "IOStream.h"
 #include "VulkanStream.h"
 
+#include "android/base/AlignedBuf.h"
+
 #include "goldfish_vk_marshaling_guest.h"
 
 
@@ -37,6 +39,9 @@
 
 using goldfish_vk::VulkanCountingStream;
 using goldfish_vk::VulkanStream;
+
+using android::aligned_buf_alloc;
+using android::aligned_buf_free;
 
 class VkEncoder::Impl {
 public:
@@ -987,6 +992,11 @@ VkResult VkEncoder::vkMapMemory(
     }
     VkResult vkMapMemory_VkResult_return = (VkResult)0;
     stream->read(&vkMapMemory_VkResult_return, sizeof(VkResult));
+    if (((vkMapMemory_VkResult_return == VK_SUCCESS) && ppData && size > 0))
+    {
+        *ppData = aligned_buf_alloc(1024 /* pick large alignment */, size);;
+        stream->read(*ppData, size);
+    }
     return vkMapMemory_VkResult_return;
 }
 
