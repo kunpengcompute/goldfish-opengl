@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "HostConnection.h"
+#include "ResourceTracker.h"
 #include "VkEncoder.h"
 
 #include "func_table.h"
@@ -102,6 +103,10 @@ VkResult CreateInstance(const VkInstanceCreateInfo* create_info,
     return res;
 }
 
+static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice, const char* name) {
+    return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_proc_address(name));
+}
+
 VKAPI_ATTR
 PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
     (void)instance;
@@ -111,6 +116,9 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
     }
     if (!strcmp(name, "vkCreateInstance")) {
         return (PFN_vkVoidFunction)CreateInstance;
+    }
+    if (!strcmp(name, "vkGetDeviceProcAddr")) {
+        return (PFN_vkVoidFunction)(GetDeviceProcAddr);
     }
     return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_proc_address(name));
 }
@@ -132,6 +140,7 @@ int OpenDevice(const hw_module_t* /*module*/,
                hw_device_t** device) {
     if (strcmp(id, HWVULKAN_DEVICE_0) == 0) {
         *device = &goldfish_vulkan_device.common;
+        goldfish_vk::ResourceTracker::get();
         return 0;
     }
     return -ENOENT;
