@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "Resources.h"
+#include "ResourceTracker.h"
+#include "VkEncoder.h"
+
+#include "gralloc_cb.h"
+#include "goldfish_vk_private_defs.h"
 
 #include "android/base/AlignedBuf.h"
 
 #include <log/log.h>
 #include <stdlib.h>
+#include <sync/sync.h>
 
 using android::aligned_buf_alloc;
 using android::aligned_buf_free;
@@ -26,8 +32,13 @@ using android::aligned_buf_free;
 #if GOLDFISH_VK_OBJECT_DEBUG
 #define D(fmt,...) ALOGD("%s: " fmt, __func__, ##__VA_ARGS__);
 #else
+#ifndef D
 #define D(fmt,...)
 #endif
+#endif
+
+using goldfish_vk::ResourceTracker;
+using goldfish_vk::VkEncoder;
 
 extern "C" {
 
@@ -125,7 +136,10 @@ GOLDFISH_VK_LIST_TRIVIAL_NON_DISPATCHABLE_HANDLE_TYPES(GOLDFISH_VK_DELETE_GOLDFI
 
 // Custom definitions///////////////////////////////////////////////////////////
 
-VkResult goldfish_vkEnumerateInstanceVersion(uint32_t* apiVersion) {
+VkResult goldfish_vkEnumerateInstanceVersion(
+    void*,
+    VkResult,
+    uint32_t* apiVersion) {
     if (apiVersion) {
         *apiVersion = VK_MAKE_VERSION(1, 0, 0);
     }
@@ -133,6 +147,8 @@ VkResult goldfish_vkEnumerateInstanceVersion(uint32_t* apiVersion) {
 }
 
 VkResult goldfish_vkEnumerateDeviceExtensionProperties(
+    void*,
+    VkResult,
     VkPhysicalDevice, const char*,
     uint32_t *pPropertyCount, VkExtensionProperties *) {
     *pPropertyCount = 0;
@@ -140,10 +156,33 @@ VkResult goldfish_vkEnumerateDeviceExtensionProperties(
 }
 
 void goldfish_vkGetPhysicalDeviceProperties2(
+    void*,
     VkPhysicalDevice,
     VkPhysicalDeviceProperties2*)
 {
     // no-op
+}
+
+VkResult goldfish_vkCreateDevice(
+    void* opaque,
+    VkResult host_return,
+    VkPhysicalDevice physicalDevice,
+    const VkDeviceCreateInfo*,
+    const VkAllocationCallbacks*,
+    VkDevice* pDevice) {
+
+    if (host_return != VK_SUCCESS) return host_return;
+
+    VkEncoder* enc = (VkEncoder*)opaque;
+
+    VkPhysicalDeviceProperties props;
+    VkPhysicalDeviceMemoryProperties memProps;
+    enc->vkGetPhysicalDeviceProperties(physicalDevice, &props);
+    enc->vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
+
+    ResourceTracker::get()->setDeviceInfo(*pDevice, physicalDevice, props, memProps);
+
+    return host_return;
 }
 
 VkDeviceMemory new_from_host_VkDeviceMemory(VkDeviceMemory mem) {
@@ -193,38 +232,55 @@ void delete_goldfish_VkDeviceMemory(VkDeviceMemory mem) {
 }
 
 VkResult goldfish_vkAllocateMemory(
-    VkDevice,
+    void*,
+    VkResult host_return,
+    VkDevice device,
     const VkMemoryAllocateInfo* pAllocateInfo,
     const VkAllocationCallbacks*,
     VkDeviceMemory* pMemory) {
+    
+    if (host_return != VK_SUCCESS) return host_return;
 
     // Assumes pMemory has already been allocated.
     goldfish_VkDeviceMemory* mem = as_goldfish_VkDeviceMemory(*pMemory);
-
     VkDeviceSize size = pAllocateInfo->allocationSize;
+
+    // assume memory is not host visible.
+    mem->ptr = nullptr;
+    mem->size = size;
+    mem->mappedSize = ResourceTracker::get()->getNonCoherentExtendedSize(device, size);
+
+    if (!ResourceTracker::get()->isMemoryTypeHostVisible(device, pAllocateInfo->memoryTypeIndex)) {
+        return host_return;
+    }
 
     // This is a strict alignment; we do not expect any
     // actual device to have more stringent requirements
     // than this.
-    mem->ptr = (uint8_t*)aligned_buf_alloc(4096, size);
-    mem->size = size;
+    mem->ptr = (uint8_t*)aligned_buf_alloc(4096, mem->mappedSize);
+    D("host visible alloc: size 0x%llx host ptr %p mapped size 0x%llx",
+      (unsigned long long)size, mem->ptr,
+      (unsigned long long)mem->mappedSize);
 
-    return VK_SUCCESS;
+    return host_return;
 }
 
 VkResult goldfish_vkMapMemory(
+    void*,
+    VkResult host_result,
     VkDevice,
     VkDeviceMemory memory,
     VkDeviceSize offset,
     VkDeviceSize size,
     VkMemoryMapFlags,
     void** ppData) {
+    
+    if (host_result != VK_SUCCESS) return host_result;
 
     goldfish_VkDeviceMemory* mem = as_goldfish_VkDeviceMemory(memory);
 
     if (!mem->ptr) {
-        ALOGE("%s: Did not allocate host pointer for device memory!", __func__);
-        abort();
+        return VK_ERROR_MEMORY_MAP_FAILED;
     }
 
     if (size != VK_WHOLE_SIZE &&
@@ -234,13 +290,49 @@ VkResult goldfish_vkMapMemory(
 
     *ppData = mem->ptr + offset;
 
-    return VK_SUCCESS;
+    return host_result;
 }
 
 void goldfish_vkUnmapMemory(
+    void*,
     VkDevice,
     VkDeviceMemory) {
     // no-op
+}
+
+void goldfish_unwrap_VkNativeBufferANDROID(
+    const VkImageCreateInfo* pCreateInfo,
+    VkImageCreateInfo* local_pCreateInfo) {
+
+    if (!pCreateInfo->pNext) return;
+
+    const VkNativeBufferANDROID* nativeInfo =
+        reinterpret_cast<const VkNativeBufferANDROID*>(pCreateInfo->pNext);
+
+    if (VK_STRUCTURE_TYPE_NATIVE_BUFFER_ANDROID != nativeInfo->sType) {
+        return;
+    }
+
+    const cb_handle_t* cb_handle =
+        reinterpret_cast<const cb_handle_t*>(nativeInfo->handle);
+
+    if (!cb_handle) return;
+
+    VkNativeBufferANDROID* nativeInfoOut =
+        reinterpret_cast<VkNativeBufferANDROID*>(local_pCreateInfo);
+
+    if (!nativeInfoOut->handle) {
+        ALOGE("FATAL: Local native buffer info not properly allocated!");
+        abort();
+    }
+
+    *(uint32_t*)(nativeInfoOut->handle) = cb_handle->hostHandle;
+}
+
+void goldfish_unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int*) {
+    if (fd != -1) {
+        sync_wait(fd, 3000);
+    }
 }
 
 } // extern "C"

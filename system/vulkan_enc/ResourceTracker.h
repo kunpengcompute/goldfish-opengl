@@ -17,20 +17,35 @@
 #include <vulkan/vulkan.h>
 
 #include "VulkanHandleMapping.h"
+#include "VulkanHandles.h"
+#include "VkEventHandler.h"
 #include <memory>
 
 namespace goldfish_vk {
 
-class ResourceTracker {
+class ResourceTracker : public VkEventHandler {
 public:
     ResourceTracker();
-    ~ResourceTracker();
+    virtual ~ResourceTracker();
     static ResourceTracker* get();
     VulkanHandleMapping* createMapping();
     VulkanHandleMapping* unwrapMapping();
     VulkanHandleMapping* destroyMapping();
     VulkanHandleMapping* defaultMapping();
-private:
+
+#define HANDLE_REGISTER_DECL(type) \
+    void register_##type(type); \
+    void unregister_##type(type); \
+
+    GOLDFISH_VK_LIST_HANDLE_TYPES(HANDLE_REGISTER_DECL)
+
+    void setDeviceInfo(VkDevice device, VkPhysicalDevice physdev, VkPhysicalDeviceProperties props, VkPhysicalDeviceMemoryProperties memProps);
+    bool isMemoryTypeHostVisible(VkDevice device, uint32_t typeIndex) const;
+    VkDeviceSize getNonCoherentExtendedSize(VkDevice device, VkDeviceSize basicSize) const;
+    bool isValidMemoryRange(
+        VkDevice device,
+        const VkMappedMemoryRange& range) const;
+  private:
     class Impl;
     std::unique_ptr<Impl> mImpl;
 };
