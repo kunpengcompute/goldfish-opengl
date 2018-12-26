@@ -16,6 +16,7 @@
 #include "ResourceTracker.h"
 
 #include "../OpenglSystemCommon/EmulatorFeatureInfo.h"
+#include "HostVisibleMemoryVirtualization.h"
 #include "Resources.h"
 #include "VkEncoder.h"
 
@@ -114,6 +115,7 @@ public:
         VkPhysicalDevice physdev;
         VkPhysicalDeviceProperties props;
         VkPhysicalDeviceMemoryProperties memProps;
+        HostVisibleMemoryVirtualizationInfo hostVisibleVirtInfo;
     };
 
     struct VkDeviceMemory_Info {
@@ -124,6 +126,8 @@ public:
         bool directMapped = false;
         std::unique_ptr<GoldfishAddressSpaceBlock>
             goldfishAddressSpaceBlock = {};
+        HostVisibleMemoryVirtualizationInfo
+            hostVisibleVirtInfo;
     };
 
 #define HANDLE_REGISTER_IMPL_IMPL(type) \
@@ -173,19 +177,25 @@ public:
         info.physdev = physdev;
         info.props = props;
         info.memProps = memProps;
+        initHostVisibleMemoryVirtualizationInfo(
+            physdev, &memProps, &info.hostVisibleVirtInfo);
     }
 
-    void setDeviceMemoryInfo(VkDeviceMemory memory,
+    void setDeviceMemoryInfo(VkDevice device,
+                             VkDeviceMemory memory,
                              VkDeviceSize allocationSize,
                              VkDeviceSize mappedSize,
                              uint8_t* ptr,
                              uint32_t memoryTypeIndex) {
         AutoLock lock(mLock);
+        auto& deviceInfo = info_VkDevice[device];
         auto& info = info_VkDeviceMemory[memory];
+
         info.allocationSize = allocationSize;
         info.mappedSize = mappedSize;
         info.mappedPtr = ptr;
         info.memoryTypeIndex = memoryTypeIndex;
+        info.hostVisibleVirtInfo = deviceInfo.hostVisibleVirtInfo;
     }
 
     bool isMemoryTypeHostVisible(VkDevice device, uint32_t typeIndex) const {
@@ -263,7 +273,39 @@ public:
         return mFeatureInfo->hasDirectMem;
     }
 
-    void deviceMemoryTransform(
+    void deviceMemoryTransform_tohost(
+        VkDeviceMemory* memory, uint32_t memoryCount,
+        VkDeviceSize* offset, uint32_t offsetCount,
+        VkDeviceSize* size, uint32_t sizeCount,
+        uint32_t* typeIndex, uint32_t typeIndexCount,
+        uint32_t* typeBits, uint32_t typeBitsCount) {
+        
+        if (memoryCount != offsetCount ||
+            offsetCount != sizeCount ||
+            sizeCount != memoryCount) {
+            ALOGE("FATAL: Mismatched counts for device memory info");
+            abort();
+        }
+
+        for (uint32_t i = 0; i < memoryCount; ++i) {
+            // TODO
+            (void)memory;
+            (void)offset;
+            (void)size;
+        }
+
+        for (uint32_t i = 0; i < typeIndexCount; ++i) {
+            // TODO
+            (void)typeIndex;
+        }
+
+        for (uint32_t i = 0; i < typeBitsCount; ++i) {
+            // TODO
+            (void)typeBits;
+        }
+    }
+
+    void deviceMemoryTransform_fromhost(
         VkDeviceMemory* memory, uint32_t memoryCount,
         VkDeviceSize* offset, uint32_t offsetCount,
         VkDeviceSize* size, uint32_t sizeCount,
@@ -323,6 +365,11 @@ public:
         // no-op
     }
 
+    void on_vkGetPhysicalDeviceMemoryProperties(
+        void*,
+        VkPhysicalDevice,
+        VkPhysicalDeviceMemoryProperties*) { }
+
     VkResult on_vkCreateDevice(
         void* context,
         VkResult input_result,
@@ -369,7 +416,7 @@ public:
         }
 
         setDeviceMemoryInfo(
-            *pMemory, allocationSize, mappedSize, mappedPtr,
+            device, *pMemory, allocationSize, mappedSize, mappedPtr,
             pAllocateInfo->memoryTypeIndex);
 
         bool doDirectMap =
@@ -631,13 +678,27 @@ bool ResourceTracker::usingDirectMapping() const {
     return mImpl->usingDirectMapping();
 }
 
-void ResourceTracker::deviceMemoryTransform(
+void ResourceTracker::deviceMemoryTransform_tohost(
     VkDeviceMemory* memory, uint32_t memoryCount,
     VkDeviceSize* offset, uint32_t offsetCount,
     VkDeviceSize* size, uint32_t sizeCount,
     uint32_t* typeIndex, uint32_t typeIndexCount,
     uint32_t* typeBits, uint32_t typeBitsCount) {
-    mImpl->deviceMemoryTransform(
+    mImpl->deviceMemoryTransform_tohost(
+        memory, memoryCount,
+        offset, offsetCount,
+        size, sizeCount,
+        typeIndex, typeIndexCount,
+        typeBits, typeBitsCount);
+}
+
+void ResourceTracker::deviceMemoryTransform_fromhost(
+    VkDeviceMemory* memory, uint32_t memoryCount,
+    VkDeviceSize* offset, uint32_t offsetCount,
+    VkDeviceSize* size, uint32_t sizeCount,
+    uint32_t* typeIndex, uint32_t typeIndexCount,
+    uint32_t* typeBits, uint32_t typeBitsCount) {
+    mImpl->deviceMemoryTransform_fromhost(
         memory, memoryCount,
         offset, offsetCount,
         size, sizeCount,
@@ -668,6 +729,14 @@ void ResourceTracker::on_vkGetPhysicalDeviceProperties2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties2* pProperties) {
     mImpl->on_vkGetPhysicalDeviceProperties2(context, physicalDevice, pProperties);
+}
+
+void ResourceTracker::on_vkGetPhysicalDeviceMemoryProperties(
+    void* context,
+    VkPhysicalDevice physicalDevice,
+    VkPhysicalDeviceMemoryProperties* pMemoryProperties) {
+    mImpl->on_vkGetPhysicalDeviceMemoryProperties(
+        context, physicalDevice, pMemoryProperties);
 }
 
 VkResult ResourceTracker::on_vkCreateDevice(
