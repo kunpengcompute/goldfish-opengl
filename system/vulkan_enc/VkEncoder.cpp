@@ -792,6 +792,7 @@ void VkEncoder::vkDestroyDevice(
     VkDevice device,
     const VkAllocationCallbacks* pAllocator)
 {
+    mImpl->resources()->on_vkDestroyDevice_pre(this, device, pAllocator);
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
     auto resources = mImpl->resources();
@@ -840,6 +841,7 @@ void VkEncoder::vkDestroyDevice(
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
     resources->destroyMapping()->mapHandles_VkDevice((VkDevice*)&device);
+    stream->flush();
 }
 
 VkResult VkEncoder::vkEnumerateInstanceExtensionProperties(
@@ -1414,7 +1416,6 @@ VkResult VkEncoder::vkAllocateMemory(
     countingStream->clearPool();
     stream->clearPool();
     pool->freeAll();
-    mImpl->resources()->on_vkAllocateMemory(this, vkAllocateMemory_VkResult_return, device, pAllocateInfo, pAllocator, pMemory);
     return vkAllocateMemory_VkResult_return;
 }
 
@@ -1440,7 +1441,7 @@ void VkEncoder::vkFreeMemory(
         deepcopy_VkAllocationCallbacks(pool, pAllocator, (VkAllocationCallbacks*)(local_pAllocator));
     }
     local_pAllocator = nullptr;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_93;
@@ -1697,7 +1698,7 @@ void VkEncoder::vkGetDeviceMemoryCommitment(
     VkDeviceMemory local_memory;
     local_device = device;
     local_memory = memory;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_103;
@@ -1742,7 +1743,7 @@ VkResult VkEncoder::vkBindBufferMemory(
     local_buffer = buffer;
     local_memory = memory;
     local_memoryOffset = memoryOffset;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, &local_memoryOffset, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, &local_memoryOffset, 1, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_107;
@@ -1798,7 +1799,7 @@ VkResult VkEncoder::vkBindImageMemory(
     local_image = image;
     local_memory = memory;
     local_memoryOffset = memoryOffset;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, &local_memoryOffset, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, &local_memoryOffset, 1, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_113;
@@ -17226,7 +17227,7 @@ VkResult VkEncoder::vkGetMemoryWin32HandleNV(
     local_device = device;
     local_memory = memory;
     local_handleType = handleType;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_1238;
@@ -20326,7 +20327,7 @@ VkResult VkEncoder::vkMapMemoryIntoAddressSpaceGOOGLE(
     VkDeviceMemory local_memory;
     local_device = device;
     local_memory = memory;
-    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 1, nullptr, 1, nullptr, 1, nullptr, 1);
+    mImpl->resources()->deviceMemoryTransform_tohost(&local_memory, 1, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     countingStream->rewind();
     {
         uint64_t cgen_var_1461;

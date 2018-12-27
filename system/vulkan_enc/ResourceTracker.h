@@ -67,6 +67,10 @@ public:
         const VkDeviceCreateInfo* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkDevice* pDevice);
+    void on_vkDestroyDevice_pre(
+        void* context,
+        VkDevice device,
+        const VkAllocationCallbacks* pAllocator);
 
     VkResult on_vkAllocateMemory(
         void* context,
@@ -75,6 +79,11 @@ public:
         const VkMemoryAllocateInfo* pAllocateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkDeviceMemory* pMemory);
+    void on_vkFreeMemory(
+        void* context,
+        VkDevice device,
+        VkDeviceMemory memory,
+        const VkAllocationCallbacks* pAllocator);
 
     VkResult on_vkMapMemory(
         void* context,

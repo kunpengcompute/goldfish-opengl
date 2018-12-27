@@ -16,10 +16,25 @@
 
 #include <vulkan/vulkan.h>
 
+#define VIRTUAL_HOST_VISIBLE_HEAP_SIZE 512ULL * (1048576ULL)
+
+namespace android {
+namespace base {
+
+class SubAllocator;
+
+} // namespace base
+} // namespace android
+
 namespace goldfish_vk {
 
+class VkEncoder;
+
 struct HostVisibleMemoryVirtualizationInfo {
-    bool supported;
+    bool initialized = false;
+    bool memoryPropertiesSupported;
+    bool directMemSupported;
+    bool virtualizationSupported;
 
     VkPhysicalDevice physicalDevice;
 
@@ -41,6 +56,57 @@ bool canFitVirtualHostVisibleMemoryInfo(
 void initHostVisibleMemoryVirtualizationInfo(
     VkPhysicalDevice physicalDevice,
     const VkPhysicalDeviceMemoryProperties* memoryProperties,
+    bool directMemSupported,
     HostVisibleMemoryVirtualizationInfo* info_out);
+
+bool isHostVisibleMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index);
+
+struct HostMemAlloc {
+    bool initialized = false;
+    VkEncoder* enc;
+    VkResult initResult = VK_SUCCESS;
+    VkDevice device = nullptr;
+    uint32_t memoryTypeIndex = 0;
+    VkDeviceSize nonCoherentAtomSize = 0;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkDeviceSize allocSize = 0;
+    VkDeviceSize mappedSize = 0;
+    uint8_t* mappedPtr = nullptr;
+    android::base::SubAllocator* subAlloc = nullptr;
+};
+
+VkResult finishHostMemAllocInit(
+    VkEncoder* enc,
+    VkDevice device,
+    uint32_t memoryTypeIndex,
+    VkDeviceSize nonCoherentAtomSize,
+    VkDeviceSize allocSize,
+    VkDeviceSize mappedSize,
+    uint8_t* mappedPtr,
+    HostMemAlloc* out);
+
+void destroyHostMemAlloc(
+    VkDevice device,
+    HostMemAlloc* toDestroy);
+
+struct SubAlloc {
+    uint8_t* mappedPtr = nullptr;
+    VkDeviceSize subAllocSize = 0;
+    VkDeviceSize subMappedSize = 0;
+
+    VkDeviceMemory baseMemory = VK_NULL_HANDLE;
+    VkDeviceSize baseOffset = 0;
+    android::base::SubAllocator* subAlloc = nullptr;
+    VkDeviceMemory subMemory = VK_NULL_HANDLE;
+};
+
+void subAllocHostMemory(
+    HostMemAlloc* alloc,
+    const VkMemoryAllocateInfo* pAllocateInfo,
+    SubAlloc* out);
+
+void subFreeHostMemory(SubAlloc* toFree);
 
 } // namespace goldfish_vk
