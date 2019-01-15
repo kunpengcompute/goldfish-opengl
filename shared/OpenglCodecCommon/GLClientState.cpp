@@ -321,7 +321,6 @@ static void sClearIndexedBufferBinding(GLuint id, std::vector<GLClientState::Buf
             bindings[i].effectiveStride = 16;
             bindings[i].size = 0;
             bindings[i].buffer = 0;
-            bindings[i].divisor = 0;
         }
     }
 }
@@ -1271,14 +1270,14 @@ void GLClientState::getBoundFramebufferFormat(
             res_info->rb_format = queryRboFormat(props.depthAttachment_rbo);
             res_info->rb_multisamples =
                 queryRboSamples(
-                        props.colorAttachmenti_rbos[colorAttachmentIndex]);
+                        props.depthAttachment_rbo);
         } else if (props.depthAttachment_hasTexObj) {
             res_info->type = FBO_ATTACHMENT_TEXTURE;
             res_info->tex_internalformat = queryTexInternalFormat(props.depthAttachment_texture);
             res_info->tex_format = queryTexFormat(props.depthAttachment_texture);
             res_info->tex_type = queryTexType(props.depthAttachment_texture);
             res_info->tex_multisamples =
-                queryTexSamples(props.colorAttachmenti_textures[colorAttachmentIndex]);
+                queryTexSamples(props.depthAttachment_texture);
         } else {
             res_info->type = FBO_ATTACHMENT_NONE;
         }
@@ -1289,14 +1288,14 @@ void GLClientState::getBoundFramebufferFormat(
             res_info->rb_format = queryRboFormat(props.stencilAttachment_rbo);
             res_info->rb_multisamples =
                 queryRboSamples(
-                        props.colorAttachmenti_rbos[colorAttachmentIndex]);
+                        props.stencilAttachment_rbo);
         } else if (props.stencilAttachment_hasTexObj) {
             res_info->type = FBO_ATTACHMENT_TEXTURE;
             res_info->tex_internalformat = queryTexInternalFormat(props.stencilAttachment_texture);
             res_info->tex_format = queryTexFormat(props.stencilAttachment_texture);
             res_info->tex_type = queryTexType(props.stencilAttachment_texture);
             res_info->tex_multisamples =
-                queryTexSamples(props.colorAttachmenti_textures[colorAttachmentIndex]);
+                queryTexSamples(props.stencilAttachment_texture);
         } else {
             res_info->type = FBO_ATTACHMENT_NONE;
         }
@@ -1307,14 +1306,14 @@ void GLClientState::getBoundFramebufferFormat(
             res_info->rb_format = queryRboFormat(props.depthstencilAttachment_rbo);
             res_info->rb_multisamples =
                 queryRboSamples(
-                        props.colorAttachmenti_rbos[colorAttachmentIndex]);
+                        props.depthstencilAttachment_rbo);
         } else if (props.depthstencilAttachment_hasTexObj) {
             res_info->type = FBO_ATTACHMENT_TEXTURE;
             res_info->tex_internalformat = queryTexInternalFormat(props.depthstencilAttachment_texture);
             res_info->tex_format = queryTexFormat(props.depthstencilAttachment_texture);
             res_info->tex_type = queryTexType(props.depthstencilAttachment_texture);
             res_info->tex_multisamples =
-                queryTexSamples(props.colorAttachmenti_textures[colorAttachmentIndex]);
+                queryTexSamples(props.depthstencilAttachment_texture);
         } else {
             res_info->type = FBO_ATTACHMENT_NONE;
         }

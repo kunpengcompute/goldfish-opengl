@@ -98,6 +98,11 @@ void GLEncoder::s_glGetIntegerv(void *self, GLenum param, GLint *ptr)
         *ptr = state->getBoundTexture(GL_TEXTURE_EXTERNAL_OES);
         break;
 
+    case GL_RESET_NOTIFICATION_STRATEGY_EXT:
+        // BUG: 121414786
+        *ptr = GL_LOSE_CONTEXT_ON_RESET_EXT;
+        break;
+
     default:
         if (!state->getClientStateParameter<GLint>(param,ptr)) {
             ctx->m_glGetIntegerv_enc(self, param, ptr);
@@ -752,8 +757,6 @@ void GLEncoder::s_glGetTexParameterfv(void* self,
         GLenum target, GLenum pname, GLfloat* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
-
     if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
         ctx->override2DTextureTarget(target);
         ctx->m_glGetTexParameterfv_enc(ctx, GL_TEXTURE_2D, pname, params);
@@ -767,7 +770,6 @@ void GLEncoder::s_glGetTexParameteriv(void* self,
         GLenum target, GLenum pname, GLint* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     switch (pname) {
     case GL_REQUIRED_TEXTURE_IMAGE_UNITS_OES:
@@ -790,7 +792,6 @@ void GLEncoder::s_glGetTexParameterxv(void* self,
         GLenum target, GLenum pname, GLfixed* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
         ctx->override2DTextureTarget(target);
@@ -824,7 +825,6 @@ void GLEncoder::s_glTexParameterf(void* self,
         GLenum target, GLenum pname, GLfloat param)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)param)),
@@ -843,7 +843,6 @@ void GLEncoder::s_glTexParameterfv(void* self,
         GLenum target, GLenum pname, const GLfloat* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)params[0])),
@@ -862,7 +861,6 @@ void GLEncoder::s_glTexParameteri(void* self,
         GLenum target, GLenum pname, GLint param)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)param)),
@@ -881,7 +879,6 @@ void GLEncoder::s_glTexParameterx(void* self,
         GLenum target, GLenum pname, GLfixed param)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)param)),
@@ -900,7 +897,6 @@ void GLEncoder::s_glTexParameteriv(void* self,
         GLenum target, GLenum pname, const GLint* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)params[0])),
@@ -919,7 +915,6 @@ void GLEncoder::s_glTexParameterxv(void* self,
         GLenum target, GLenum pname, const GLfixed* params)
 {
     GLEncoder* ctx = (GLEncoder*)self;
-    const GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF((target == GL_TEXTURE_EXTERNAL_OES &&
             !isValidTextureExternalParam(pname, (GLenum)params[0])),
@@ -1088,6 +1083,8 @@ GLEncoder::GLEncoder(IOStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glFramebufferTexture2DOES);
     OVERRIDE(glFramebufferTexture2DMultisampleIMG);
     OVERRIDE(glGetFramebufferAttachmentParameterivOES);
+
+    this->glReadnPixelsEXT = s_glReadnPixelsEXT;
 }
 
 GLEncoder::~GLEncoder()
@@ -1105,4 +1102,13 @@ void GLEncoder::s_glFinish(void *self)
 {
     GLEncoder *ctx = (GLEncoder *)self;
     ctx->glFinishRoundTrip(self);
+}
+
+void GLEncoder::s_glReadnPixelsEXT(void* self, GLint x, GLint y, GLsizei width,
+        GLsizei height, GLenum format, GLenum type, GLsizei bufSize,
+        GLvoid* pixels) {
+    GLEncoder *ctx = (GLEncoder*)self;
+    SET_ERROR_IF(bufSize < ctx->pixelDataSize(width, height, format,
+        type, 1), GL_INVALID_OPERATION);
+    ctx->glReadPixels(self, x, y, width, height, format, type, pixels);
 }
