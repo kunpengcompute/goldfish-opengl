@@ -36,6 +36,7 @@
 #define RESOURCE_TRACKER_DEBUG 0
 
 #if RESOURCE_TRACKER_DEBUG
+#undef D
 #define D(fmt,...) ALOGD("%s: " fmt, __func__, ##__VA_ARGS__);
 #else
 #ifndef D
@@ -412,8 +413,16 @@ public:
         VkPhysicalDevice,
         const char*,
         uint32_t* pPropertyCount,
-        VkExtensionProperties*) {
-        *pPropertyCount = 0;
+        VkExtensionProperties* pProperties) {
+        *pPropertyCount = 1;
+    VkExtensionProperties anb = {
+        "VK_ANDROID_native_buffer", 7,
+    };
+
+    if (pProperties) {
+        *pProperties = anb;
+    }
+
         return VK_SUCCESS;
     }
 
@@ -530,7 +539,7 @@ public:
             uint8_t* mappedPtr = (uint8_t*)aligned_buf_alloc(4096, mappedSize);
             D("host visible alloc (non-direct): "
               "size 0x%llx host ptr %p mapped size 0x%llx",
-              (unsigned long long)allocationSize, mappedPtr,
+              (unsigned long long)pAllocateInfo->allocationSize, mappedPtr,
               (unsigned long long)mappedSize);
             setDeviceMemoryInfo(
                 device, *pMemory,
@@ -580,6 +589,7 @@ public:
             hostMemInfo.mappedSize = hostMemInfo.allocationSize;
             hostMemInfo.memoryTypeIndex =
                 pAllocateInfo->memoryTypeIndex;
+            hostMemAlloc->nonCoherentAtomSize = nonCoherentAtomSize;
 
             uint64_t directMappedAddr = 0;
             lock.unlock();
@@ -630,7 +640,7 @@ public:
         D("host visible alloc (direct, suballoc): "
           "size 0x%llx ptr %p mapped size 0x%llx",
           (unsigned long long)virtualMemInfo.allocationSize, virtualMemInfo.mappedPtr,
-          (unsigned long long)virtualMemInfo.mappedSisze);
+          (unsigned long long)virtualMemInfo.mappedSize);
 
         info_VkDeviceMemory[
             virtualMemInfo.subAlloc.subMemory] = virtualMemInfo;
@@ -803,6 +813,13 @@ public:
         uint64_t gpuAddr = *pAddress;
 
         void* userPtr = block.mmap(gpuAddr);
+
+        D("%s: Got new host visible alloc. "
+          "Sizeof void: %zu map size: %zu Range: [%p %p]",
+          __func__,
+          sizeof(void*), (size_t)memInfo.mappedSize,
+          userPtr,
+          (unsigned char*)userPtr + memInfo.mappedSize);
 
         *pAddress = (uint64_t)(uintptr_t)userPtr;
 
