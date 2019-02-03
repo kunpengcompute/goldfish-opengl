@@ -27,7 +27,9 @@
 #include "goldfish_address_space.h"
 #include "goldfish_vk_private_defs.h"
 
+#include <string>
 #include <unordered_map>
+#include <set>
 
 #include <log/log.h>
 #include <stdlib.h>
@@ -112,11 +114,18 @@ public:
 
     GOLDFISH_VK_LIST_TRIVIAL_HANDLE_TYPES(HANDLE_DEFINE_TRIVIAL_INFO_STRUCT)
 
+    struct VkInstance_Info {
+        uint32_t highestApiVersion;
+        std::set<std::string> enabledExtensions;
+    };
+
     struct VkDevice_Info {
         VkPhysicalDevice physdev;
         VkPhysicalDeviceProperties props;
         VkPhysicalDeviceMemoryProperties memProps;
         HostMemAlloc hostMemAllocs[VK_MAX_MEMORY_TYPES] = {};
+        uint32_t apiVersion;
+        std::set<std::string> enabledExtensions;
     };
 
     struct VkDeviceMemory_Info {
@@ -146,6 +155,16 @@ public:
 
     GOLDFISH_VK_LIST_HANDLE_TYPES(HANDLE_REGISTER_IMPL_IMPL)
     GOLDFISH_VK_LIST_TRIVIAL_HANDLE_TYPES(HANDLE_UNREGISTER_IMPL_IMPL)
+
+    void unregister_VkInstance(VkInstance instance) {
+        AutoLock lock(mLock);
+
+        auto it = info_VkInstance.find(instance);
+        if (it == info_VkInstance.end()) return;
+        auto info = it->second;
+        info_VkInstance.erase(instance);
+        lock.unlock();
+    }
 
     void unregister_VkDevice(VkDevice device) {
         AutoLock lock(mLock);
@@ -180,10 +199,30 @@ public:
         info_VkDeviceMemory.erase(mem);
     }
 
+    // TODO: Upgrade to 1.1
+    static constexpr uint32_t kMaxApiVersion = VK_MAKE_VERSION(1, 0, 65);
+    static constexpr uint32_t kMinApiVersion = VK_MAKE_VERSION(1, 0, 0);
+
+    void setInstanceInfo(VkInstance instance,
+                         uint32_t enabledExtensionCount,
+                         const char* const* ppEnabledExtensionNames) {
+        AutoLock lock(mLock);
+        auto& info = info_VkInstance[instance];
+        info.highestApiVersion = kMaxApiVersion;
+
+        if (!ppEnabledExtensionNames) return;
+
+        for (uint32_t i = 0; i < enabledExtensionCount; ++i) {
+            info.enabledExtensions.insert(ppEnabledExtensionNames[i]);
+        }
+    }
+
     void setDeviceInfo(VkDevice device,
                        VkPhysicalDevice physdev,
                        VkPhysicalDeviceProperties props,
-                       VkPhysicalDeviceMemoryProperties memProps) {
+                       VkPhysicalDeviceMemoryProperties memProps,
+                       uint32_t enabledExtensionCount,
+                       const char* const* ppEnabledExtensionNames) {
         AutoLock lock(mLock);
         auto& info = info_VkDevice[device];
         info.physdev = physdev;
@@ -193,6 +232,13 @@ public:
             physdev, &memProps,
             mFeatureInfo->hasDirectMem,
             &mHostVisibleMemoryVirtInfo);
+        info.apiVersion = props.apiVersion;
+
+        if (!ppEnabledExtensionNames) return;
+
+        for (uint32_t i = 0; i < enabledExtensionCount; ++i) {
+            info.enabledExtensions.insert(ppEnabledExtensionNames[i]);
+        }
     }
 
     void setDeviceMemoryInfo(VkDevice device,
@@ -284,6 +330,28 @@ public:
 
     bool usingDirectMapping() const {
         return mHostVisibleMemoryVirtInfo.virtualizationSupported;
+    }
+
+    int getHostInstanceExtensionIndex(const std::string& extName) const {
+        int i = 0;
+        for (const auto& prop : mHostInstanceExtensions) {
+            if (extName == std::string(prop.extensionName)) {
+                return i;
+            }
+            ++i;
+        }
+        return -1;
+    }
+
+    int getHostDeviceExtensionIndex(const std::string& extName) const {
+        int i = 0;
+        for (const auto& prop : mHostDeviceExtensions) {
+            if (extName == std::string(prop.extensionName)) {
+                return i;
+            }
+            ++i;
+        }
+        return -1;
     }
 
     void deviceMemoryTransform_tohost(
@@ -402,35 +470,127 @@ public:
         VkResult,
         uint32_t* apiVersion) {
         if (apiVersion) {
-            *apiVersion = VK_MAKE_VERSION(1, 0, 0);
+            *apiVersion = kMaxApiVersion;
         }
         return VK_SUCCESS;
     }
 
-    VkResult on_vkEnumerateDeviceExtensionProperties(
-        void*,
+    VkResult on_vkEnumerateInstanceExtensionProperties(
+        void* context,
         VkResult,
-        VkPhysicalDevice,
         const char*,
         uint32_t* pPropertyCount,
         VkExtensionProperties* pProperties) {
-        *pPropertyCount = 1;
-    VkExtensionProperties anb = {
-        "VK_ANDROID_native_buffer", 7,
-    };
 
-    if (pProperties) {
-        *pProperties = anb;
-    }
+        std::vector<const char*> allowedExtensionNames = {
+            "VK_KHR_get_physical_device_properties2",
+            // TODO:
+            // VK_KHR_external_memory_capabilities
+        };
+
+        VkEncoder* enc = (VkEncoder*)context;
+
+        // Only advertise a select set of extensions.
+        if (mHostInstanceExtensions.empty()) {
+            uint32_t hostPropCount = 0;
+            enc->vkEnumerateInstanceExtensionProperties(nullptr, &hostPropCount, nullptr);
+            mHostInstanceExtensions.resize(hostPropCount);
+
+            VkResult hostRes =
+                enc->vkEnumerateInstanceExtensionProperties(
+                    nullptr, &hostPropCount, mHostInstanceExtensions.data());
+
+            if (hostRes != VK_SUCCESS) {
+                return hostRes;
+            }
+        }
+
+        std::vector<VkExtensionProperties> filteredExts;
+
+        for (size_t i = 0; i < allowedExtensionNames.size(); ++i) {
+            auto extIndex = getHostInstanceExtensionIndex(allowedExtensionNames[i]);
+            if (extIndex != -1) {
+                filteredExts.push_back(mHostInstanceExtensions[extIndex]);
+            }
+        }
+
+        VkExtensionProperties anbExtProp = {
+            "VK_ANDROID_native_buffer", 7,
+        };
+
+        filteredExts.push_back(anbExtProp);
+
+        if (pPropertyCount) {
+            *pPropertyCount = filteredExts.size();
+        }
+
+        if (pPropertyCount && pProperties) {
+            for (size_t i = 0; i < *pPropertyCount; ++i) {
+                pProperties[i] = filteredExts[i];
+            }
+        }
 
         return VK_SUCCESS;
     }
 
-    void on_vkGetPhysicalDeviceProperties2(
-        void*,
-        VkPhysicalDevice,
-        VkPhysicalDeviceProperties2*) {
-        // no-op
+    VkResult on_vkEnumerateDeviceExtensionProperties(
+        void* context,
+        VkResult,
+        VkPhysicalDevice physdev,
+        const char*,
+        uint32_t* pPropertyCount,
+        VkExtensionProperties* pProperties) {
+
+        std::vector<const char*> allowedExtensionNames = {
+            // "VK_KHR_maintenance1",
+            // "VK_KHR_maintenance2",
+            // "VK_KHR_maintenance3",
+            // TODO:
+            // VK_KHR_external_memory_capabilities
+        };
+
+        VkEncoder* enc = (VkEncoder*)context;
+
+        if (mHostDeviceExtensions.empty()) {
+            uint32_t hostPropCount = 0;
+            enc->vkEnumerateDeviceExtensionProperties(physdev, nullptr, &hostPropCount, nullptr);
+            mHostDeviceExtensions.resize(hostPropCount);
+
+            VkResult hostRes =
+                enc->vkEnumerateDeviceExtensionProperties(
+                    physdev, nullptr, &hostPropCount, mHostDeviceExtensions.data());
+
+            if (hostRes != VK_SUCCESS) {
+                return hostRes;
+            }
+        }
+
+        std::vector<VkExtensionProperties> filteredExts;
+
+        for (size_t i = 0; i < allowedExtensionNames.size(); ++i) {
+            auto extIndex = getHostDeviceExtensionIndex(allowedExtensionNames[i]);
+            if (extIndex != -1) {
+                filteredExts.push_back(mHostDeviceExtensions[extIndex]);
+            }
+        }
+
+        VkExtensionProperties anbExtProp = {
+            "VK_ANDROID_native_buffer", 7,
+        };
+
+        filteredExts.push_back(anbExtProp);
+
+        if (pPropertyCount) {
+            *pPropertyCount = filteredExts.size();
+        }
+
+        if (pPropertyCount && pProperties) {
+            for (size_t i = 0; i < *pPropertyCount; ++i) {
+                pProperties[i] = filteredExts[i];
+            }
+        }
+
+        return VK_SUCCESS;
     }
 
     void on_vkGetPhysicalDeviceMemoryProperties(
@@ -449,11 +609,44 @@ public:
         }
     }
 
+    void on_vkGetPhysicalDeviceMemoryProperties2(
+        void*,
+        VkPhysicalDevice physdev,
+        VkPhysicalDeviceMemoryProperties2* out) {
+
+        initHostVisibleMemoryVirtualizationInfo(
+            physdev,
+            &out->memoryProperties,
+            mFeatureInfo->hasDirectMem,
+            &mHostVisibleMemoryVirtInfo);
+
+        if (mHostVisibleMemoryVirtInfo.virtualizationSupported) {
+            out->memoryProperties = mHostVisibleMemoryVirtInfo.guestMemoryProperties;
+        }
+    }
+
+    VkResult on_vkCreateInstance(
+        void*,
+        VkResult input_result,
+        const VkInstanceCreateInfo* createInfo,
+        const VkAllocationCallbacks*,
+        VkInstance* pInstance) {
+
+        if (input_result != VK_SUCCESS) return input_result;
+
+        setInstanceInfo(
+            *pInstance,
+            createInfo->enabledExtensionCount,
+            createInfo->ppEnabledExtensionNames);
+
+        return input_result;
+    }
+
     VkResult on_vkCreateDevice(
         void* context,
         VkResult input_result,
         VkPhysicalDevice physicalDevice,
-        const VkDeviceCreateInfo*,
+        const VkDeviceCreateInfo* pCreateInfo,
         const VkAllocationCallbacks*,
         VkDevice* pDevice) {
 
@@ -466,7 +659,9 @@ public:
         enc->vkGetPhysicalDeviceProperties(physicalDevice, &props);
         enc->vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
 
-        setDeviceInfo(*pDevice, physicalDevice, props, memProps);
+        setDeviceInfo(
+            *pDevice, physicalDevice, props, memProps,
+            pCreateInfo->enabledExtensionCount, pCreateInfo->ppEnabledExtensionNames);
 
         return input_result;
     }
@@ -826,12 +1021,61 @@ public:
         return input_result;
     }
 
+    uint32_t getApiVersionFromInstance(VkInstance instance) const {
+        AutoLock lock(mLock);
+        uint32_t api = kMinApiVersion;
+
+        auto it = info_VkInstance.find(instance);
+        if (it == info_VkInstance.end()) return api;
+
+        api = it->second.highestApiVersion;
+
+        return api;
+    }
+
+    uint32_t getApiVersionFromDevice(VkDevice device) const {
+        AutoLock lock(mLock);
+
+        uint32_t api = kMinApiVersion;
+
+        auto it = info_VkDevice.find(device);
+        if (it == info_VkDevice.end()) return api;
+
+        api = it->second.apiVersion;
+
+        return api;
+    }
+
+    bool hasInstanceExtension(VkInstance instance, const std::string& name) const {
+        AutoLock lock(mLock);
+
+        auto it = info_VkInstance.find(instance);
+        if (it == info_VkInstance.end()) return false;
+
+        return it->second.enabledExtensions.find(name) !=
+               it->second.enabledExtensions.end();
+    }
+
+    bool hasDeviceExtension(VkDevice device, const std::string& name) const {
+        AutoLock lock(mLock);
+
+        auto it = info_VkDevice.find(device);
+        if (it == info_VkDevice.end()) return false;
+
+        return it->second.enabledExtensions.find(name) !=
+               it->second.enabledExtensions.end();
+    }
+
 private:
     mutable Lock mLock;
     HostVisibleMemoryVirtualizationInfo mHostVisibleMemoryVirtInfo;
     std::unique_ptr<EmulatorFeatureInfo> mFeatureInfo;
     std::unique_ptr<GoldfishAddressSpaceBlockProvider> mGoldfishAddressSpaceBlockProvider;
+
+    std::vector<VkExtensionProperties> mHostInstanceExtensions;
+    std::vector<VkExtensionProperties> mHostDeviceExtensions;
 };
+
 ResourceTracker::ResourceTracker() : mImpl(new ResourceTracker::Impl()) { }
 ResourceTracker::~ResourceTracker() { }
 VulkanHandleMapping* ResourceTracker::createMapping() {
@@ -865,14 +1109,6 @@ ResourceTracker* ResourceTracker::get() {
     } \
 
 GOLDFISH_VK_LIST_HANDLE_TYPES(HANDLE_REGISTER_IMPL)
-
-void ResourceTracker::setDeviceInfo(
-    VkDevice device,
-    VkPhysicalDevice physdev,
-    VkPhysicalDeviceProperties props,
-    VkPhysicalDeviceMemoryProperties memProps) {
-    mImpl->setDeviceInfo(device, physdev, props, memProps);
-}
 
 bool ResourceTracker::isMemoryTypeHostVisible(
     VkDevice device, uint32_t typeIndex) const {
@@ -931,11 +1167,35 @@ void ResourceTracker::deviceMemoryTransform_fromhost(
         typeBits, typeBitsCount);
 }
 
+uint32_t ResourceTracker::getApiVersionFromInstance(VkInstance instance) const {
+    return mImpl->getApiVersionFromInstance(instance);
+}
+
+uint32_t ResourceTracker::getApiVersionFromDevice(VkDevice device) const {
+    return mImpl->getApiVersionFromDevice(device);
+}
+bool ResourceTracker::hasInstanceExtension(VkInstance instance, const std::string &name) const {
+    return mImpl->hasInstanceExtension(instance, name);
+}
+bool ResourceTracker::hasDeviceExtension(VkDevice device, const std::string &name) const {
+    return mImpl->hasDeviceExtension(device, name);
+}
+
 VkResult ResourceTracker::on_vkEnumerateInstanceVersion(
     void* context,
     VkResult input_result,
     uint32_t* apiVersion) {
     return mImpl->on_vkEnumerateInstanceVersion(context, input_result, apiVersion);
+}
+
+VkResult ResourceTracker::on_vkEnumerateInstanceExtensionProperties(
+    void* context,
+    VkResult input_result,
+    const char* pLayerName,
+    uint32_t* pPropertyCount,
+    VkExtensionProperties* pProperties) {
+    return mImpl->on_vkEnumerateInstanceExtensionProperties(
+        context, input_result, pLayerName, pPropertyCount, pProperties);
 }
 
 VkResult ResourceTracker::on_vkEnumerateDeviceExtensionProperties(
@@ -949,19 +1209,38 @@ VkResult ResourceTracker::on_vkEnumerateDeviceExtensionProperties(
         context, input_result, physicalDevice, pLayerName, pPropertyCount, pProperties);
 }
 
-void ResourceTracker::on_vkGetPhysicalDeviceProperties2(
-    void* context,
-    VkPhysicalDevice physicalDevice,
-    VkPhysicalDeviceProperties2* pProperties) {
-    mImpl->on_vkGetPhysicalDeviceProperties2(context, physicalDevice, pProperties);
-}
-
 void ResourceTracker::on_vkGetPhysicalDeviceMemoryProperties(
     void* context,
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties* pMemoryProperties) {
     mImpl->on_vkGetPhysicalDeviceMemoryProperties(
         context, physicalDevice, pMemoryProperties);
+}
+
+void ResourceTracker::on_vkGetPhysicalDeviceMemoryProperties2(
+    void* context,
+    VkPhysicalDevice physicalDevice,
+    VkPhysicalDeviceMemoryProperties2* pMemoryProperties) {
+    mImpl->on_vkGetPhysicalDeviceMemoryProperties2(
+        context, physicalDevice, pMemoryProperties);
+}
+
+void ResourceTracker::on_vkGetPhysicalDeviceMemoryProperties2KHR(
+    void* context,
+    VkPhysicalDevice physicalDevice,
+    VkPhysicalDeviceMemoryProperties2* pMemoryProperties) {
+    mImpl->on_vkGetPhysicalDeviceMemoryProperties2(
+        context, physicalDevice, pMemoryProperties);
+}
+
+VkResult ResourceTracker::on_vkCreateInstance(
+    void* context,
+    VkResult input_result,
+    const VkInstanceCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkInstance* pInstance) {
+    return mImpl->on_vkCreateInstance(
+        context, input_result, pCreateInfo, pAllocator, pInstance);
 }
 
 VkResult ResourceTracker::on_vkCreateDevice(
