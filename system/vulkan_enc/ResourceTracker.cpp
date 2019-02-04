@@ -328,6 +328,12 @@ public:
         }
     }
 
+    bool hostSupportsVulkan() const {
+        if (!mFeatureInfo) return false;
+
+        return mFeatureInfo->hasVulkan;
+    }
+
     bool usingDirectMapping() const {
         return mHostVisibleMemoryVirtInfo.virtualizationSupported;
     }
@@ -542,7 +548,8 @@ public:
         VkExtensionProperties* pProperties) {
 
         std::vector<const char*> allowedExtensionNames = {
-            // "VK_KHR_maintenance1",
+            "VK_KHR_maintenance1",
+            "VK_KHR_get_memory_requirements2",
             // "VK_KHR_maintenance2",
             // "VK_KHR_maintenance3",
             // TODO:
@@ -1133,6 +1140,10 @@ bool ResourceTracker::isValidMemoryRange(const VkMappedMemoryRange& range) const
 
 void ResourceTracker::setupFeatures(const EmulatorFeatureInfo* features) {
     mImpl->setupFeatures(features);
+}
+
+bool ResourceTracker::hostSupportsVulkan() const {
+    return mImpl->hostSupportsVulkan();
 }
 
 bool ResourceTracker::usingDirectMapping() const {
