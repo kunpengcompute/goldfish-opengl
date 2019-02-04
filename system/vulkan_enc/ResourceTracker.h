@@ -44,6 +44,14 @@ public:
         void* context,
         VkResult input_result,
         uint32_t* apiVersion);
+
+    VkResult on_vkEnumerateInstanceExtensionProperties(
+        void* context,
+        VkResult input_result,
+        const char* pLayerName,
+        uint32_t* pPropertyCount,
+        VkExtensionProperties* pProperties);
+
     VkResult on_vkEnumerateDeviceExtensionProperties(
         void* context,
         VkResult input_result,
@@ -51,15 +59,26 @@ public:
         const char* pLayerName,
         uint32_t* pPropertyCount,
         VkExtensionProperties* pProperties);
-    void on_vkGetPhysicalDeviceProperties2(
-        void* context,
-        VkPhysicalDevice physicalDevice,
-        VkPhysicalDeviceProperties2* pProperties);
+
     void on_vkGetPhysicalDeviceMemoryProperties(
         void* context,
         VkPhysicalDevice physicalDevice,
         VkPhysicalDeviceMemoryProperties* pMemoryProperties);
+    void on_vkGetPhysicalDeviceMemoryProperties2(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        VkPhysicalDeviceMemoryProperties2* pMemoryProperties);
+    void on_vkGetPhysicalDeviceMemoryProperties2KHR(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        VkPhysicalDeviceMemoryProperties2* pMemoryProperties);
 
+    VkResult on_vkCreateInstance(
+        void* context,
+        VkResult input_result,
+        const VkInstanceCreateInfo* createInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkInstance* pInstance);
     VkResult on_vkCreateDevice(
         void* context,
         VkResult input_result,
@@ -118,13 +137,13 @@ public:
         VkDeviceMemory memory,
         uint64_t* pAddress);
 
-    void setDeviceInfo(VkDevice device, VkPhysicalDevice physdev, VkPhysicalDeviceProperties props, VkPhysicalDeviceMemoryProperties memProps);
     bool isMemoryTypeHostVisible(VkDevice device, uint32_t typeIndex) const;
     uint8_t* getMappedPointer(VkDeviceMemory memory);
     VkDeviceSize getMappedSize(VkDeviceMemory memory);
     VkDeviceSize getNonCoherentExtendedSize(VkDevice device, VkDeviceSize basicSize) const;
     bool isValidMemoryRange(const VkMappedMemoryRange& range) const;
     void setupFeatures(const EmulatorFeatureInfo* features);
+    bool hostSupportsVulkan() const;
     bool usingDirectMapping() const;
     void deviceMemoryTransform_tohost(
         VkDeviceMemory* memory, uint32_t memoryCount,
@@ -138,6 +157,11 @@ public:
         VkDeviceSize* size, uint32_t sizeCount,
         uint32_t* typeIndex, uint32_t typeIndexCount,
         uint32_t* typeBits, uint32_t typeBitsCount);
+
+    uint32_t getApiVersionFromInstance(VkInstance instance) const;
+    uint32_t getApiVersionFromDevice(VkDevice device) const;
+    bool hasInstanceExtension(VkInstance instance, const std::string& name) const;
+    bool hasDeviceExtension(VkDevice instance, const std::string& name) const;
 
   private:
     class Impl;

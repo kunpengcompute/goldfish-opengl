@@ -24,6 +24,105 @@
 
 #include "func_table.h"
 
+#include <array>
+#include <bitset>
+#include <mutex>
+
+// Used when there is no Vulkan support on the host.
+// Copied from frameworks/native/vulkan/libvulkan/stubhal.cpp
+namespace vkstubhal {
+
+const size_t kMaxInstances = 32;
+static std::mutex g_instance_mutex;
+static std::bitset<kMaxInstances> g_instance_used(false);
+static std::array<hwvulkan_dispatch_t, kMaxInstances> g_instances;
+
+[[noreturn]] VKAPI_ATTR void NoOp() {
+    LOG_ALWAYS_FATAL("invalid stub function called");
+}
+
+VkResult
+EnumerateInstanceExtensionProperties(const char* /*layer_name*/,
+                                     uint32_t* count,
+                                     VkExtensionProperties* /*properties*/) {
+    *count = 0;
+    return VK_SUCCESS;
+}
+
+VkResult
+EnumerateInstanceLayerProperties(uint32_t* count,
+                                 VkLayerProperties* /*properties*/) {
+    *count = 0;
+    return VK_SUCCESS;
+}
+
+VkResult CreateInstance(const VkInstanceCreateInfo* /*create_info*/,
+                        const VkAllocationCallbacks* /*allocator*/,
+                        VkInstance* instance) {
+    std::lock_guard<std::mutex> lock(g_instance_mutex);
+    for (size_t i = 0; i < kMaxInstances; i++) {
+        if (!g_instance_used[i]) {
+            g_instance_used[i] = true;
+            g_instances[i].magic = HWVULKAN_DISPATCH_MAGIC;
+            *instance = reinterpret_cast<VkInstance>(&g_instances[i]);
+            return VK_SUCCESS;
+        }
+    }
+    ALOGE("no more instances available (max=%zu)", kMaxInstances);
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+void DestroyInstance(VkInstance instance,
+                     const VkAllocationCallbacks* /*allocator*/) {
+    std::lock_guard<std::mutex> lock(g_instance_mutex);
+    ssize_t idx =
+        reinterpret_cast<hwvulkan_dispatch_t*>(instance) - &g_instances[0];
+    ALOG_ASSERT(idx >= 0 && static_cast<size_t>(idx) < g_instance_used.size(),
+                "DestroyInstance: invalid instance handle");
+    g_instance_used[static_cast<size_t>(idx)] = false;
+}
+
+VkResult EnumeratePhysicalDevices(VkInstance /*instance*/,
+                                  uint32_t* count,
+                                  VkPhysicalDevice* /*gpus*/) {
+    *count = 0;
+    return VK_SUCCESS;
+}
+
+VkResult
+EnumeratePhysicalDeviceGroups(VkInstance /*instance*/,
+                              uint32_t* count,
+                              VkPhysicalDeviceGroupProperties* /*properties*/) {
+    *count = 0;
+    return VK_SUCCESS;
+}
+
+PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance,
+                                       const char* name) {
+    if (strcmp(name, "vkCreateInstance") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(CreateInstance);
+    if (strcmp(name, "vkDestroyInstance") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(DestroyInstance);
+    if (strcmp(name, "vkEnumerateInstanceExtensionProperties") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(
+            EnumerateInstanceExtensionProperties);
+    if (strcmp(name, "vkEnumeratePhysicalDevices") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(EnumeratePhysicalDevices);
+    if (strcmp(name, "vkEnumeratePhysicalDeviceGroups") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(
+            EnumeratePhysicalDeviceGroups);
+    if (strcmp(name, "vkGetInstanceProcAddr") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(GetInstanceProcAddr);
+    // Per the spec, return NULL if instance is NULL.
+    if (!instance)
+        return nullptr;
+    // None of the other Vulkan functions should ever be called, as they all
+    // take a VkPhysicalDevice or other object obtained from a physical device.
+    return reinterpret_cast<PFN_vkVoidFunction>(NoOp);
+}
+
+} // namespace vkstubhal
+
 namespace {
 
 int OpenDevice(const hw_module_t* module, const char* id, hw_device_t** device);
@@ -49,23 +148,24 @@ int CloseDevice(struct hw_device_t* /*device*/) {
     return 0;
 }
 
-#define VK_HOST_CONNECTION \
+#define VK_HOST_CONNECTION(ret) \
     HostConnection *hostCon = HostConnection::get(); \
     if (!hostCon) { \
         ALOGE("vulkan: Failed to get host connection\n"); \
-        return VK_ERROR_DEVICE_LOST; \
+        return ret; \
     } \
     ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("vulkan: Failed to get renderControl encoder context\n"); \
-        return VK_ERROR_DEVICE_LOST; \
+        return ret; \
     } \
     goldfish_vk::VkEncoder *vkEnc = hostCon->vkEncoder(); \
     if (!vkEnc) { \
         ALOGE("vulkan: Failed to get Vulkan encoder\n"); \
-        return VK_ERROR_DEVICE_LOST; \
+        return ret; \
     } \
     goldfish_vk::ResourceTracker::get()->setupFeatures(rcEnc->featureInfo_const()); \
+    auto hostSupportsVulkan = goldfish_vk::ResourceTracker::get()->hostSupportsVulkan(); \
 
 VKAPI_ATTR
 VkResult EnumerateInstanceExtensionProperties(
@@ -73,7 +173,11 @@ VkResult EnumerateInstanceExtensionProperties(
     uint32_t* count,
     VkExtensionProperties* properties) {
 
-    VK_HOST_CONNECTION;
+    VK_HOST_CONNECTION(VK_ERROR_DEVICE_LOST)
+
+    if (!hostSupportsVulkan) {
+        return vkstubhal::EnumerateInstanceExtensionProperties(layer_name, count, properties);
+    }
 
     if (layer_name) {
         ALOGW(
@@ -82,42 +186,48 @@ VkResult EnumerateInstanceExtensionProperties(
             layer_name);
     }
 
-    // For now, let's not expose any extensions;
-    // add them one at a time as needed.
-    *count = 1;
-    VkExtensionProperties anb = {
-        "VK_ANDROID_native_buffer", 7,
-    };
+    VkResult res = goldfish_vk::ResourceTracker::get()->on_vkEnumerateInstanceExtensionProperties(
+        vkEnc, VK_SUCCESS, layer_name, count, properties);
 
-    if (properties) {
-        *properties = anb;
-    }
-
-    return VK_SUCCESS;
+    return res;
 }
 
 VKAPI_ATTR
 VkResult CreateInstance(const VkInstanceCreateInfo* create_info,
                         const VkAllocationCallbacks* allocator,
                         VkInstance* out_instance) {
-    ALOGD("%s: goldfish vkCreateInstance\n", __func__);
-    VK_HOST_CONNECTION;
+    VK_HOST_CONNECTION(VK_ERROR_DEVICE_LOST)
+
+    if (!hostSupportsVulkan) {
+        return vkstubhal::CreateInstance(create_info, allocator, out_instance);
+    }
 
     VkResult res = vkEnc->vkCreateInstance(create_info, nullptr, out_instance);
 
     return res;
 }
 
-static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice, const char* name) {
+static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice device, const char* name) {
+    VK_HOST_CONNECTION(nullptr)
+
+    if (!hostSupportsVulkan) {
+        return nullptr;
+    }
+
     if (!strcmp(name, "vkGetDeviceProcAddr")) {
         return (PFN_vkVoidFunction)(GetDeviceProcAddr);
     }
-    return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_proc_address(name));
+    return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_device_proc_address(device, name));
 }
 
 VKAPI_ATTR
 PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
-    (void)instance;
+    VK_HOST_CONNECTION(nullptr)
+
+    if (!hostSupportsVulkan) {
+        return vkstubhal::GetInstanceProcAddr(instance, name);
+    }
+
     if (!strcmp(name, "vkEnumerateInstanceExtensionProperties")) {
         return (PFN_vkVoidFunction)EnumerateInstanceExtensionProperties;
     }
@@ -127,7 +237,7 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
     if (!strcmp(name, "vkGetDeviceProcAddr")) {
         return (PFN_vkVoidFunction)(GetDeviceProcAddr);
     }
-    return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_proc_address(name));
+    return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_instance_proc_address(instance, name));
 }
 
 hwvulkan_device_t goldfish_vulkan_device = {
