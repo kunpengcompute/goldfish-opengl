@@ -331,12 +331,21 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
     return 0;
 }
 
+static HostConnection* sHostCon = NULL;
+
+static HostConnection* createOrGetHostConnection() {
+    if (!sHostCon) {
+        sHostCon = HostConnection::createUnique();
+    }
+    return sHostCon;
+}
+
 #define DEFINE_HOST_CONNECTION \
-    HostConnection *hostCon = HostConnection::get(); \
+    HostConnection *hostCon = createOrGetHostConnection(); \
     ExtendedRCEncoderContext *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL)
 
 #define DEFINE_AND_VALIDATE_HOST_CONNECTION \
-    HostConnection *hostCon = HostConnection::get(); \
+    HostConnection *hostCon = createOrGetHostConnection(); \
     if (!hostCon) { \
         ALOGE("gralloc: Failed to get host connection\n"); \
         return -EIO; \
@@ -345,13 +354,6 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
     if (!rcEnc) { \
         ALOGE("gralloc: Failed to get renderControl encoder context\n"); \
         return -EIO; \
-    }
-
-#define EXIT_GRALLOCONLY_HOST_CONNECTION \
-    if (hostCon && hostCon->isGrallocOnly()) { \
-        ALOGD("%s: exiting HostConnection (is buffer-handling thread)", \
-              __FUNCTION__); \
-        HostConnection::exit(); \
     }
 
 #if PLATFORM_SDK_VERSION < 18
@@ -719,6 +721,8 @@ static int gralloc_alloc(alloc_device_t* dev,
 
         cb->setFd(fd);
 
+        hostCon->lock();
+
         if (rcEnc->getDmaVersion() > 0) {
             D("%s: creating goldfish dma region of size %lu (cb fd %d)\n", __FUNCTION__, ashmem_size, cb->fd);
             init_gralloc_dmaregion();
@@ -726,6 +730,7 @@ static int gralloc_alloc(alloc_device_t* dev,
         } else {
             cb->goldfish_dma.fd = -1;
         }
+        hostCon->unlock();
     } else {
         cb->goldfish_dma.fd = -1;
     }
@@ -741,11 +746,13 @@ static int gralloc_alloc(alloc_device_t* dev,
             if (HAL_PIXEL_FORMAT_RGBX_8888 == format) {
                 allocFormat = GL_RGB;
             }
+            hostCon->lock();
             if (s_grdma) {
                 cb->hostHandle = rcEnc->rcCreateColorBufferDMA(rcEnc, w, h, allocFormat, cb->emuFrameworkFormat);
             } else {
                 cb->hostHandle = rcEnc->rcCreateColorBuffer(rcEnc, w, h, allocFormat);
             }
+            hostCon->unlock();
         }
 
         if (!cb->hostHandle) {
@@ -817,7 +824,9 @@ static int gralloc_free(alloc_device_t* dev,
         if (*openCountPtr > 0) {
             DEFINE_AND_VALIDATE_HOST_CONNECTION;
             D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
+            hostCon->lock();
             rcEnc->rcCloseColorBuffer(rcEnc, cb->hostHandle);
+            hostCon->unlock();
         } else {
             D("A rcCloseColorBuffer is owed!!! sdk ver: %d", PLATFORM_SDK_VERSION);
             *openCountPtr = -1;
@@ -916,8 +925,10 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
     (*postCountPtr)++;
 
     // send post request to host
+    hostCon->lock();
     rcEnc->rcFBPost(rcEnc, cb->hostHandle);
     hostCon->flush();
+    hostCon->unlock();
 
     return 0;
 }
@@ -959,8 +970,10 @@ static int fb_setSwapInterval(struct framebuffer_device_t* dev,
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
     // send request to host
+    hostCon->lock();
     rcEnc->rcFBSetSwapInterval(rcEnc, interval);
     hostCon->flush();
+    hostCon->unlock();
 
     return 0;
 }
@@ -1002,7 +1015,9 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
     if (cb->hostHandle != 0 && !cb->hasRefcountPipe()) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Opening host ColorBuffer 0x%x\n", cb->hostHandle);
+        hostCon->lock();
         rcEnc->rcOpenColorBuffer2(rcEnc, cb->hostHandle);
+        hostCon->unlock();
     }
 
     //
@@ -1024,10 +1039,12 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
         }
 
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        hostCon->lock();
         if (rcEnc->getDmaVersion() > 0) {
             init_gralloc_dmaregion();
             gralloc_dmaregion_register_ashmem(cb->ashmemSize);
         }
+        hostCon->unlock();
 
     }
 
@@ -1058,6 +1075,7 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
     if (cb->hostHandle && !cb->hasRefcountPipe()) {
         D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        hostCon->lock();
         rcEnc->rcCloseColorBuffer(rcEnc, cb->hostHandle);
 
         if (isHidlGralloc) {
@@ -1072,8 +1090,7 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
                 }
             }
         }
-        EXIT_GRALLOCONLY_HOST_CONNECTION;
-
+        hostCon->unlock();
     }
 
     //
@@ -1087,7 +1104,6 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
 
         if (!SHOULD_UNMAP) goto done;
 
-        DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
         void *vaddr;
         int err = munmap((void *)cb->ashmemBase, cb->ashmemSize);
@@ -1098,7 +1114,6 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
         cb->ashmemBase = 0;
         cb->mappedPid = 0;
         D("%s: Unregister buffer previous mapped to pid %d", __FUNCTION__, getpid());
-        EXIT_GRALLOCONLY_HOST_CONNECTION;
     }
 
 done:
@@ -1191,6 +1206,7 @@ static int gralloc_lock(gralloc_module_t const* module,
     if (cb->hostHandle) {
         // Make sure we have host connection
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        hostCon->lock();
 
         //
         // flush color buffer write cache on host and get its sync status.
@@ -1228,6 +1244,7 @@ static int gralloc_lock(gralloc_module_t const* module,
                 delete [] tmpBuf;
             }
         }
+        hostCon->unlock();
     }
 
     //
@@ -1276,6 +1293,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
 
         // Make sure we have host connection
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        hostCon->lock();
 
         void *cpu_addr = (void *)(cb->ashmemBase + getAshmemColorOffset(cb));
 
@@ -1287,6 +1305,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
             updateHostColorBuffer(cb, false, rgb_addr);
         }
 
+        hostCon->unlock();
         DD("gralloc_unlock success. cpu_addr: %p", cpu_addr);
     }
 
@@ -1423,8 +1442,8 @@ static int gralloc_device_open(const hw_module_t* module,
 
         // Create host connection and keep it in the TLS.
         // return error if connection with host can not be established
-        HostConnection *hostCon = HostConnection::get();
-        if (!hostCon) {
+        HostConnection *hostConn = createOrGetHostConnection();
+        if (!hostConn) {
             ALOGE("gralloc: failed to get host connection while opening %s\n", name);
             return -EIO;
         }
@@ -1458,6 +1477,7 @@ static int gralloc_device_open(const hw_module_t* module,
 
         // return error if connection with host can not be established
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        hostCon->lock();
 
         //
         // Query the host for Framebuffer attributes
@@ -1477,6 +1497,7 @@ static int gralloc_device_open(const hw_module_t* module,
         D("gralloc: min_swap=%d\n", min_si);
         EGLint max_si = rcEnc->rcGetFBParam(rcEnc, FB_MAX_SWAP_INTERVAL);
         D("gralloc: max_swap=%d\n", max_si);
+        hostCon->unlock();
 
         //
         // Allocate memory for the framebuffer device
