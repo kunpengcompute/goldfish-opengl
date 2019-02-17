@@ -66,7 +66,8 @@ static VkResult entry_vkEnumeratePhysicalDevices(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumeratePhysicalDevices_VkResult_return = (VkResult)0;
-    vkEnumeratePhysicalDevices_VkResult_return = vkEnc->vkEnumeratePhysicalDevices(instance, pPhysicalDeviceCount, pPhysicalDevices);
+    auto resources = ResourceTracker::get();
+    vkEnumeratePhysicalDevices_VkResult_return = resources->on_vkEnumeratePhysicalDevices(vkEnc, VK_SUCCESS, instance, pPhysicalDeviceCount, pPhysicalDevices);
     return vkEnumeratePhysicalDevices_VkResult_return;
 }
 static void entry_vkGetPhysicalDeviceFeatures(
@@ -311,7 +312,8 @@ static VkResult entry_vkBindBufferMemory(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory_VkResult_return = (VkResult)0;
-    vkBindBufferMemory_VkResult_return = vkEnc->vkBindBufferMemory(device, buffer, memory, memoryOffset);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory_VkResult_return = resources->on_vkBindBufferMemory(vkEnc, VK_SUCCESS, device, buffer, memory, memoryOffset);
     return vkBindBufferMemory_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory(
@@ -322,7 +324,8 @@ static VkResult entry_vkBindImageMemory(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory_VkResult_return = (VkResult)0;
-    vkBindImageMemory_VkResult_return = vkEnc->vkBindImageMemory(device, image, memory, memoryOffset);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory_VkResult_return = resources->on_vkBindImageMemory(vkEnc, VK_SUCCESS, device, image, memory, memoryOffset);
     return vkBindImageMemory_VkResult_return;
 }
 static void entry_vkGetBufferMemoryRequirements(
@@ -331,7 +334,8 @@ static void entry_vkGetBufferMemoryRequirements(
     VkMemoryRequirements* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements(vkEnc, device, buffer, pMemoryRequirements);
 }
 static void entry_vkGetImageMemoryRequirements(
     VkDevice device,
@@ -339,7 +343,8 @@ static void entry_vkGetImageMemoryRequirements(
     VkMemoryRequirements* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements(device, image, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements(vkEnc, device, image, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements(
     VkDevice device,
@@ -531,7 +536,8 @@ static VkResult entry_vkCreateBuffer(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateBuffer_VkResult_return = (VkResult)0;
-    vkCreateBuffer_VkResult_return = vkEnc->vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+    auto resources = ResourceTracker::get();
+    vkCreateBuffer_VkResult_return = resources->on_vkCreateBuffer(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pBuffer);
     return vkCreateBuffer_VkResult_return;
 }
 static void entry_vkDestroyBuffer(
@@ -540,7 +546,8 @@ static void entry_vkDestroyBuffer(
     const VkAllocationCallbacks* pAllocator)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroyBuffer(device, buffer, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroyBuffer(vkEnc, device, buffer, pAllocator);
 }
 static VkResult entry_vkCreateBufferView(
     VkDevice device,
@@ -569,7 +576,8 @@ static VkResult entry_vkCreateImage(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateImage_VkResult_return = (VkResult)0;
-    vkCreateImage_VkResult_return = vkEnc->vkCreateImage(device, pCreateInfo, pAllocator, pImage);
+    auto resources = ResourceTracker::get();
+    vkCreateImage_VkResult_return = resources->on_vkCreateImage(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pImage);
     return vkCreateImage_VkResult_return;
 }
 static void entry_vkDestroyImage(
@@ -578,7 +586,8 @@ static void entry_vkDestroyImage(
     const VkAllocationCallbacks* pAllocator)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroyImage(device, image, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroyImage(vkEnc, device, image, pAllocator);
 }
 static void entry_vkGetImageSubresourceLayout(
     VkDevice device,
@@ -1383,7 +1392,8 @@ static VkResult entry_vkBindBufferMemory2(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory2_VkResult_return = (VkResult)0;
-    vkBindBufferMemory2_VkResult_return = vkEnc->vkBindBufferMemory2(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory2_VkResult_return = resources->on_vkBindBufferMemory2(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindBufferMemory2_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory2(
@@ -1393,7 +1403,8 @@ static VkResult entry_vkBindImageMemory2(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory2_VkResult_return = (VkResult)0;
-    vkBindImageMemory2_VkResult_return = vkEnc->vkBindImageMemory2(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory2_VkResult_return = resources->on_vkBindImageMemory2(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindImageMemory2_VkResult_return;
 }
 static void entry_vkGetDeviceGroupPeerMemoryFeatures(
@@ -1441,7 +1452,8 @@ static void entry_vkGetImageMemoryRequirements2(
     VkMemoryRequirements2* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements2(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetBufferMemoryRequirements2(
     VkDevice device,
@@ -1449,7 +1461,8 @@ static void entry_vkGetBufferMemoryRequirements2(
     VkMemoryRequirements2* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements2(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements2(
     VkDevice device,
@@ -2452,7 +2465,8 @@ static void entry_vkGetImageMemoryRequirements2KHR(
     VkMemoryRequirements2* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements2KHR(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetBufferMemoryRequirements2KHR(
     VkDevice device,
@@ -2460,7 +2474,8 @@ static void entry_vkGetBufferMemoryRequirements2KHR(
     VkMemoryRequirements2* pMemoryRequirements)
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements2KHR(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements2KHR(
     VkDevice device,
@@ -2503,7 +2518,8 @@ static VkResult entry_vkBindBufferMemory2KHR(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory2KHR_VkResult_return = (VkResult)0;
-    vkBindBufferMemory2KHR_VkResult_return = vkEnc->vkBindBufferMemory2KHR(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory2KHR_VkResult_return = resources->on_vkBindBufferMemory2KHR(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindBufferMemory2KHR_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory2KHR(
@@ -2513,7 +2529,8 @@ static VkResult entry_vkBindImageMemory2KHR(
 {
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory2KHR_VkResult_return = (VkResult)0;
-    vkBindImageMemory2KHR_VkResult_return = vkEnc->vkBindImageMemory2KHR(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory2KHR_VkResult_return = resources->on_vkBindImageMemory2KHR(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindImageMemory2KHR_VkResult_return;
 }
 #endif
