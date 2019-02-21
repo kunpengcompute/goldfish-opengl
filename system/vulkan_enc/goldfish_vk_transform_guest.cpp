@@ -8891,6 +8891,56 @@ void transform_fromhost_VkCheckpointDataNV(
 #endif
 #ifdef VK_GOOGLE_address_space
 #endif
+#ifdef VK_GOOGLE_color_buffer
+void transform_tohost_VkImportColorBufferGOOGLE(
+    ResourceTracker* resourceTracker,
+    VkImportColorBufferGOOGLE* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_tohost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+void transform_fromhost_VkImportColorBufferGOOGLE(
+    ResourceTracker* resourceTracker,
+    VkImportColorBufferGOOGLE* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_fromhost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+void transform_tohost_VkImportPhysicalAddressGOOGLE(
+    ResourceTracker* resourceTracker,
+    VkImportPhysicalAddressGOOGLE* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_tohost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+void transform_fromhost_VkImportPhysicalAddressGOOGLE(
+    ResourceTracker* resourceTracker,
+    VkImportPhysicalAddressGOOGLE* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_fromhost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+#endif
 void transform_tohost_extension_struct(
     ResourceTracker* resourceTracker,
     void* structExtension_out)

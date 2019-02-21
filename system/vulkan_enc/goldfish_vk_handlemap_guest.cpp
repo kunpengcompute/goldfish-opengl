@@ -4718,6 +4718,32 @@ void handlemap_VkCheckpointDataNV(
 #endif
 #ifdef VK_GOOGLE_address_space
 #endif
+#ifdef VK_GOOGLE_color_buffer
+void handlemap_VkImportColorBufferGOOGLE(
+    VulkanHandleMapping* handlemap,
+    VkImportColorBufferGOOGLE* toMap)
+{
+    (void)handlemap;
+    (void)toMap;
+    if (toMap->pNext)
+    {
+        handlemap_extension_struct(handlemap, (void*)(toMap->pNext));
+    }
+}
+
+void handlemap_VkImportPhysicalAddressGOOGLE(
+    VulkanHandleMapping* handlemap,
+    VkImportPhysicalAddressGOOGLE* toMap)
+{
+    (void)handlemap;
+    (void)toMap;
+    if (toMap->pNext)
+    {
+        handlemap_extension_struct(handlemap, (void*)(toMap->pNext));
+    }
+}
+
+#endif
 void handlemap_extension_struct(
     VulkanHandleMapping* handlemap,
     void* structExtension_out)
