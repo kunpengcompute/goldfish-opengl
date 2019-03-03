@@ -113,6 +113,29 @@ VkResult createAndroidHardwareBuffer(
 #include <stdlib.h>
 #include <sync/sync.h>
 
+#include <sys/mman.h>
+#include <sys/syscall.h>
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+
+#ifdef HOST_BUILD
+#include "android/utils/tempfile.h"
+#endif
+
+#ifndef HAVE_MEMFD_CREATE
+static inline int
+memfd_create(const char *name, unsigned int flags) {
+#ifdef HOST_BUILD
+    TempFile* tmpFile = tempfile_create();
+    return open(tempfile_path(tmpFile), O_RDWR);
+    // TODO: Windows is not suppose to support VkSemaphoreGetFdInfoKHR
+#else
+    return syscall(SYS_memfd_create, name, flags);
+#endif
+}
+#endif // !HAVE_MEMFD_CREATE
+#endif // !VK_USE_PLATFORM_ANDROID_KHR
+
 #define RESOURCE_TRACKER_DEBUG 0
 
 #if RESOURCE_TRACKER_DEBUG
@@ -206,6 +229,7 @@ public:
         HostMemAlloc hostMemAllocs[VK_MAX_MEMORY_TYPES] = {};
         uint32_t apiVersion;
         std::set<std::string> enabledExtensions;
+        VkFence fence = VK_NULL_HANDLE;
     };
 
     struct VkDeviceMemory_Info {
@@ -226,6 +250,8 @@ public:
     struct VkImage_Info {
         VkDevice device;
         VkImageCreateInfo createInfo;
+        bool external = false;
+        VkExternalMemoryImageCreateInfo externalCreateInfo;
         VkDeviceMemory currentBacking = VK_NULL_HANDLE;
         VkDeviceSize currentBackingOffset = 0;
         VkDeviceSize currentBackingSize = 0;
@@ -235,6 +261,8 @@ public:
     struct VkBuffer_Info {
         VkDevice device;
         VkBufferCreateInfo createInfo;
+        bool external = false;
+        VkExternalMemoryBufferCreateInfo externalCreateInfo;
         VkDeviceMemory currentBacking = VK_NULL_HANDLE;
         VkDeviceSize currentBackingOffset = 0;
         VkDeviceSize currentBackingSize = 0;
@@ -659,10 +687,12 @@ public:
         const char*,
         uint32_t* pPropertyCount,
         VkExtensionProperties* pProperties) {
-
         std::vector<const char*> allowedExtensionNames = {
             "VK_KHR_get_physical_device_properties2",
             "VK_KHR_sampler_ycbcr_conversion",
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+            "VK_KHR_external_semaphore_capabilities",
+#endif
             // TODO:
             // VK_KHR_external_memory_capabilities
         };
@@ -734,6 +764,10 @@ public:
             "VK_KHR_dedicated_allocation",
             "VK_KHR_bind_memory2",
             "VK_KHR_sampler_ycbcr_conversion",
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+            "VK_KHR_external_semaphore",
+            "VK_KHR_external_semaphore_fd",
+#endif
             // "VK_KHR_maintenance2",
             // "VK_KHR_maintenance3",
             // TODO:
@@ -790,6 +824,7 @@ public:
                 pProperties[i] = filteredExts[i];
             }
         }
+
 
         return VK_SUCCESS;
     }
@@ -944,10 +979,15 @@ public:
         for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; ++i) {
             destroyHostMemAlloc(enc, device, &info.hostMemAllocs[i]);
         }
+
+        if (info.fence != VK_NULL_HANDLE) {
+            enc->vkDestroyFence(device, info.fence, nullptr);
+        }
     }
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
     VkResult on_vkGetAndroidHardwareBufferPropertiesANDROID(
+        void*, VkResult,
         VkDevice device,
         const AHardwareBuffer* buffer,
         VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
@@ -957,6 +997,7 @@ public:
     }
 
     VkResult on_vkGetMemoryAndroidHardwareBufferANDROID(
+        void*, VkResult,
         VkDevice device,
         const VkMemoryGetAndroidHardwareBufferInfoANDROID *pInfo,
         struct AHardwareBuffer** pBuffer) {
@@ -993,6 +1034,7 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
     VkResult on_vkGetMemoryFuchsiaHandleKHR(
+        void*, VkResult,
         VkDevice device,
         const VkMemoryGetFuchsiaHandleInfoKHR* pInfo,
         uint32_t* pHandle) {
@@ -1027,6 +1069,7 @@ public:
     }
 
     VkResult on_vkGetMemoryFuchsiaHandlePropertiesKHR(
+        void*, VkResult,
         VkDevice device,
         VkExternalMemoryHandleTypeFlagBitsKHR handleType,
         uint32_t handle,
@@ -1036,6 +1079,7 @@ public:
     }
 
     VkResult on_vkImportSemaphoreFuchsiaHandleKHR(
+        void*, VkResult,
         VkDevice device,
         const VkImportSemaphoreFuchsiaHandleInfoKHR* pInfo) {
 
@@ -1067,6 +1111,7 @@ public:
     }
 
     VkResult on_vkGetSemaphoreFuchsiaHandleKHR(
+        void*, VkResult,
         VkDevice device,
         const VkSemaphoreGetFuchsiaHandleInfoKHR* pInfo,
         uint32_t* pHandle) {
@@ -1529,6 +1574,58 @@ public:
         // no-op
     }
 
+    uint32_t transformExternalResourceMemoryTypeBitsForGuest(
+        uint32_t normalBits) {
+        uint32_t res = 0;
+        for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; ++i) {
+            if (normalBits & (1 << i) &&
+                !isHostVisibleMemoryTypeIndexForGuest(
+                    &mHostVisibleMemoryVirtInfo, i)) {
+                res |= (1 << i);
+            }
+        }
+        return res;
+    }
+
+    void transformExternalResourceMemoryRequirementsForGuest(
+        VkMemoryRequirements* reqs) {
+        reqs->memoryTypeBits =
+            transformExternalResourceMemoryTypeBitsForGuest(
+                reqs->memoryTypeBits);
+    }
+
+    void transformExternalImageMemoryRequirementsForGuest(
+        VkImage image,
+        VkMemoryRequirements* reqs) {
+
+        AutoLock lock(mLock);
+
+        auto it = info_VkImage.find(image);
+        if (it == info_VkImage.end()) return;
+
+        auto& info = it->second;
+        if (!info.external) return;
+        if (!info.externalCreateInfo.handleTypes) return;
+
+        transformExternalResourceMemoryRequirementsForGuest(reqs);
+    }
+
+    void transformExternalBufferMemoryRequirementsForGuest(
+        VkBuffer buffer,
+        VkMemoryRequirements* reqs) {
+
+        AutoLock lock(mLock);
+
+        auto it = info_VkBuffer.find(buffer);
+        if (it == info_VkBuffer.end()) return;
+
+        auto& info = it->second;
+        if (!info.external) return;
+        if (!info.externalCreateInfo.handleTypes) return;
+
+        transformExternalResourceMemoryRequirementsForGuest(reqs);
+    }
+
     VkResult on_vkCreateImage(
         void* context, VkResult,
         VkDevice device, const VkImageCreateInfo *pCreateInfo,
@@ -1583,6 +1680,15 @@ public:
         info.createInfo.pNext = nullptr;
         info.cbHandle = cbHandle;
 
+        VkExternalMemoryImageCreateInfo* extImgCi =
+            (VkExternalMemoryImageCreateInfo*)vk_find_struct((vk_struct_common*)pCreateInfo,
+                VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO);
+
+        if (!extImgCi) return res;
+
+        info.external = true;
+        info.externalCreateInfo = *extImgCi;
+
         return res;
     }
 
@@ -1599,6 +1705,8 @@ public:
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetImageMemoryRequirements(
             device, image, pMemoryRequirements);
+        transformExternalImageMemoryRequirementsForGuest(
+            image, pMemoryRequirements);
     }
 
     void on_vkGetImageMemoryRequirements2(
@@ -1607,6 +1715,9 @@ public:
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetImageMemoryRequirements2(
             device, pInfo, pMemoryRequirements);
+        transformExternalImageMemoryRequirementsForGuest(
+            pInfo->image,
+            &pMemoryRequirements->memoryRequirements);
     }
 
     void on_vkGetImageMemoryRequirements2KHR(
@@ -1615,6 +1726,9 @@ public:
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetImageMemoryRequirements2KHR(
             device, pInfo, pMemoryRequirements);
+        transformExternalImageMemoryRequirementsForGuest(
+            pInfo->image,
+            &pMemoryRequirements->memoryRequirements);
     }
 
     VkResult on_vkBindImageMemory(
@@ -1695,6 +1809,15 @@ public:
         info.createInfo = *pCreateInfo;
         info.createInfo.pNext = nullptr;
 
+        VkExternalMemoryBufferCreateInfo* extBufCi =
+            (VkExternalMemoryBufferCreateInfo*)vk_find_struct((vk_struct_common*)pCreateInfo,
+                VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO);
+
+        if (!extBufCi) return res;
+
+        info.external = true;
+        info.externalCreateInfo = *extBufCi;
+
         return res;
     }
 
@@ -1710,6 +1833,8 @@ public:
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetBufferMemoryRequirements(
             device, buffer, pMemoryRequirements);
+        transformExternalBufferMemoryRequirementsForGuest(
+            buffer, pMemoryRequirements);
     }
 
     void on_vkGetBufferMemoryRequirements2(
@@ -1717,6 +1842,9 @@ public:
         VkMemoryRequirements2* pMemoryRequirements) {
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+        transformExternalBufferMemoryRequirementsForGuest(
+            pInfo->buffer,
+            &pMemoryRequirements->memoryRequirements);
     }
 
     void on_vkGetBufferMemoryRequirements2KHR(
@@ -1724,6 +1852,9 @@ public:
         VkMemoryRequirements2* pMemoryRequirements) {
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetBufferMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+        transformExternalBufferMemoryRequirementsForGuest(
+            pInfo->buffer,
+            &pMemoryRequirements->memoryRequirements);
     }
 
     VkResult on_vkBindBufferMemory(
@@ -1758,27 +1889,37 @@ public:
 
         VkEncoder* enc = (VkEncoder*)context;
 
-        input_result = enc->vkCreateSemaphore(
-            device, pCreateInfo, pAllocator, pSemaphore);
+        VkSemaphoreCreateInfo finalCreateInfo = *pCreateInfo;
 
-        if (input_result != VK_SUCCESS) return input_result;
-
-        bool exportFence = false;
-        zx_handle_t event_handle = ZX_HANDLE_INVALID;
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        // vk_init_struct_chain initializes pNext to nullptr
+        vk_struct_common* structChain = vk_init_struct_chain(
+            (vk_struct_common*)(&finalCreateInfo));
 
         VkExportSemaphoreCreateInfoKHR* exportSemaphoreInfoPtr =
             (VkExportSemaphoreCreateInfoKHR*)vk_find_struct((vk_struct_common*)pCreateInfo,
                 VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR);
 
+        bool exportFence = false;
+
         if (exportSemaphoreInfoPtr) {
             exportFence =
                 exportSemaphoreInfoPtr->handleTypes &
                 VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FUCHSIA_FENCE_BIT_KHR;
+            // TODO: add host side export struct info.
         }
 
+#endif
+        input_result = enc->vkCreateSemaphore(
+            device, &finalCreateInfo, pAllocator, pSemaphore);
+
+        zx_handle_t event_handle = ZX_HANDLE_INVALID;
+
+#ifdef VK_USE_PLATFORM_FUCHSIA
         if (exportFence) {
             zx_event_create(0, &event_handle);
         }
+#endif
 
         AutoLock lock(mLock);
 
@@ -1800,6 +1941,63 @@ public:
         enc->vkDestroySemaphore(device, semaphore, pAllocator);
     }
 
+    // https://www.khronos.org/registry/vulkan/specs/1.0-extensions/html/vkspec.html#vkGetSemaphoreFdKHR
+    // Each call to vkGetSemaphoreFdKHR must create a new file descriptor and transfer ownership
+    // of it to the application. To avoid leaking resources, the application must release ownership
+    // of the file descriptor when it is no longer needed.
+    VkResult on_vkGetSemaphoreFdKHR(
+        void* context, VkResult,
+        VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo,
+        int* pFd) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        VkEncoder* enc = (VkEncoder*)context;
+        int hostFd = 0;
+        VkResult result = enc->vkGetSemaphoreFdKHR(device, pGetFdInfo, &hostFd);
+        if (result != VK_SUCCESS) {
+            return result;
+        }
+        *pFd = memfd_create("vk_opaque_fd", 0);
+        write(*pFd, &hostFd, sizeof(hostFd));
+        return VK_SUCCESS;
+#else
+        (void)context;
+        (void)device;
+        (void)pGetFdInfo;
+        (void)pFd;
+        return VK_ERROR_INCOMPATIBLE_DRIVER;
+#endif
+    }
+
+    VkResult on_vkImportSemaphoreFdKHR(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        VkEncoder* enc = (VkEncoder*)context;
+        if (input_result != VK_SUCCESS) {
+            return input_result;
+        }
+        int fd = pImportSemaphoreFdInfo->fd;
+        int err = lseek(fd, 0, SEEK_SET);
+        if (err == -1) {
+            ALOGE("lseek fail on import semaphore");
+        }
+        int hostFd = 0;
+        read(fd, &hostFd, sizeof(hostFd));
+        VkImportSemaphoreFdInfoKHR tmpInfo = *pImportSemaphoreFdInfo;
+        tmpInfo.fd = hostFd;
+        VkResult result = enc->vkImportSemaphoreFdKHR(device, &tmpInfo);
+        close(fd);
+        return result;
+#else
+        (void)context;
+        (void)input_result;
+        (void)device;
+        (void)pImportSemaphoreFdInfo;
+        return VK_ERROR_INCOMPATIBLE_DRIVER;
+#endif
+    }
+
     VkResult on_vkQueueSubmit(
         void* context, VkResult input_result,
         VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
@@ -1807,6 +2005,9 @@ public:
         std::vector<VkSemaphore> pre_signal_semaphores;
         std::vector<zx_handle_t> post_wait_events;
         VkDevice device = VK_NULL_HANDLE;
+        VkFence* pFence = nullptr;
+
+        VkEncoder* enc = (VkEncoder*)context;
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         AutoLock lock(mLock);
@@ -1833,6 +2034,7 @@ public:
                     if (semInfo.eventHandle) {
                         post_wait_events.push_back(semInfo.eventHandle);
                         device = semInfo.device;
+                        pFence = &info_VkDevice[device].fence;
                     }
                 }
             }
@@ -1840,16 +2042,16 @@ public:
         lock.unlock();
 #endif
 
-        VkEncoder* enc = (VkEncoder*)context;
-
-        VkSubmitInfo submit_info = {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .waitSemaphoreCount = 0,
-            .pWaitSemaphores = nullptr,
-            .pWaitDstStageMask = nullptr,
-            .signalSemaphoreCount = static_cast<uint32_t>(pre_signal_semaphores.size()),
-            .pSignalSemaphores = pre_signal_semaphores.data()};
-        enc->vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+        if (!pre_signal_semaphores.empty()) {
+            VkSubmitInfo submit_info = {
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .waitSemaphoreCount = 0,
+                .pWaitSemaphores = nullptr,
+                .pWaitDstStageMask = nullptr,
+                .signalSemaphoreCount = static_cast<uint32_t>(pre_signal_semaphores.size()),
+                .pSignalSemaphores = pre_signal_semaphores.data()};
+            enc->vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+        }
 
         input_result = enc->vkQueueSubmit(queue, submitCount, pSubmits, fence);
 
@@ -1858,17 +2060,17 @@ public:
         if (post_wait_events.empty())
             return VK_SUCCESS;
 
-        VkFenceCreateInfo fence_create_info = {
-            VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, 0, 0,
-        };
-        enc->vkCreateFence(device, &fence_create_info, nullptr, &fence);
-        enc->vkQueueSubmit(queue, 0, nullptr, fence);
-
+        if (*pFence == VK_NULL_HANDLE) {
+            VkFenceCreateInfo fence_create_info = {
+                VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, 0, 0,
+            };
+            enc->vkCreateFence(device, &fence_create_info, nullptr, pFence);
+        }
+        enc->vkQueueSubmit(queue, 0, nullptr, *pFence);
         static constexpr uint64_t MAX_WAIT_NS =
             5ULL * 1000ULL * 1000ULL * 1000ULL;
-
-        enc->vkWaitForFences(device, 1, &fence, VK_TRUE, MAX_WAIT_NS);
-        enc->vkDestroyFence(device, fence, nullptr);
+        enc->vkWaitForFences(device, 1, pFence, VK_TRUE, MAX_WAIT_NS);
+        enc->vkResetFences(device, 1, pFence);
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         for (auto& event : post_wait_events) {
@@ -2409,6 +2611,21 @@ VkResult ResourceTracker::on_vkQueueSubmit(
         context, input_result, queue, submitCount, pSubmits, fence);
 }
 
+VkResult ResourceTracker::on_vkGetSemaphoreFdKHR(
+    void* context, VkResult input_result,
+    VkDevice device,
+    const VkSemaphoreGetFdInfoKHR* pGetFdInfo,
+    int* pFd) {
+    return mImpl->on_vkGetSemaphoreFdKHR(context, input_result, device, pGetFdInfo, pFd);
+}
+
+VkResult ResourceTracker::on_vkImportSemaphoreFdKHR(
+    void* context, VkResult input_result,
+    VkDevice device,
+    const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) {
+    return mImpl->on_vkImportSemaphoreFdKHR(context, input_result, device, pImportSemaphoreFdInfo);
+}
+
 void ResourceTracker::unwrap_VkNativeBufferANDROID(
     const VkImageCreateInfo* pCreateInfo,
     VkImageCreateInfo* local_pCreateInfo) {
@@ -2421,23 +2638,59 @@ void ResourceTracker::unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int* fd
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
 VkResult ResourceTracker::on_vkGetMemoryFuchsiaHandleKHR(
+    void* context, VkResult input_result,
     VkDevice device,
     const VkMemoryGetFuchsiaHandleInfoKHR* pInfo,
     uint32_t* pHandle) {
-    return mImpl->on_vkGetMemoryFuchsiaHandleKHR(device, pInfo, pHandle);
+    return mImpl->on_vkGetMemoryFuchsiaHandleKHR(
+        context, input_result, device, pInfo, pHandle);
+}
+
+VkResult on_vkGetMemoryFuchsiaHandlePropertiesKHR(
+    void* context, VkResult input_result,
+    VkDevice device,
+    VkExternalMemoryHandleTypeFlagBitsKHR handleType,
+    uint32_t handle,
+    VkMemoryFuchsiaHandlePropertiesKHR* pProperties) {
+    return mImpl->on_vkGetMemoryFuchsiaHandlePropertiesKHR(
+        context, input_result, device, handleType, handle, pProperties);
 }
 
 VkResult ResourceTracker::on_vkGetSemaphoreFuchsiaHandleKHR(
+    void* context, VkResult input_result,
     VkDevice device,
     const VkSemaphoreGetFuchsiaHandleInfoKHR* pInfo,
     uint32_t* pHandle) {
-    return mImpl->on_vkGetSemaphoreFuchsiaHandleKHR(device, pInfo, pHandle);
+    return mImpl->on_vkGetSemaphoreFuchsiaHandleKHR(
+        context, input_result, device, pInfo, pHandle);
 }
 
 VkResult ResourceTracker::on_vkImportSemaphoreFuchsiaHandleKHR(
+    void* context, VkResult input_result,
     VkDevice device,
     const VkImportSemaphoreFuchsiaHandleInfoKHR* pInfo) {
-    return mImpl->on_vkImportSemaphoreFuchsiaHandleKHR(device, pInfo);
+    return mImpl->on_vkImportSemaphoreFuchsiaHandleKHR(
+        context, input_result, device, pInfo);
+}
+#endif
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+VkResult ResourceTracker::on_vkGetAndroidHardwareBufferPropertiesANDROID(
+    void* context, VkResult input_result,
+    VkDevice device,
+    const AHardwareBuffer* buffer,
+    VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
+    return mImpl->on_vkGetAndroidHardwareBufferPropertiesANDROID(
+        context, input_result, device, buffer, pProperties);
+}
+VkResult ResourceTracker::on_vkGetMemoryAndroidHardwareBufferANDROID(
+    void* context, VkResult input_result,
+    VkDevice device,
+    const VkMemoryGetAndroidHardwareBufferInfoANDROID *pInfo,
+    struct AHardwareBuffer** pBuffer) {
+    return mImpl->on_vkGetMemoryAndroidHardwareBufferANDROID(
+        context, input_result,
+        device, pInfo, pBuffer);
 }
 #endif
 

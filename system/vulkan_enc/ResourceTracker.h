@@ -197,6 +197,15 @@ public:
     void on_vkDestroySemaphore(
         void* context,
         VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks *pAllocator);
+    VkResult on_vkGetSemaphoreFdKHR(
+        void* context, VkResult,
+        VkDevice device,
+        const VkSemaphoreGetFdInfoKHR* pGetFdInfo,
+        int* pFd);
+    VkResult on_vkImportSemaphoreFdKHR(
+        void* context, VkResult,
+        VkDevice device,
+        const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo);
 
     VkResult on_vkQueueSubmit(
         void* context, VkResult input_result,
@@ -209,16 +218,38 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
     VkResult on_vkGetMemoryFuchsiaHandleKHR(
+        void* context, VkResult input_result,
         VkDevice device,
         const VkMemoryGetFuchsiaHandleInfoKHR* pInfo,
         uint32_t* pHandle);
+    VkResult on_vkGetMemoryFuchsiaHandlePropertiesKHR(
+        void* context, VkResult input_result,
+        VkDevice device,
+        VkExternalMemoryHandleTypeFlagBitsKHR handleType,
+        uint32_t handle,
+        VkMemoryFuchsiaHandlePropertiesKHR* pProperties);
     VkResult on_vkGetSemaphoreFuchsiaHandleKHR(
+        void* context, VkResult input_result,
         VkDevice device,
         const VkSemaphoreGetFuchsiaHandleInfoKHR* pInfo,
         uint32_t* pHandle);
     VkResult on_vkImportSemaphoreFuchsiaHandleKHR(
+        void* context, VkResult input_result,
         VkDevice device,
         const VkImportSemaphoreFuchsiaHandleInfoKHR* pInfo);
+#endif
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+    VkResult on_vkGetAndroidHardwareBufferPropertiesANDROID(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const AHardwareBuffer* buffer,
+        VkAndroidHardwareBufferPropertiesANDROID* pProperties);
+    VkResult on_vkGetMemoryAndroidHardwareBufferANDROID(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkMemoryGetAndroidHardwareBufferInfoANDROID *pInfo,
+        struct AHardwareBuffer** pBuffer);
 #endif
 
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
