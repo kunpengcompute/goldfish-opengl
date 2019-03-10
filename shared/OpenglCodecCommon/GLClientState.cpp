@@ -20,7 +20,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "glUtils.h"
+
+#if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
+#else
+#include <log/log.h>
+#endif
 
 #ifndef MAX
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
@@ -256,7 +261,7 @@ void GLClientState::setVertexArrayObject(GLuint name) {
 
     m_currVaoState =
         VAOStateRef(m_vaoMap.find(name));
-    ALOGV("%s: set vao to %u (%u) %u %u", __FUNCTION__,
+    ALOGD("%s: set vao to %u (%u) %u %u", __FUNCTION__,
             name,
             m_currVaoState.vaoId(),
             m_arrayBuffer,
@@ -490,6 +495,17 @@ int GLClientState::getMaxIndexedBufferBindings(GLenum target) const {
         return m_indexedShaderStorageBuffers.size();
     default:
         return m_currVaoState.bufferBindings_const().size();
+    }
+}
+
+bool GLClientState::isNonIndexedBindNoOp(GLenum target, GLuint buffer) {
+    if (buffer != !getLastEncodedBufferBind(target)) return false;
+
+    int idOrError = getBuffer(target);
+    if (idOrError < 0) {
+        return false;
+    } else {
+        return buffer == (GLuint)idOrError;
     }
 }
 

@@ -239,7 +239,6 @@ public:
         const VkImportSemaphoreFuchsiaHandleInfoKHR* pInfo);
 #endif
 
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
     VkResult on_vkGetAndroidHardwareBufferPropertiesANDROID(
         void* context, VkResult input_result,
         VkDevice device,
@@ -250,7 +249,19 @@ public:
         VkDevice device,
         const VkMemoryGetAndroidHardwareBufferInfoANDROID *pInfo,
         struct AHardwareBuffer** pBuffer);
-#endif
+
+    VkResult on_vkCreateSamplerYcbcrConversion(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkSamplerYcbcrConversion* pYcbcrConversion);
+    VkResult on_vkCreateSamplerYcbcrConversionKHR(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkSamplerYcbcrConversion* pYcbcrConversion);
 
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
         void* context,

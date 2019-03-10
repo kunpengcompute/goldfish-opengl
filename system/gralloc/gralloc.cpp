@@ -36,7 +36,11 @@
 #include "glUtils.h"
 #include "qemu_pipe.h"
 
+#if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
+#else
+#include <log/log.h>
+#endif
 #include <cutils/properties.h>
 
 #include <set>
@@ -342,7 +346,8 @@ static HostConnection* createOrGetHostConnection() {
 
 #define DEFINE_HOST_CONNECTION \
     HostConnection *hostCon = createOrGetHostConnection(); \
-    ExtendedRCEncoderContext *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL)
+    ExtendedRCEncoderContext *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL); \
+    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; \
 
 #define DEFINE_AND_VALIDATE_HOST_CONNECTION \
     HostConnection *hostCon = createOrGetHostConnection(); \
@@ -354,7 +359,8 @@ static HostConnection* createOrGetHostConnection() {
     if (!rcEnc) { \
         ALOGE("gralloc: Failed to get renderControl encoder context\n"); \
         return -EIO; \
-    }
+    } \
+    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; \
 
 #if PLATFORM_SDK_VERSION < 18
 // On older APIs, just define it as a value no one is going to use.
@@ -629,11 +635,19 @@ static int gralloc_alloc(alloc_device_t* dev,
     // rendering will still happen on the host but we also need to be able to
     // read back from the color buffer, which requires that there is a buffer
     //
+    DEFINE_AND_VALIDATE_HOST_CONNECTION;
 #if PLATFORM_SDK_VERSION >= 17
+
+#ifdef GOLDFISH_VULKAN
+
+    bool needHostCb = (((!yuv_format) && (hasVulkan || (frameworkFormat != HAL_PIXEL_FORMAT_BLOB))) ||
+#else
     bool needHostCb = ((!yuv_format && frameworkFormat != HAL_PIXEL_FORMAT_BLOB) ||
+#endif // !GOLDFISH_VULKAN
+
 #else
     bool needHostCb = (!yuv_format ||
-#endif
+#endif // !(PLATFORM_SDK_VERSION >= 17)
                        frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
                        frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) &&
 #if PLATFORM_SDK_VERSION >= 15
@@ -705,7 +719,6 @@ static int gralloc_alloc(alloc_device_t* dev,
                                       w, h, frameworkFormat, format,
                                       glFormat, glType, selectedEmuFrameworkFormat);
 
-    DEFINE_HOST_CONNECTION;
     if (ashmem_size > 0) {
 
         //
