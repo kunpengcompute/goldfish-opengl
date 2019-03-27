@@ -44,6 +44,7 @@
 #include <cutils/properties.h>
 
 #include <set>
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -99,38 +100,20 @@ static pthread_once_t     sFallbackOnce = PTHREAD_ONCE_INIT;
 
 static void fallback_init(void);  // forward
 
-typedef struct _alloc_list_node {
-    buffer_handle_t handle;
-    _alloc_list_node *next;
-    _alloc_list_node *prev;
-} AllocListNode;
-
-struct MemRegionInfo {
-    void* ashmemBase;
-    mutable uint32_t refCount;
-};
-
-struct MemRegionInfoCmp {
-    bool operator()(const MemRegionInfo& a, const MemRegionInfo& b) const {
-        return a.ashmemBase < b.ashmemBase;
-    }
-};
-
-typedef std::set<MemRegionInfo, MemRegionInfoCmp> MemRegionSet;
-typedef MemRegionSet::iterator mem_region_handle_t;
-
 //
 // Our gralloc device structure (alloc interface)
 //
 struct gralloc_device_t {
     alloc_device_t  device;
-
-    AllocListNode *allocListHead;    // double linked list of allocated buffers
+    std::set<buffer_handle_t> allocated;
     pthread_mutex_t lock;
 };
 
 struct gralloc_memregions_t {
-    MemRegionSet ashmemRegions;
+    typedef std::map<void*, uint32_t> MemRegionMap;  // base -> refCount
+    typedef MemRegionMap::const_iterator mem_region_handle_t;
+
+    MemRegionMap ashmemRegions;
     pthread_mutex_t lock;
 };
 
@@ -147,10 +130,12 @@ struct gralloc_dmaregion_t {
 static gralloc_memregions_t* s_memregions = NULL;
 static gralloc_dmaregion_t* s_grdma = NULL;
 
-static void init_gralloc_memregions() {
-    if (s_memregions) return;
+static gralloc_memregions_t* init_gralloc_memregions() {
+    if (s_memregions) return s_memregions;
+
     s_memregions = new gralloc_memregions_t;
     pthread_mutex_init(&s_memregions->lock, NULL);
+    return s_memregions;
 }
 
 static void init_gralloc_dmaregion() {
@@ -231,51 +216,43 @@ static void gralloc_dmaregion_register_ashmem(uint32_t sz) {
 }
 
 static void get_mem_region(void* ashmemBase) {
-    init_gralloc_memregions();
-    D("%s: call for %p", __FUNCTION__, ashmemBase);
-    MemRegionInfo lookup;
-    lookup.ashmemBase = ashmemBase;
-    pthread_mutex_lock(&s_memregions->lock);
-    mem_region_handle_t handle = s_memregions->ashmemRegions.find(lookup);
-    if (handle == s_memregions->ashmemRegions.end()) {
-        MemRegionInfo newRegion;
-        newRegion.ashmemBase = ashmemBase;
-        newRegion.refCount = 1;
-        s_memregions->ashmemRegions.insert(newRegion);
-    } else {
-        handle->refCount++;
-    }
-    pthread_mutex_unlock(&s_memregions->lock);
+    D("%s: call for %p", __func__, ashmemBase);
+
+    gralloc_memregions_t* memregions = init_gralloc_memregions();
+
+    pthread_mutex_lock(&memregions->lock);
+    ++memregions->ashmemRegions[ashmemBase];
+    pthread_mutex_unlock(&memregions->lock);
 }
 
 static bool put_mem_region(void* ashmemBase) {
-    init_gralloc_memregions();
-    D("%s: call for %p", __FUNCTION__, ashmemBase);
-    MemRegionInfo lookup;
-    lookup.ashmemBase = ashmemBase;
-    pthread_mutex_lock(&s_memregions->lock);
-    mem_region_handle_t handle = s_memregions->ashmemRegions.find(lookup);
-    if (handle == s_memregions->ashmemRegions.end()) {
-        ALOGE("%s: error: tried to put nonexistent mem region!", __FUNCTION__);
-        pthread_mutex_unlock(&s_memregions->lock);
-        return true;
+    D("%s: call for %p", __func__, ashmemBase);
+
+    gralloc_memregions_t* memregions = init_gralloc_memregions();
+    bool shouldRemove;
+
+    pthread_mutex_lock(&memregions->lock);
+    gralloc_memregions_t::MemRegionMap::iterator i = memregions->ashmemRegions.find(ashmemBase);
+    if (i == memregions->ashmemRegions.end()) {
+        shouldRemove = true;
+        ALOGE("%s: error: tried to put a nonexistent mem region (%p)!", __func__, ashmemBase);
     } else {
-        handle->refCount--;
-        bool shouldRemove = !handle->refCount;
+        shouldRemove = --i->second == 0;
         if (shouldRemove) {
-            s_memregions->ashmemRegions.erase(lookup);
+            memregions->ashmemRegions.erase(i);
         }
-        pthread_mutex_unlock(&s_memregions->lock);
-        return shouldRemove;
     }
+    pthread_mutex_unlock(&memregions->lock);
+
+    return shouldRemove;
 }
 
 static void dump_regions() {
-    init_gralloc_memregions();
-    mem_region_handle_t curr = s_memregions->ashmemRegions.begin();
+    gralloc_memregions_t* memregions = init_gralloc_memregions();
+    gralloc_memregions_t::mem_region_handle_t curr = memregions->ashmemRegions.begin();
     std::stringstream res;
-    for (; curr != s_memregions->ashmemRegions.end(); curr++) {
-        res << "\tashmem base " << curr->ashmemBase << " refcount " << curr->refCount << "\n";
+    for (; curr != memregions->ashmemRegions.end(); ++curr) {
+        res << "\tashmem base " << curr->first << " refcount " << curr->second << "\n";
     }
     ALOGD("ashmem region dump [\n%s]", res.str().c_str());
 }
@@ -788,15 +765,8 @@ static int gralloc_alloc(alloc_device_t* dev,
     //
     // alloc succeeded - insert the allocated handle to the allocated list
     //
-    AllocListNode *node = new AllocListNode();
     pthread_mutex_lock(&grdev->lock);
-    node->handle = cb;
-    node->next =  grdev->allocListHead;
-    node->prev =  NULL;
-    if (grdev->allocListHead) {
-        grdev->allocListHead->prev = node;
-    }
-    grdev->allocListHead = node;
+    grdev->allocated.insert(cb);
     pthread_mutex_unlock(&grdev->lock);
 
     *pHandle = cb;
@@ -863,25 +833,9 @@ static int gralloc_free(alloc_device_t* dev,
     D("%s: done", __FUNCTION__);
     // remove it from the allocated list
     gralloc_device_t *grdev = (gralloc_device_t *)dev;
-    pthread_mutex_lock(&grdev->lock);
-    AllocListNode *n = grdev->allocListHead;
-    while( n && n->handle != cb ) {
-        n = n->next;
-    }
-    if (n) {
-       // buffer found on list - remove it from list
-       if (n->next) {
-           n->next->prev = n->prev;
-       }
-       if (n->prev) {
-           n->prev->next = n->next;
-       }
-       else {
-           grdev->allocListHead = n->next;
-       }
 
-       delete n;
-    }
+    pthread_mutex_lock(&grdev->lock);
+    grdev->allocated.erase(cb);
     pthread_mutex_unlock(&grdev->lock);
 
     delete cb;
@@ -894,14 +848,12 @@ static int gralloc_device_close(struct hw_device_t *dev)
 {
     gralloc_device_t* d = reinterpret_cast<gralloc_device_t*>(dev);
     if (d) {
-
-        // free still allocated buffers
-        while( d->allocListHead != NULL ) {
-            gralloc_free(&d->device, d->allocListHead->handle);
+        for (std::set<buffer_handle_t>::const_iterator i = d->allocated.begin();
+             i != d->allocated.end(); ++i) {
+            gralloc_free(&d->device, *i);
         }
 
-        // free device
-        free(d);
+        delete d;
     }
     return 0;
 }
@@ -1454,12 +1406,10 @@ static int gralloc_device_open(const hw_module_t* module,
         //
         // Allocate memory for the gralloc device (alloc interface)
         //
-        gralloc_device_t *dev;
-        dev = (gralloc_device_t*)malloc(sizeof(gralloc_device_t));
+        gralloc_device_t *dev = new gralloc_device_t;
         if (NULL == dev) {
             return -ENOMEM;
         }
-        memset(dev, 0, sizeof(gralloc_device_t));
 
         // Initialize our device structure
         //
@@ -1470,7 +1420,6 @@ static int gralloc_device_open(const hw_module_t* module,
 
         dev->device.alloc   = gralloc_alloc;
         dev->device.free    = gralloc_free;
-        dev->allocListHead  = NULL;
         pthread_mutex_init(&dev->lock, NULL);
 
         *device = &dev->device.common;
