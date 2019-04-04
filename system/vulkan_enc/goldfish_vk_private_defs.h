@@ -400,6 +400,31 @@ typedef struct AHardwareBuffer_Desc {
 
 #endif // __Fuchsia__
 
+#define VK_GOOGLE_sized_descriptor_update_template 1
+
+typedef void (VKAPI_PTR *PFN_vkUpdateDescriptorSetWithTemplateSizedGOOGLE)(
+    VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate,
+    uint32_t imageInfoCount,
+    uint32_t bufferInfoCount,
+    uint32_t bufferViewCount,
+    const uint32_t* pImageInfoEntryIndices,
+    const uint32_t* pBufferInfoEntryIndices,
+    const uint32_t* pBufferViewEntryIndices,
+    const VkDescriptorImageInfo* pImageInfos,
+    const VkDescriptorBufferInfo* pBufferInfos,
+    const VkBufferView* pBufferViews);
+
+#define VK_GOOGLE_async_command_buffers 1
+
+typedef void (VKAPI_PTR *PFN_vkBeginCommandBufferAsyncGOOGLE)(
+    VkCommandBuffer commandBuffer,
+    const VkCommandBufferBeginInfo* pBeginInfo);
+typedef void (VKAPI_PTR *PFN_vkEndCommandBufferAsyncGOOGLE)(
+    VkCommandBuffer commandBuffer);
+typedef void (VKAPI_PTR *PFN_vkResetCommandBufferAsyncGOOGLE)(
+    VkCommandBuffer commandBuffer,
+    VkCommandBufferResetFlags flags);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
