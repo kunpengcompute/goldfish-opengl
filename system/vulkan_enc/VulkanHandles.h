@@ -27,9 +27,7 @@
     GOLDFISH_VK_LIST_TRIVIAL_DISPATCHABLE_HANDLE_TYPES(f)
 
 #define GOLDFISH_VK_LIST_TRIVIAL_NON_DISPATCHABLE_HANDLE_TYPES(f) \
-    f(VkBuffer) \
     f(VkBufferView) \
-    f(VkImage) \
     f(VkImageView) \
     f(VkShaderModule) \
     f(VkDescriptorPool) \
@@ -43,11 +41,9 @@
     f(VkFramebuffer) \
     f(VkCommandPool) \
     f(VkFence) \
-    f(VkSemaphore) \
     f(VkEvent) \
     f(VkQueryPool) \
     f(VkSamplerYcbcrConversion) \
-    f(VkDescriptorUpdateTemplate) \
     f(VkSurfaceKHR) \
     f(VkSwapchainKHR) \
     f(VkDisplayKHR) \
@@ -60,6 +56,10 @@
 
 #define GOLDFISH_VK_LIST_NON_DISPATCHABLE_HANDLE_TYPES(f) \
     f(VkDeviceMemory) \
+    f(VkBuffer) \
+    f(VkImage) \
+    f(VkSemaphore) \
+    f(VkDescriptorUpdateTemplate) \
     GOLDFISH_VK_LIST_TRIVIAL_NON_DISPATCHABLE_HANDLE_TYPES(f) \
 
 #define GOLDFISH_VK_LIST_HANDLE_TYPES(f) \

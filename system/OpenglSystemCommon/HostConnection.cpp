@@ -15,8 +15,28 @@
 */
 #include "HostConnection.h"
 
+#ifdef GOLDFISH_NO_GL
+struct gl_client_context_t {
+    int placeholder;
+};
+class GLEncoder : public gl_client_context_t {
+public:
+    GLEncoder(IOStream*, ChecksumCalculator*) { }
+    void setContextAccessor(gl_client_context_t *()) { }
+};
+struct gl2_client_context_t {
+    int placeholder;
+};
+class GL2Encoder : public gl2_client_context_t {
+public:
+    GL2Encoder(IOStream*, ChecksumCalculator*) { }
+    void setContextAccessor(gl2_client_context_t *()) { }
+    void setNoHostError(bool) { }
+};
+#else
 #include "GLEncoder.h"
 #include "GL2Encoder.h"
+#endif
 
 #ifdef GOLDFISH_VULKAN
 #include "VkEncoder.h"
@@ -42,7 +62,11 @@ using goldfish_vk::VkEncoder;
 #include "VirtioGpuStream.h"
 #endif
 
+#if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
+#else
+#include <log/log.h>
+#endif
 
 #define STREAM_BUFFER_SIZE  (4*1024*1024)
 #define STREAM_PORT_NUM     22468
@@ -414,5 +438,12 @@ void HostConnection::queryAndSetVulkanSupport(ExtendedRCEncoderContext* rcEnc) {
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kVulkan) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkan = true;
+    }
+}
+
+void HostConnection::queryAndSetDeferredVulkanCommandsSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kDeferredVulkanCommands) != std::string::npos) {
+        rcEnc->featureInfo()->hasDeferredVulkanCommands = true;
     }
 }

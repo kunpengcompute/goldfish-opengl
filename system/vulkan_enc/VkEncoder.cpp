@@ -29,7 +29,7 @@
 #include "Resources.h"
 #include "ResourceTracker.h"
 #include "Validation.h"
-#include "VulkanStream.h"
+#include "VulkanStreamGuest.h"
 
 #include "android/base/AlignedBuf.h"
 #include "android/base/Pool.h"
@@ -63,7 +63,7 @@ public:
         }
     }
     VulkanCountingStream* countingStream() { return &m_countingStream; }
-    VulkanStream* stream() { return &m_stream; }
+    VulkanStreamGuest* stream() { return &m_stream; }
     Pool* pool() { return &m_pool; }
     ResourceTracker* resources() { return ResourceTracker::get(); }
     Validation* validation() { return &m_validation; }
@@ -74,7 +74,7 @@ public:
     }
 private:
     VulkanCountingStream m_countingStream;
-    VulkanStream m_stream;
+    VulkanStreamGuest m_stream;
     Pool m_pool { 8, 4096, 64 };
 
     Validation m_validation;
@@ -98,6 +98,7 @@ VkResult VkEncoder::vkCreateInstance(
     const VkAllocationCallbacks* pAllocator,
     VkInstance* pInstance)
 {
+    AEMU_SCOPED_TRACE("vkCreateInstance encode");
     mImpl->log("start vkCreateInstance");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -159,11 +160,13 @@ VkResult VkEncoder::vkCreateInstance(
     stream->handleMapping()->mapHandles_VkInstance_u64(pInstance, &cgen_var_3, 1);
     stream->write((uint64_t*)&cgen_var_3, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateInstance readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_4;
     stream->read((uint64_t*)&cgen_var_4, 8);
     stream->handleMapping()->mapHandles_u64_VkInstance(&cgen_var_4, (VkInstance*)pInstance, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateInstance returnUnmarshal");
     VkResult vkCreateInstance_VkResult_return = (VkResult)0;
     stream->read(&vkCreateInstance_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -178,6 +181,7 @@ void VkEncoder::vkDestroyInstance(
     VkInstance instance,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyInstance encode");
     mImpl->log("start vkDestroyInstance");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -226,6 +230,8 @@ void VkEncoder::vkDestroyInstance(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyInstance readParams");
+    AEMU_SCOPED_TRACE("vkDestroyInstance returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkInstance((VkInstance*)&instance);
     mImpl->log("finish vkDestroyInstance");;
 }
@@ -235,6 +241,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDevices(
     uint32_t* pPhysicalDeviceCount,
     VkPhysicalDevice* pPhysicalDevices)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDevices encode");
     mImpl->log("start vkEnumeratePhysicalDevices");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -299,6 +306,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDevices(
         }
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDevices readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPhysicalDeviceCount;
     check_pPhysicalDeviceCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -329,6 +337,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDevices(
         }
     }
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDevices returnUnmarshal");
     VkResult vkEnumeratePhysicalDevices_VkResult_return = (VkResult)0;
     stream->read(&vkEnumeratePhysicalDevices_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -342,6 +351,7 @@ void VkEncoder::vkGetPhysicalDeviceFeatures(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures encode");
     mImpl->log("start vkGetPhysicalDeviceFeatures");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -366,11 +376,13 @@ void VkEncoder::vkGetPhysicalDeviceFeatures(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_21, 1);
     stream->write((uint64_t*)&cgen_var_21, 1 * 8);
     marshal_VkPhysicalDeviceFeatures(stream, (VkPhysicalDeviceFeatures*)(pFeatures));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures readParams");
     unmarshal_VkPhysicalDeviceFeatures(stream, (VkPhysicalDeviceFeatures*)(pFeatures));
     if (pFeatures)
     {
         transform_fromhost_VkPhysicalDeviceFeatures(mImpl->resources(), (VkPhysicalDeviceFeatures*)(pFeatures));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFeatures");;
 }
 
@@ -379,6 +391,7 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties(
     VkFormat format,
     VkFormatProperties* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties encode");
     mImpl->log("start vkGetPhysicalDeviceFormatProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -407,11 +420,13 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties(
     stream->write((uint64_t*)&cgen_var_23, 1 * 8);
     stream->write((VkFormat*)&local_format, sizeof(VkFormat));
     marshal_VkFormatProperties(stream, (VkFormatProperties*)(pFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties readParams");
     unmarshal_VkFormatProperties(stream, (VkFormatProperties*)(pFormatProperties));
     if (pFormatProperties)
     {
         transform_fromhost_VkFormatProperties(mImpl->resources(), (VkFormatProperties*)(pFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFormatProperties");;
 }
 
@@ -424,6 +439,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties(
     VkImageCreateFlags flags,
     VkImageFormatProperties* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties encode");
     mImpl->log("start vkGetPhysicalDeviceImageFormatProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -468,11 +484,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties(
     stream->write((VkImageUsageFlags*)&local_usage, sizeof(VkImageUsageFlags));
     stream->write((VkImageCreateFlags*)&local_flags, sizeof(VkImageCreateFlags));
     marshal_VkImageFormatProperties(stream, (VkImageFormatProperties*)(pImageFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties readParams");
     unmarshal_VkImageFormatProperties(stream, (VkImageFormatProperties*)(pImageFormatProperties));
     if (pImageFormatProperties)
     {
         transform_fromhost_VkImageFormatProperties(mImpl->resources(), (VkImageFormatProperties*)(pImageFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties returnUnmarshal");
     VkResult vkGetPhysicalDeviceImageFormatProperties_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceImageFormatProperties_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -486,6 +504,7 @@ void VkEncoder::vkGetPhysicalDeviceProperties(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties encode");
     mImpl->log("start vkGetPhysicalDeviceProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -510,11 +529,13 @@ void VkEncoder::vkGetPhysicalDeviceProperties(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_27, 1);
     stream->write((uint64_t*)&cgen_var_27, 1 * 8);
     marshal_VkPhysicalDeviceProperties(stream, (VkPhysicalDeviceProperties*)(pProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties readParams");
     unmarshal_VkPhysicalDeviceProperties(stream, (VkPhysicalDeviceProperties*)(pProperties));
     if (pProperties)
     {
         transform_fromhost_VkPhysicalDeviceProperties(mImpl->resources(), (VkPhysicalDeviceProperties*)(pProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceProperties");;
 }
 
@@ -523,6 +544,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties encode");
     mImpl->log("start vkGetPhysicalDeviceQueueFamilyProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -579,6 +601,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties(
             marshal_VkQueueFamilyProperties(stream, (VkQueueFamilyProperties*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pQueueFamilyPropertyCount;
     check_pQueueFamilyPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -611,6 +634,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties(
             transform_fromhost_VkQueueFamilyProperties(mImpl->resources(), (VkQueueFamilyProperties*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceQueueFamilyProperties");;
 }
 
@@ -618,6 +642,7 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties encode");
     mImpl->log("start vkGetPhysicalDeviceMemoryProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -642,11 +667,13 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_37, 1);
     stream->write((uint64_t*)&cgen_var_37, 1 * 8);
     marshal_VkPhysicalDeviceMemoryProperties(stream, (VkPhysicalDeviceMemoryProperties*)(pMemoryProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties readParams");
     unmarshal_VkPhysicalDeviceMemoryProperties(stream, (VkPhysicalDeviceMemoryProperties*)(pMemoryProperties));
     if (pMemoryProperties)
     {
         transform_fromhost_VkPhysicalDeviceMemoryProperties(mImpl->resources(), (VkPhysicalDeviceMemoryProperties*)(pMemoryProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties returnUnmarshal");
     mImpl->resources()->on_vkGetPhysicalDeviceMemoryProperties(this, physicalDevice, pMemoryProperties);
     mImpl->log("finish vkGetPhysicalDeviceMemoryProperties");;
 }
@@ -655,6 +682,7 @@ PFN_vkVoidFunction VkEncoder::vkGetInstanceProcAddr(
     VkInstance instance,
     const char* pName)
 {
+    AEMU_SCOPED_TRACE("vkGetInstanceProcAddr encode");
     mImpl->log("start vkGetInstanceProcAddr");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -685,6 +713,8 @@ PFN_vkVoidFunction VkEncoder::vkGetInstanceProcAddr(
     stream->handleMapping()->mapHandles_VkInstance_u64(&local_instance, &cgen_var_39, 1);
     stream->write((uint64_t*)&cgen_var_39, 1 * 8);
     stream->putString(local_pName);
+    AEMU_SCOPED_TRACE("vkGetInstanceProcAddr readParams");
+    AEMU_SCOPED_TRACE("vkGetInstanceProcAddr returnUnmarshal");
     PFN_vkVoidFunction vkGetInstanceProcAddr_PFN_vkVoidFunction_return = (PFN_vkVoidFunction)0;
     stream->read(&vkGetInstanceProcAddr_PFN_vkVoidFunction_return, sizeof(PFN_vkVoidFunction));
     countingStream->clearPool();
@@ -698,6 +728,7 @@ PFN_vkVoidFunction VkEncoder::vkGetDeviceProcAddr(
     VkDevice device,
     const char* pName)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceProcAddr encode");
     mImpl->log("start vkGetDeviceProcAddr");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -728,6 +759,8 @@ PFN_vkVoidFunction VkEncoder::vkGetDeviceProcAddr(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_41, 1);
     stream->write((uint64_t*)&cgen_var_41, 1 * 8);
     stream->putString(local_pName);
+    AEMU_SCOPED_TRACE("vkGetDeviceProcAddr readParams");
+    AEMU_SCOPED_TRACE("vkGetDeviceProcAddr returnUnmarshal");
     PFN_vkVoidFunction vkGetDeviceProcAddr_PFN_vkVoidFunction_return = (PFN_vkVoidFunction)0;
     stream->read(&vkGetDeviceProcAddr_PFN_vkVoidFunction_return, sizeof(PFN_vkVoidFunction));
     countingStream->clearPool();
@@ -743,6 +776,7 @@ VkResult VkEncoder::vkCreateDevice(
     const VkAllocationCallbacks* pAllocator,
     VkDevice* pDevice)
 {
+    AEMU_SCOPED_TRACE("vkCreateDevice encode");
     mImpl->log("start vkCreateDevice");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -812,11 +846,13 @@ VkResult VkEncoder::vkCreateDevice(
     stream->handleMapping()->mapHandles_VkDevice_u64(pDevice, &cgen_var_47, 1);
     stream->write((uint64_t*)&cgen_var_47, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDevice readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_48;
     stream->read((uint64_t*)&cgen_var_48, 8);
     stream->handleMapping()->mapHandles_u64_VkDevice(&cgen_var_48, (VkDevice*)pDevice, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDevice returnUnmarshal");
     VkResult vkCreateDevice_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDevice_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -831,6 +867,7 @@ void VkEncoder::vkDestroyDevice(
     VkDevice device,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDevice encode");
     mImpl->log("start vkDestroyDevice");
     mImpl->resources()->on_vkDestroyDevice_pre(this, device, pAllocator);
     auto stream = mImpl->stream();
@@ -880,6 +917,8 @@ void VkEncoder::vkDestroyDevice(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDevice readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDevice returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDevice((VkDevice*)&device);
     stream->flush();
     mImpl->log("finish vkDestroyDevice");;
@@ -890,6 +929,7 @@ VkResult VkEncoder::vkEnumerateInstanceExtensionProperties(
     uint32_t* pPropertyCount,
     VkExtensionProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceExtensionProperties encode");
     mImpl->log("start vkEnumerateInstanceExtensionProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -946,6 +986,7 @@ VkResult VkEncoder::vkEnumerateInstanceExtensionProperties(
             marshal_VkExtensionProperties(stream, (VkExtensionProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceExtensionProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -978,6 +1019,7 @@ VkResult VkEncoder::vkEnumerateInstanceExtensionProperties(
             transform_fromhost_VkExtensionProperties(mImpl->resources(), (VkExtensionProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceExtensionProperties returnUnmarshal");
     VkResult vkEnumerateInstanceExtensionProperties_VkResult_return = (VkResult)0;
     stream->read(&vkEnumerateInstanceExtensionProperties_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -993,6 +1035,7 @@ VkResult VkEncoder::vkEnumerateDeviceExtensionProperties(
     uint32_t* pPropertyCount,
     VkExtensionProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceExtensionProperties encode");
     mImpl->log("start vkEnumerateDeviceExtensionProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1057,6 +1100,7 @@ VkResult VkEncoder::vkEnumerateDeviceExtensionProperties(
             marshal_VkExtensionProperties(stream, (VkExtensionProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceExtensionProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -1089,6 +1133,7 @@ VkResult VkEncoder::vkEnumerateDeviceExtensionProperties(
             transform_fromhost_VkExtensionProperties(mImpl->resources(), (VkExtensionProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceExtensionProperties returnUnmarshal");
     VkResult vkEnumerateDeviceExtensionProperties_VkResult_return = (VkResult)0;
     stream->read(&vkEnumerateDeviceExtensionProperties_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1102,6 +1147,7 @@ VkResult VkEncoder::vkEnumerateInstanceLayerProperties(
     uint32_t* pPropertyCount,
     VkLayerProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceLayerProperties encode");
     mImpl->log("start vkEnumerateInstanceLayerProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1150,6 +1196,7 @@ VkResult VkEncoder::vkEnumerateInstanceLayerProperties(
             marshal_VkLayerProperties(stream, (VkLayerProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceLayerProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -1182,6 +1229,7 @@ VkResult VkEncoder::vkEnumerateInstanceLayerProperties(
             transform_fromhost_VkLayerProperties(mImpl->resources(), (VkLayerProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceLayerProperties returnUnmarshal");
     VkResult vkEnumerateInstanceLayerProperties_VkResult_return = (VkResult)0;
     stream->read(&vkEnumerateInstanceLayerProperties_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1196,6 +1244,7 @@ VkResult VkEncoder::vkEnumerateDeviceLayerProperties(
     uint32_t* pPropertyCount,
     VkLayerProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceLayerProperties encode");
     mImpl->log("start vkEnumerateDeviceLayerProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1252,6 +1301,7 @@ VkResult VkEncoder::vkEnumerateDeviceLayerProperties(
             marshal_VkLayerProperties(stream, (VkLayerProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceLayerProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -1284,6 +1334,7 @@ VkResult VkEncoder::vkEnumerateDeviceLayerProperties(
             transform_fromhost_VkLayerProperties(mImpl->resources(), (VkLayerProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceLayerProperties returnUnmarshal");
     VkResult vkEnumerateDeviceLayerProperties_VkResult_return = (VkResult)0;
     stream->read(&vkEnumerateDeviceLayerProperties_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1299,6 +1350,7 @@ void VkEncoder::vkGetDeviceQueue(
     uint32_t queueIndex,
     VkQueue* pQueue)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue encode");
     mImpl->log("start vkGetDeviceQueue");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1337,11 +1389,13 @@ void VkEncoder::vkGetDeviceQueue(
     stream->handleMapping()->mapHandles_VkQueue_u64(pQueue, &cgen_var_84, 1);
     stream->write((uint64_t*)&cgen_var_84, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_85;
     stream->read((uint64_t*)&cgen_var_85, 8);
     stream->handleMapping()->mapHandles_u64_VkQueue(&cgen_var_85, (VkQueue*)pQueue, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue returnUnmarshal");
     mImpl->log("finish vkGetDeviceQueue");;
 }
 
@@ -1351,6 +1405,7 @@ VkResult VkEncoder::vkQueueSubmit(
     const VkSubmitInfo* pSubmits,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkQueueSubmit encode");
     mImpl->log("start vkQueueSubmit");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1410,6 +1465,8 @@ VkResult VkEncoder::vkQueueSubmit(
     uint64_t cgen_var_89;
     stream->handleMapping()->mapHandles_VkFence_u64(&local_fence, &cgen_var_89, 1);
     stream->write((uint64_t*)&cgen_var_89, 1 * 8);
+    AEMU_SCOPED_TRACE("vkQueueSubmit readParams");
+    AEMU_SCOPED_TRACE("vkQueueSubmit returnUnmarshal");
     VkResult vkQueueSubmit_VkResult_return = (VkResult)0;
     stream->read(&vkQueueSubmit_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1422,6 +1479,7 @@ VkResult VkEncoder::vkQueueSubmit(
 VkResult VkEncoder::vkQueueWaitIdle(
     VkQueue queue)
 {
+    AEMU_SCOPED_TRACE("vkQueueWaitIdle encode");
     mImpl->log("start vkQueueWaitIdle");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1444,6 +1502,8 @@ VkResult VkEncoder::vkQueueWaitIdle(
     uint64_t cgen_var_91;
     stream->handleMapping()->mapHandles_VkQueue_u64(&local_queue, &cgen_var_91, 1);
     stream->write((uint64_t*)&cgen_var_91, 1 * 8);
+    AEMU_SCOPED_TRACE("vkQueueWaitIdle readParams");
+    AEMU_SCOPED_TRACE("vkQueueWaitIdle returnUnmarshal");
     VkResult vkQueueWaitIdle_VkResult_return = (VkResult)0;
     stream->read(&vkQueueWaitIdle_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1456,6 +1516,7 @@ VkResult VkEncoder::vkQueueWaitIdle(
 VkResult VkEncoder::vkDeviceWaitIdle(
     VkDevice device)
 {
+    AEMU_SCOPED_TRACE("vkDeviceWaitIdle encode");
     mImpl->log("start vkDeviceWaitIdle");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1478,6 +1539,8 @@ VkResult VkEncoder::vkDeviceWaitIdle(
     uint64_t cgen_var_93;
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_93, 1);
     stream->write((uint64_t*)&cgen_var_93, 1 * 8);
+    AEMU_SCOPED_TRACE("vkDeviceWaitIdle readParams");
+    AEMU_SCOPED_TRACE("vkDeviceWaitIdle returnUnmarshal");
     VkResult vkDeviceWaitIdle_VkResult_return = (VkResult)0;
     stream->read(&vkDeviceWaitIdle_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1493,6 +1556,7 @@ VkResult VkEncoder::vkAllocateMemory(
     const VkAllocationCallbacks* pAllocator,
     VkDeviceMemory* pMemory)
 {
+    AEMU_SCOPED_TRACE("vkAllocateMemory encode");
     mImpl->log("start vkAllocateMemory");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1562,11 +1626,13 @@ VkResult VkEncoder::vkAllocateMemory(
     stream->handleMapping()->mapHandles_VkDeviceMemory_u64(pMemory, &cgen_var_99, 1);
     stream->write((uint64_t*)&cgen_var_99, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkAllocateMemory readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_100;
     stream->read((uint64_t*)&cgen_var_100, 8);
     stream->handleMapping()->mapHandles_u64_VkDeviceMemory(&cgen_var_100, (VkDeviceMemory*)pMemory, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkAllocateMemory returnUnmarshal");
     VkResult vkAllocateMemory_VkResult_return = (VkResult)0;
     stream->read(&vkAllocateMemory_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1581,6 +1647,7 @@ void VkEncoder::vkFreeMemory(
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkFreeMemory encode");
     mImpl->log("start vkFreeMemory");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1634,6 +1701,8 @@ void VkEncoder::vkFreeMemory(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkFreeMemory readParams");
+    AEMU_SCOPED_TRACE("vkFreeMemory returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDeviceMemory((VkDeviceMemory*)&memory);
     mImpl->log("finish vkFreeMemory");;
 }
@@ -1646,6 +1715,7 @@ VkResult VkEncoder::vkMapMemory(
     VkMemoryMapFlags flags,
     void** ppData)
 {
+    AEMU_SCOPED_TRACE("vkMapMemory resourceEvent");
     VkResult vkMapMemory_VkResult_return = (VkResult)0;
     vkMapMemory_VkResult_return = mImpl->resources()->on_vkMapMemory(this, VK_SUCCESS, device, memory, offset, size, flags, ppData);
     mImpl->log("finish vkMapMemory");;
@@ -1656,6 +1726,7 @@ void VkEncoder::vkUnmapMemory(
     VkDevice device,
     VkDeviceMemory memory)
 {
+    AEMU_SCOPED_TRACE("vkUnmapMemory resourceEvent");
     mImpl->resources()->on_vkUnmapMemory(this, device, memory);
 }
 
@@ -1664,6 +1735,7 @@ VkResult VkEncoder::vkFlushMappedMemoryRanges(
     uint32_t memoryRangeCount,
     const VkMappedMemoryRange* pMemoryRanges)
 {
+    AEMU_SCOPED_TRACE("vkFlushMappedMemoryRanges encode");
     mImpl->log("start vkFlushMappedMemoryRanges");
     VALIDATE_RET(VkResult, VK_SUCCESS, mImpl->validation()->on_vkFlushMappedMemoryRanges(this, VK_SUCCESS, device, memoryRangeCount, pMemoryRanges));
     auto stream = mImpl->stream();
@@ -1754,6 +1826,8 @@ VkResult VkEncoder::vkFlushMappedMemoryRanges(
             stream->write(targetRange, actualSize);
         }
     }
+    AEMU_SCOPED_TRACE("vkFlushMappedMemoryRanges readParams");
+    AEMU_SCOPED_TRACE("vkFlushMappedMemoryRanges returnUnmarshal");
     VkResult vkFlushMappedMemoryRanges_VkResult_return = (VkResult)0;
     stream->read(&vkFlushMappedMemoryRanges_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1768,6 +1842,7 @@ VkResult VkEncoder::vkInvalidateMappedMemoryRanges(
     uint32_t memoryRangeCount,
     const VkMappedMemoryRange* pMemoryRanges)
 {
+    AEMU_SCOPED_TRACE("vkInvalidateMappedMemoryRanges encode");
     mImpl->log("start vkInvalidateMappedMemoryRanges");
     VALIDATE_RET(VkResult, VK_SUCCESS, mImpl->validation()->on_vkInvalidateMappedMemoryRanges(this, VK_SUCCESS, device, memoryRangeCount, pMemoryRanges));
     auto stream = mImpl->stream();
@@ -1820,6 +1895,8 @@ VkResult VkEncoder::vkInvalidateMappedMemoryRanges(
     {
         marshal_VkMappedMemoryRange(stream, (VkMappedMemoryRange*)(local_pMemoryRanges + i));
     }
+    AEMU_SCOPED_TRACE("vkInvalidateMappedMemoryRanges readParams");
+    AEMU_SCOPED_TRACE("vkInvalidateMappedMemoryRanges returnUnmarshal");
     VkResult vkInvalidateMappedMemoryRanges_VkResult_return = (VkResult)0;
     stream->read(&vkInvalidateMappedMemoryRanges_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1853,6 +1930,7 @@ void VkEncoder::vkGetDeviceMemoryCommitment(
     VkDeviceMemory memory,
     VkDeviceSize* pCommittedMemoryInBytes)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceMemoryCommitment encode");
     mImpl->log("start vkGetDeviceMemoryCommitment");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1886,7 +1964,9 @@ void VkEncoder::vkGetDeviceMemoryCommitment(
     stream->handleMapping()->mapHandles_VkDeviceMemory_u64(&local_memory, &cgen_var_114, 1);
     stream->write((uint64_t*)&cgen_var_114, 1 * 8);
     stream->write((VkDeviceSize*)pCommittedMemoryInBytes, sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkGetDeviceMemoryCommitment readParams");
     stream->read((VkDeviceSize*)pCommittedMemoryInBytes, sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkGetDeviceMemoryCommitment returnUnmarshal");
     mImpl->log("finish vkGetDeviceMemoryCommitment");;
 }
 
@@ -1896,6 +1976,7 @@ VkResult VkEncoder::vkBindBufferMemory(
     VkDeviceMemory memory,
     VkDeviceSize memoryOffset)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory encode");
     mImpl->log("start vkBindBufferMemory");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1939,6 +2020,8 @@ VkResult VkEncoder::vkBindBufferMemory(
     stream->handleMapping()->mapHandles_VkDeviceMemory_u64(&local_memory, &cgen_var_120, 1);
     stream->write((uint64_t*)&cgen_var_120, 1 * 8);
     stream->write((VkDeviceSize*)&local_memoryOffset, sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkBindBufferMemory readParams");
+    AEMU_SCOPED_TRACE("vkBindBufferMemory returnUnmarshal");
     VkResult vkBindBufferMemory_VkResult_return = (VkResult)0;
     stream->read(&vkBindBufferMemory_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -1954,6 +2037,7 @@ VkResult VkEncoder::vkBindImageMemory(
     VkDeviceMemory memory,
     VkDeviceSize memoryOffset)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory encode");
     mImpl->log("start vkBindImageMemory");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -1997,6 +2081,8 @@ VkResult VkEncoder::vkBindImageMemory(
     stream->handleMapping()->mapHandles_VkDeviceMemory_u64(&local_memory, &cgen_var_126, 1);
     stream->write((uint64_t*)&cgen_var_126, 1 * 8);
     stream->write((VkDeviceSize*)&local_memoryOffset, sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkBindImageMemory readParams");
+    AEMU_SCOPED_TRACE("vkBindImageMemory returnUnmarshal");
     VkResult vkBindImageMemory_VkResult_return = (VkResult)0;
     stream->read(&vkBindImageMemory_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2011,6 +2097,7 @@ void VkEncoder::vkGetBufferMemoryRequirements(
     VkBuffer buffer,
     VkMemoryRequirements* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements encode");
     mImpl->log("start vkGetBufferMemoryRequirements");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2043,11 +2130,13 @@ void VkEncoder::vkGetBufferMemoryRequirements(
     stream->handleMapping()->mapHandles_VkBuffer_u64(&local_buffer, &cgen_var_130, 1);
     stream->write((uint64_t*)&cgen_var_130, 1 * 8);
     marshal_VkMemoryRequirements(stream, (VkMemoryRequirements*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements readParams");
     unmarshal_VkMemoryRequirements(stream, (VkMemoryRequirements*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements(mImpl->resources(), (VkMemoryRequirements*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements returnUnmarshal");
     mImpl->log("finish vkGetBufferMemoryRequirements");;
 }
 
@@ -2056,6 +2145,7 @@ void VkEncoder::vkGetImageMemoryRequirements(
     VkImage image,
     VkMemoryRequirements* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements encode");
     mImpl->log("start vkGetImageMemoryRequirements");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2088,11 +2178,13 @@ void VkEncoder::vkGetImageMemoryRequirements(
     stream->handleMapping()->mapHandles_VkImage_u64(&local_image, &cgen_var_134, 1);
     stream->write((uint64_t*)&cgen_var_134, 1 * 8);
     marshal_VkMemoryRequirements(stream, (VkMemoryRequirements*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements readParams");
     unmarshal_VkMemoryRequirements(stream, (VkMemoryRequirements*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements(mImpl->resources(), (VkMemoryRequirements*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements returnUnmarshal");
     mImpl->log("finish vkGetImageMemoryRequirements");;
 }
 
@@ -2102,6 +2194,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements encode");
     mImpl->log("start vkGetImageSparseMemoryRequirements");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2166,6 +2259,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements(
             marshal_VkSparseImageMemoryRequirements(stream, (VkSparseImageMemoryRequirements*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSparseMemoryRequirementCount;
     check_pSparseMemoryRequirementCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -2198,6 +2292,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements(
             transform_fromhost_VkSparseImageMemoryRequirements(mImpl->resources(), (VkSparseImageMemoryRequirements*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements returnUnmarshal");
     mImpl->log("finish vkGetImageSparseMemoryRequirements");;
 }
 
@@ -2211,6 +2306,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties encode");
     mImpl->log("start vkGetPhysicalDeviceSparseImageFormatProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2287,6 +2383,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties(
             marshal_VkSparseImageFormatProperties(stream, (VkSparseImageFormatProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -2319,6 +2416,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties(
             transform_fromhost_VkSparseImageFormatProperties(mImpl->resources(), (VkSparseImageFormatProperties*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceSparseImageFormatProperties");;
 }
 
@@ -2328,6 +2426,7 @@ VkResult VkEncoder::vkQueueBindSparse(
     const VkBindSparseInfo* pBindInfo,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkQueueBindSparse encode");
     mImpl->log("start vkQueueBindSparse");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2387,6 +2486,8 @@ VkResult VkEncoder::vkQueueBindSparse(
     uint64_t cgen_var_156;
     stream->handleMapping()->mapHandles_VkFence_u64(&local_fence, &cgen_var_156, 1);
     stream->write((uint64_t*)&cgen_var_156, 1 * 8);
+    AEMU_SCOPED_TRACE("vkQueueBindSparse readParams");
+    AEMU_SCOPED_TRACE("vkQueueBindSparse returnUnmarshal");
     VkResult vkQueueBindSparse_VkResult_return = (VkResult)0;
     stream->read(&vkQueueBindSparse_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2402,6 +2503,7 @@ VkResult VkEncoder::vkCreateFence(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkCreateFence encode");
     mImpl->log("start vkCreateFence");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2471,11 +2573,13 @@ VkResult VkEncoder::vkCreateFence(
     stream->handleMapping()->mapHandles_VkFence_u64(pFence, &cgen_var_162, 1);
     stream->write((uint64_t*)&cgen_var_162, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateFence readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_163;
     stream->read((uint64_t*)&cgen_var_163, 8);
     stream->handleMapping()->mapHandles_u64_VkFence(&cgen_var_163, (VkFence*)pFence, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateFence returnUnmarshal");
     VkResult vkCreateFence_VkResult_return = (VkResult)0;
     stream->read(&vkCreateFence_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2490,6 +2594,7 @@ void VkEncoder::vkDestroyFence(
     VkFence fence,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyFence encode");
     mImpl->log("start vkDestroyFence");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2546,6 +2651,8 @@ void VkEncoder::vkDestroyFence(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyFence readParams");
+    AEMU_SCOPED_TRACE("vkDestroyFence returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkFence((VkFence*)&fence);
     mImpl->log("finish vkDestroyFence");;
 }
@@ -2555,6 +2662,7 @@ VkResult VkEncoder::vkResetFences(
     uint32_t fenceCount,
     const VkFence* pFences)
 {
+    AEMU_SCOPED_TRACE("vkResetFences encode");
     mImpl->log("start vkResetFences");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2601,6 +2709,8 @@ VkResult VkEncoder::vkResetFences(
         stream->handleMapping()->mapHandles_VkFence_u64(local_pFences, cgen_var_173, ((fenceCount)));
         stream->write((uint64_t*)cgen_var_173, ((fenceCount)) * 8);
     }
+    AEMU_SCOPED_TRACE("vkResetFences readParams");
+    AEMU_SCOPED_TRACE("vkResetFences returnUnmarshal");
     VkResult vkResetFences_VkResult_return = (VkResult)0;
     stream->read(&vkResetFences_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2614,6 +2724,7 @@ VkResult VkEncoder::vkGetFenceStatus(
     VkDevice device,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceStatus encode");
     mImpl->log("start vkGetFenceStatus");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2644,6 +2755,8 @@ VkResult VkEncoder::vkGetFenceStatus(
     uint64_t cgen_var_177;
     stream->handleMapping()->mapHandles_VkFence_u64(&local_fence, &cgen_var_177, 1);
     stream->write((uint64_t*)&cgen_var_177, 1 * 8);
+    AEMU_SCOPED_TRACE("vkGetFenceStatus readParams");
+    AEMU_SCOPED_TRACE("vkGetFenceStatus returnUnmarshal");
     VkResult vkGetFenceStatus_VkResult_return = (VkResult)0;
     stream->read(&vkGetFenceStatus_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2660,6 +2773,7 @@ VkResult VkEncoder::vkWaitForFences(
     VkBool32 waitAll,
     uint64_t timeout)
 {
+    AEMU_SCOPED_TRACE("vkWaitForFences encode");
     mImpl->log("start vkWaitForFences");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2714,6 +2828,8 @@ VkResult VkEncoder::vkWaitForFences(
     }
     stream->write((VkBool32*)&local_waitAll, sizeof(VkBool32));
     stream->write((uint64_t*)&local_timeout, sizeof(uint64_t));
+    AEMU_SCOPED_TRACE("vkWaitForFences readParams");
+    AEMU_SCOPED_TRACE("vkWaitForFences returnUnmarshal");
     VkResult vkWaitForFences_VkResult_return = (VkResult)0;
     stream->read(&vkWaitForFences_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2729,6 +2845,7 @@ VkResult VkEncoder::vkCreateSemaphore(
     const VkAllocationCallbacks* pAllocator,
     VkSemaphore* pSemaphore)
 {
+    AEMU_SCOPED_TRACE("vkCreateSemaphore encode");
     mImpl->log("start vkCreateSemaphore");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2798,11 +2915,13 @@ VkResult VkEncoder::vkCreateSemaphore(
     stream->handleMapping()->mapHandles_VkSemaphore_u64(pSemaphore, &cgen_var_187, 1);
     stream->write((uint64_t*)&cgen_var_187, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSemaphore readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_188;
     stream->read((uint64_t*)&cgen_var_188, 8);
     stream->handleMapping()->mapHandles_u64_VkSemaphore(&cgen_var_188, (VkSemaphore*)pSemaphore, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateSemaphore returnUnmarshal");
     VkResult vkCreateSemaphore_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSemaphore_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2817,6 +2936,7 @@ void VkEncoder::vkDestroySemaphore(
     VkSemaphore semaphore,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySemaphore encode");
     mImpl->log("start vkDestroySemaphore");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2873,6 +2993,8 @@ void VkEncoder::vkDestroySemaphore(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySemaphore readParams");
+    AEMU_SCOPED_TRACE("vkDestroySemaphore returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkSemaphore((VkSemaphore*)&semaphore);
     mImpl->log("finish vkDestroySemaphore");;
 }
@@ -2883,6 +3005,7 @@ VkResult VkEncoder::vkCreateEvent(
     const VkAllocationCallbacks* pAllocator,
     VkEvent* pEvent)
 {
+    AEMU_SCOPED_TRACE("vkCreateEvent encode");
     mImpl->log("start vkCreateEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -2952,11 +3075,13 @@ VkResult VkEncoder::vkCreateEvent(
     stream->handleMapping()->mapHandles_VkEvent_u64(pEvent, &cgen_var_200, 1);
     stream->write((uint64_t*)&cgen_var_200, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateEvent readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_201;
     stream->read((uint64_t*)&cgen_var_201, 8);
     stream->handleMapping()->mapHandles_u64_VkEvent(&cgen_var_201, (VkEvent*)pEvent, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateEvent returnUnmarshal");
     VkResult vkCreateEvent_VkResult_return = (VkResult)0;
     stream->read(&vkCreateEvent_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -2971,6 +3096,7 @@ void VkEncoder::vkDestroyEvent(
     VkEvent event,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyEvent encode");
     mImpl->log("start vkDestroyEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3027,6 +3153,8 @@ void VkEncoder::vkDestroyEvent(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyEvent readParams");
+    AEMU_SCOPED_TRACE("vkDestroyEvent returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkEvent((VkEvent*)&event);
     mImpl->log("finish vkDestroyEvent");;
 }
@@ -3035,6 +3163,7 @@ VkResult VkEncoder::vkGetEventStatus(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkGetEventStatus encode");
     mImpl->log("start vkGetEventStatus");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3065,6 +3194,8 @@ VkResult VkEncoder::vkGetEventStatus(
     uint64_t cgen_var_211;
     stream->handleMapping()->mapHandles_VkEvent_u64(&local_event, &cgen_var_211, 1);
     stream->write((uint64_t*)&cgen_var_211, 1 * 8);
+    AEMU_SCOPED_TRACE("vkGetEventStatus readParams");
+    AEMU_SCOPED_TRACE("vkGetEventStatus returnUnmarshal");
     VkResult vkGetEventStatus_VkResult_return = (VkResult)0;
     stream->read(&vkGetEventStatus_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3078,6 +3209,7 @@ VkResult VkEncoder::vkSetEvent(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkSetEvent encode");
     mImpl->log("start vkSetEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3108,6 +3240,8 @@ VkResult VkEncoder::vkSetEvent(
     uint64_t cgen_var_215;
     stream->handleMapping()->mapHandles_VkEvent_u64(&local_event, &cgen_var_215, 1);
     stream->write((uint64_t*)&cgen_var_215, 1 * 8);
+    AEMU_SCOPED_TRACE("vkSetEvent readParams");
+    AEMU_SCOPED_TRACE("vkSetEvent returnUnmarshal");
     VkResult vkSetEvent_VkResult_return = (VkResult)0;
     stream->read(&vkSetEvent_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3121,6 +3255,7 @@ VkResult VkEncoder::vkResetEvent(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkResetEvent encode");
     mImpl->log("start vkResetEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3151,6 +3286,8 @@ VkResult VkEncoder::vkResetEvent(
     uint64_t cgen_var_219;
     stream->handleMapping()->mapHandles_VkEvent_u64(&local_event, &cgen_var_219, 1);
     stream->write((uint64_t*)&cgen_var_219, 1 * 8);
+    AEMU_SCOPED_TRACE("vkResetEvent readParams");
+    AEMU_SCOPED_TRACE("vkResetEvent returnUnmarshal");
     VkResult vkResetEvent_VkResult_return = (VkResult)0;
     stream->read(&vkResetEvent_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3166,6 +3303,7 @@ VkResult VkEncoder::vkCreateQueryPool(
     const VkAllocationCallbacks* pAllocator,
     VkQueryPool* pQueryPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateQueryPool encode");
     mImpl->log("start vkCreateQueryPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3235,11 +3373,13 @@ VkResult VkEncoder::vkCreateQueryPool(
     stream->handleMapping()->mapHandles_VkQueryPool_u64(pQueryPool, &cgen_var_225, 1);
     stream->write((uint64_t*)&cgen_var_225, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateQueryPool readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_226;
     stream->read((uint64_t*)&cgen_var_226, 8);
     stream->handleMapping()->mapHandles_u64_VkQueryPool(&cgen_var_226, (VkQueryPool*)pQueryPool, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateQueryPool returnUnmarshal");
     VkResult vkCreateQueryPool_VkResult_return = (VkResult)0;
     stream->read(&vkCreateQueryPool_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3254,6 +3394,7 @@ void VkEncoder::vkDestroyQueryPool(
     VkQueryPool queryPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyQueryPool encode");
     mImpl->log("start vkDestroyQueryPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3310,6 +3451,8 @@ void VkEncoder::vkDestroyQueryPool(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyQueryPool readParams");
+    AEMU_SCOPED_TRACE("vkDestroyQueryPool returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkQueryPool((VkQueryPool*)&queryPool);
     mImpl->log("finish vkDestroyQueryPool");;
 }
@@ -3324,6 +3467,7 @@ VkResult VkEncoder::vkGetQueryPoolResults(
     VkDeviceSize stride,
     VkQueryResultFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkGetQueryPoolResults encode");
     mImpl->log("start vkGetQueryPoolResults");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3378,7 +3522,9 @@ VkResult VkEncoder::vkGetQueryPoolResults(
     stream->write((void*)pData, ((dataSize)) * sizeof(uint8_t));
     stream->write((VkDeviceSize*)&local_stride, sizeof(VkDeviceSize));
     stream->write((VkQueryResultFlags*)&local_flags, sizeof(VkQueryResultFlags));
+    AEMU_SCOPED_TRACE("vkGetQueryPoolResults readParams");
     stream->read((void*)pData, ((dataSize)) * sizeof(uint8_t));
+    AEMU_SCOPED_TRACE("vkGetQueryPoolResults returnUnmarshal");
     VkResult vkGetQueryPoolResults_VkResult_return = (VkResult)0;
     stream->read(&vkGetQueryPoolResults_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3394,6 +3540,7 @@ VkResult VkEncoder::vkCreateBuffer(
     const VkAllocationCallbacks* pAllocator,
     VkBuffer* pBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCreateBuffer encode");
     mImpl->log("start vkCreateBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3463,11 +3610,13 @@ VkResult VkEncoder::vkCreateBuffer(
     stream->handleMapping()->mapHandles_VkBuffer_u64(pBuffer, &cgen_var_244, 1);
     stream->write((uint64_t*)&cgen_var_244, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateBuffer readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_245;
     stream->read((uint64_t*)&cgen_var_245, 8);
     stream->handleMapping()->mapHandles_u64_VkBuffer(&cgen_var_245, (VkBuffer*)pBuffer, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateBuffer returnUnmarshal");
     VkResult vkCreateBuffer_VkResult_return = (VkResult)0;
     stream->read(&vkCreateBuffer_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3482,6 +3631,7 @@ void VkEncoder::vkDestroyBuffer(
     VkBuffer buffer,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyBuffer encode");
     mImpl->log("start vkDestroyBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3538,6 +3688,8 @@ void VkEncoder::vkDestroyBuffer(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyBuffer readParams");
+    AEMU_SCOPED_TRACE("vkDestroyBuffer returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkBuffer((VkBuffer*)&buffer);
     mImpl->log("finish vkDestroyBuffer");;
 }
@@ -3548,6 +3700,7 @@ VkResult VkEncoder::vkCreateBufferView(
     const VkAllocationCallbacks* pAllocator,
     VkBufferView* pView)
 {
+    AEMU_SCOPED_TRACE("vkCreateBufferView encode");
     mImpl->log("start vkCreateBufferView");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3617,11 +3770,13 @@ VkResult VkEncoder::vkCreateBufferView(
     stream->handleMapping()->mapHandles_VkBufferView_u64(pView, &cgen_var_257, 1);
     stream->write((uint64_t*)&cgen_var_257, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateBufferView readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_258;
     stream->read((uint64_t*)&cgen_var_258, 8);
     stream->handleMapping()->mapHandles_u64_VkBufferView(&cgen_var_258, (VkBufferView*)pView, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateBufferView returnUnmarshal");
     VkResult vkCreateBufferView_VkResult_return = (VkResult)0;
     stream->read(&vkCreateBufferView_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3636,6 +3791,7 @@ void VkEncoder::vkDestroyBufferView(
     VkBufferView bufferView,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyBufferView encode");
     mImpl->log("start vkDestroyBufferView");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3692,6 +3848,8 @@ void VkEncoder::vkDestroyBufferView(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyBufferView readParams");
+    AEMU_SCOPED_TRACE("vkDestroyBufferView returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkBufferView((VkBufferView*)&bufferView);
     mImpl->log("finish vkDestroyBufferView");;
 }
@@ -3702,6 +3860,7 @@ VkResult VkEncoder::vkCreateImage(
     const VkAllocationCallbacks* pAllocator,
     VkImage* pImage)
 {
+    AEMU_SCOPED_TRACE("vkCreateImage encode");
     mImpl->log("start vkCreateImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3772,11 +3931,13 @@ VkResult VkEncoder::vkCreateImage(
     stream->handleMapping()->mapHandles_VkImage_u64(pImage, &cgen_var_270, 1);
     stream->write((uint64_t*)&cgen_var_270, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateImage readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_271;
     stream->read((uint64_t*)&cgen_var_271, 8);
     stream->handleMapping()->mapHandles_u64_VkImage(&cgen_var_271, (VkImage*)pImage, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateImage returnUnmarshal");
     VkResult vkCreateImage_VkResult_return = (VkResult)0;
     stream->read(&vkCreateImage_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -3791,6 +3952,7 @@ void VkEncoder::vkDestroyImage(
     VkImage image,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyImage encode");
     mImpl->log("start vkDestroyImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3847,6 +4009,8 @@ void VkEncoder::vkDestroyImage(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyImage readParams");
+    AEMU_SCOPED_TRACE("vkDestroyImage returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkImage((VkImage*)&image);
     mImpl->log("finish vkDestroyImage");;
 }
@@ -3857,6 +4021,7 @@ void VkEncoder::vkGetImageSubresourceLayout(
     const VkImageSubresource* pSubresource,
     VkSubresourceLayout* pLayout)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSubresourceLayout encode");
     mImpl->log("start vkGetImageSubresourceLayout");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3902,11 +4067,13 @@ void VkEncoder::vkGetImageSubresourceLayout(
     stream->write((uint64_t*)&cgen_var_281, 1 * 8);
     marshal_VkImageSubresource(stream, (VkImageSubresource*)(local_pSubresource));
     marshal_VkSubresourceLayout(stream, (VkSubresourceLayout*)(pLayout));
+    AEMU_SCOPED_TRACE("vkGetImageSubresourceLayout readParams");
     unmarshal_VkSubresourceLayout(stream, (VkSubresourceLayout*)(pLayout));
     if (pLayout)
     {
         transform_fromhost_VkSubresourceLayout(mImpl->resources(), (VkSubresourceLayout*)(pLayout));
     }
+    AEMU_SCOPED_TRACE("vkGetImageSubresourceLayout returnUnmarshal");
     mImpl->log("finish vkGetImageSubresourceLayout");;
 }
 
@@ -3916,6 +4083,7 @@ VkResult VkEncoder::vkCreateImageView(
     const VkAllocationCallbacks* pAllocator,
     VkImageView* pView)
 {
+    AEMU_SCOPED_TRACE("vkCreateImageView encode");
     mImpl->log("start vkCreateImageView");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -3985,11 +4153,13 @@ VkResult VkEncoder::vkCreateImageView(
     stream->handleMapping()->mapHandles_VkImageView_u64(pView, &cgen_var_287, 1);
     stream->write((uint64_t*)&cgen_var_287, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateImageView readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_288;
     stream->read((uint64_t*)&cgen_var_288, 8);
     stream->handleMapping()->mapHandles_u64_VkImageView(&cgen_var_288, (VkImageView*)pView, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateImageView returnUnmarshal");
     VkResult vkCreateImageView_VkResult_return = (VkResult)0;
     stream->read(&vkCreateImageView_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4004,6 +4174,7 @@ void VkEncoder::vkDestroyImageView(
     VkImageView imageView,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyImageView encode");
     mImpl->log("start vkDestroyImageView");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4060,6 +4231,8 @@ void VkEncoder::vkDestroyImageView(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyImageView readParams");
+    AEMU_SCOPED_TRACE("vkDestroyImageView returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkImageView((VkImageView*)&imageView);
     mImpl->log("finish vkDestroyImageView");;
 }
@@ -4070,6 +4243,7 @@ VkResult VkEncoder::vkCreateShaderModule(
     const VkAllocationCallbacks* pAllocator,
     VkShaderModule* pShaderModule)
 {
+    AEMU_SCOPED_TRACE("vkCreateShaderModule encode");
     mImpl->log("start vkCreateShaderModule");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4139,11 +4313,13 @@ VkResult VkEncoder::vkCreateShaderModule(
     stream->handleMapping()->mapHandles_VkShaderModule_u64(pShaderModule, &cgen_var_300, 1);
     stream->write((uint64_t*)&cgen_var_300, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateShaderModule readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_301;
     stream->read((uint64_t*)&cgen_var_301, 8);
     stream->handleMapping()->mapHandles_u64_VkShaderModule(&cgen_var_301, (VkShaderModule*)pShaderModule, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateShaderModule returnUnmarshal");
     VkResult vkCreateShaderModule_VkResult_return = (VkResult)0;
     stream->read(&vkCreateShaderModule_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4158,6 +4334,7 @@ void VkEncoder::vkDestroyShaderModule(
     VkShaderModule shaderModule,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyShaderModule encode");
     mImpl->log("start vkDestroyShaderModule");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4214,6 +4391,8 @@ void VkEncoder::vkDestroyShaderModule(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyShaderModule readParams");
+    AEMU_SCOPED_TRACE("vkDestroyShaderModule returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkShaderModule((VkShaderModule*)&shaderModule);
     mImpl->log("finish vkDestroyShaderModule");;
 }
@@ -4224,6 +4403,7 @@ VkResult VkEncoder::vkCreatePipelineCache(
     const VkAllocationCallbacks* pAllocator,
     VkPipelineCache* pPipelineCache)
 {
+    AEMU_SCOPED_TRACE("vkCreatePipelineCache encode");
     mImpl->log("start vkCreatePipelineCache");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4293,11 +4473,13 @@ VkResult VkEncoder::vkCreatePipelineCache(
     stream->handleMapping()->mapHandles_VkPipelineCache_u64(pPipelineCache, &cgen_var_313, 1);
     stream->write((uint64_t*)&cgen_var_313, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreatePipelineCache readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_314;
     stream->read((uint64_t*)&cgen_var_314, 8);
     stream->handleMapping()->mapHandles_u64_VkPipelineCache(&cgen_var_314, (VkPipelineCache*)pPipelineCache, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreatePipelineCache returnUnmarshal");
     VkResult vkCreatePipelineCache_VkResult_return = (VkResult)0;
     stream->read(&vkCreatePipelineCache_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4312,6 +4494,7 @@ void VkEncoder::vkDestroyPipelineCache(
     VkPipelineCache pipelineCache,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipelineCache encode");
     mImpl->log("start vkDestroyPipelineCache");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4368,6 +4551,8 @@ void VkEncoder::vkDestroyPipelineCache(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyPipelineCache readParams");
+    AEMU_SCOPED_TRACE("vkDestroyPipelineCache returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkPipelineCache((VkPipelineCache*)&pipelineCache);
     mImpl->log("finish vkDestroyPipelineCache");;
 }
@@ -4378,6 +4563,7 @@ VkResult VkEncoder::vkGetPipelineCacheData(
     size_t* pDataSize,
     void* pData)
 {
+    AEMU_SCOPED_TRACE("vkGetPipelineCacheData encode");
     mImpl->log("start vkGetPipelineCacheData");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4438,6 +4624,7 @@ VkResult VkEncoder::vkGetPipelineCacheData(
     {
         stream->write((void*)pData, (*(pDataSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetPipelineCacheData readParams");
     // WARNING PTR CHECK
     size_t* check_pDataSize;
     check_pDataSize = (size_t*)(uintptr_t)stream->getBe64();
@@ -4460,6 +4647,7 @@ VkResult VkEncoder::vkGetPipelineCacheData(
         }
         stream->read((void*)pData, (*(pDataSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetPipelineCacheData returnUnmarshal");
     VkResult vkGetPipelineCacheData_VkResult_return = (VkResult)0;
     stream->read(&vkGetPipelineCacheData_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4475,6 +4663,7 @@ VkResult VkEncoder::vkMergePipelineCaches(
     uint32_t srcCacheCount,
     const VkPipelineCache* pSrcCaches)
 {
+    AEMU_SCOPED_TRACE("vkMergePipelineCaches encode");
     mImpl->log("start vkMergePipelineCaches");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4529,6 +4718,8 @@ VkResult VkEncoder::vkMergePipelineCaches(
         stream->handleMapping()->mapHandles_VkPipelineCache_u64(local_pSrcCaches, cgen_var_339, ((srcCacheCount)));
         stream->write((uint64_t*)cgen_var_339, ((srcCacheCount)) * 8);
     }
+    AEMU_SCOPED_TRACE("vkMergePipelineCaches readParams");
+    AEMU_SCOPED_TRACE("vkMergePipelineCaches returnUnmarshal");
     VkResult vkMergePipelineCaches_VkResult_return = (VkResult)0;
     stream->read(&vkMergePipelineCaches_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4546,6 +4737,7 @@ VkResult VkEncoder::vkCreateGraphicsPipelines(
     const VkAllocationCallbacks* pAllocator,
     VkPipeline* pPipelines)
 {
+    AEMU_SCOPED_TRACE("vkCreateGraphicsPipelines encode");
     mImpl->log("start vkCreateGraphicsPipelines");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4647,6 +4839,7 @@ VkResult VkEncoder::vkCreateGraphicsPipelines(
         stream->write((uint64_t*)cgen_var_347, ((createInfoCount)) * 8);
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateGraphicsPipelines readParams");
     stream->setHandleMapping(resources->createMapping());
     if (((createInfoCount)))
     {
@@ -4656,6 +4849,7 @@ VkResult VkEncoder::vkCreateGraphicsPipelines(
         stream->handleMapping()->mapHandles_u64_VkPipeline(cgen_var_348, (VkPipeline*)pPipelines, ((createInfoCount)));
     }
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateGraphicsPipelines returnUnmarshal");
     VkResult vkCreateGraphicsPipelines_VkResult_return = (VkResult)0;
     stream->read(&vkCreateGraphicsPipelines_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4673,6 +4867,7 @@ VkResult VkEncoder::vkCreateComputePipelines(
     const VkAllocationCallbacks* pAllocator,
     VkPipeline* pPipelines)
 {
+    AEMU_SCOPED_TRACE("vkCreateComputePipelines encode");
     mImpl->log("start vkCreateComputePipelines");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4774,6 +4969,7 @@ VkResult VkEncoder::vkCreateComputePipelines(
         stream->write((uint64_t*)cgen_var_356, ((createInfoCount)) * 8);
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateComputePipelines readParams");
     stream->setHandleMapping(resources->createMapping());
     if (((createInfoCount)))
     {
@@ -4783,6 +4979,7 @@ VkResult VkEncoder::vkCreateComputePipelines(
         stream->handleMapping()->mapHandles_u64_VkPipeline(cgen_var_357, (VkPipeline*)pPipelines, ((createInfoCount)));
     }
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateComputePipelines returnUnmarshal");
     VkResult vkCreateComputePipelines_VkResult_return = (VkResult)0;
     stream->read(&vkCreateComputePipelines_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4797,6 +4994,7 @@ void VkEncoder::vkDestroyPipeline(
     VkPipeline pipeline,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipeline encode");
     mImpl->log("start vkDestroyPipeline");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4853,6 +5051,8 @@ void VkEncoder::vkDestroyPipeline(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyPipeline readParams");
+    AEMU_SCOPED_TRACE("vkDestroyPipeline returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkPipeline((VkPipeline*)&pipeline);
     mImpl->log("finish vkDestroyPipeline");;
 }
@@ -4863,6 +5063,7 @@ VkResult VkEncoder::vkCreatePipelineLayout(
     const VkAllocationCallbacks* pAllocator,
     VkPipelineLayout* pPipelineLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreatePipelineLayout encode");
     mImpl->log("start vkCreatePipelineLayout");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -4932,11 +5133,13 @@ VkResult VkEncoder::vkCreatePipelineLayout(
     stream->handleMapping()->mapHandles_VkPipelineLayout_u64(pPipelineLayout, &cgen_var_369, 1);
     stream->write((uint64_t*)&cgen_var_369, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreatePipelineLayout readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_370;
     stream->read((uint64_t*)&cgen_var_370, 8);
     stream->handleMapping()->mapHandles_u64_VkPipelineLayout(&cgen_var_370, (VkPipelineLayout*)pPipelineLayout, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreatePipelineLayout returnUnmarshal");
     VkResult vkCreatePipelineLayout_VkResult_return = (VkResult)0;
     stream->read(&vkCreatePipelineLayout_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -4951,6 +5154,7 @@ void VkEncoder::vkDestroyPipelineLayout(
     VkPipelineLayout pipelineLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipelineLayout encode");
     mImpl->log("start vkDestroyPipelineLayout");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5007,6 +5211,8 @@ void VkEncoder::vkDestroyPipelineLayout(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyPipelineLayout readParams");
+    AEMU_SCOPED_TRACE("vkDestroyPipelineLayout returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkPipelineLayout((VkPipelineLayout*)&pipelineLayout);
     mImpl->log("finish vkDestroyPipelineLayout");;
 }
@@ -5017,6 +5223,7 @@ VkResult VkEncoder::vkCreateSampler(
     const VkAllocationCallbacks* pAllocator,
     VkSampler* pSampler)
 {
+    AEMU_SCOPED_TRACE("vkCreateSampler encode");
     mImpl->log("start vkCreateSampler");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5086,11 +5293,13 @@ VkResult VkEncoder::vkCreateSampler(
     stream->handleMapping()->mapHandles_VkSampler_u64(pSampler, &cgen_var_382, 1);
     stream->write((uint64_t*)&cgen_var_382, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSampler readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_383;
     stream->read((uint64_t*)&cgen_var_383, 8);
     stream->handleMapping()->mapHandles_u64_VkSampler(&cgen_var_383, (VkSampler*)pSampler, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateSampler returnUnmarshal");
     VkResult vkCreateSampler_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSampler_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5105,6 +5314,7 @@ void VkEncoder::vkDestroySampler(
     VkSampler sampler,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySampler encode");
     mImpl->log("start vkDestroySampler");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5161,6 +5371,8 @@ void VkEncoder::vkDestroySampler(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySampler readParams");
+    AEMU_SCOPED_TRACE("vkDestroySampler returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkSampler((VkSampler*)&sampler);
     mImpl->log("finish vkDestroySampler");;
 }
@@ -5171,6 +5383,7 @@ VkResult VkEncoder::vkCreateDescriptorSetLayout(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorSetLayout* pSetLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorSetLayout encode");
     mImpl->log("start vkCreateDescriptorSetLayout");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5240,11 +5453,13 @@ VkResult VkEncoder::vkCreateDescriptorSetLayout(
     stream->handleMapping()->mapHandles_VkDescriptorSetLayout_u64(pSetLayout, &cgen_var_395, 1);
     stream->write((uint64_t*)&cgen_var_395, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDescriptorSetLayout readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_396;
     stream->read((uint64_t*)&cgen_var_396, 8);
     stream->handleMapping()->mapHandles_u64_VkDescriptorSetLayout(&cgen_var_396, (VkDescriptorSetLayout*)pSetLayout, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDescriptorSetLayout returnUnmarshal");
     VkResult vkCreateDescriptorSetLayout_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDescriptorSetLayout_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5259,6 +5474,7 @@ void VkEncoder::vkDestroyDescriptorSetLayout(
     VkDescriptorSetLayout descriptorSetLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorSetLayout encode");
     mImpl->log("start vkDestroyDescriptorSetLayout");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5315,6 +5531,8 @@ void VkEncoder::vkDestroyDescriptorSetLayout(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorSetLayout readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorSetLayout returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDescriptorSetLayout((VkDescriptorSetLayout*)&descriptorSetLayout);
     mImpl->log("finish vkDestroyDescriptorSetLayout");;
 }
@@ -5325,6 +5543,7 @@ VkResult VkEncoder::vkCreateDescriptorPool(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorPool* pDescriptorPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorPool encode");
     mImpl->log("start vkCreateDescriptorPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5394,11 +5613,13 @@ VkResult VkEncoder::vkCreateDescriptorPool(
     stream->handleMapping()->mapHandles_VkDescriptorPool_u64(pDescriptorPool, &cgen_var_408, 1);
     stream->write((uint64_t*)&cgen_var_408, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDescriptorPool readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_409;
     stream->read((uint64_t*)&cgen_var_409, 8);
     stream->handleMapping()->mapHandles_u64_VkDescriptorPool(&cgen_var_409, (VkDescriptorPool*)pDescriptorPool, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDescriptorPool returnUnmarshal");
     VkResult vkCreateDescriptorPool_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDescriptorPool_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5413,6 +5634,7 @@ void VkEncoder::vkDestroyDescriptorPool(
     VkDescriptorPool descriptorPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorPool encode");
     mImpl->log("start vkDestroyDescriptorPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5469,6 +5691,8 @@ void VkEncoder::vkDestroyDescriptorPool(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorPool readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorPool returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDescriptorPool((VkDescriptorPool*)&descriptorPool);
     mImpl->log("finish vkDestroyDescriptorPool");;
 }
@@ -5478,6 +5702,7 @@ VkResult VkEncoder::vkResetDescriptorPool(
     VkDescriptorPool descriptorPool,
     VkDescriptorPoolResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetDescriptorPool encode");
     mImpl->log("start vkResetDescriptorPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5512,6 +5737,8 @@ VkResult VkEncoder::vkResetDescriptorPool(
     stream->handleMapping()->mapHandles_VkDescriptorPool_u64(&local_descriptorPool, &cgen_var_419, 1);
     stream->write((uint64_t*)&cgen_var_419, 1 * 8);
     stream->write((VkDescriptorPoolResetFlags*)&local_flags, sizeof(VkDescriptorPoolResetFlags));
+    AEMU_SCOPED_TRACE("vkResetDescriptorPool readParams");
+    AEMU_SCOPED_TRACE("vkResetDescriptorPool returnUnmarshal");
     VkResult vkResetDescriptorPool_VkResult_return = (VkResult)0;
     stream->read(&vkResetDescriptorPool_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5526,6 +5753,7 @@ VkResult VkEncoder::vkAllocateDescriptorSets(
     const VkDescriptorSetAllocateInfo* pAllocateInfo,
     VkDescriptorSet* pDescriptorSets)
 {
+    AEMU_SCOPED_TRACE("vkAllocateDescriptorSets encode");
     mImpl->log("start vkAllocateDescriptorSets");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5577,6 +5805,7 @@ VkResult VkEncoder::vkAllocateDescriptorSets(
         stream->write((uint64_t*)cgen_var_423, pAllocateInfo->descriptorSetCount * 8);
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkAllocateDescriptorSets readParams");
     stream->setHandleMapping(resources->createMapping());
     if (pAllocateInfo->descriptorSetCount)
     {
@@ -5586,6 +5815,7 @@ VkResult VkEncoder::vkAllocateDescriptorSets(
         stream->handleMapping()->mapHandles_u64_VkDescriptorSet(cgen_var_424, (VkDescriptorSet*)pDescriptorSets, pAllocateInfo->descriptorSetCount);
     }
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkAllocateDescriptorSets returnUnmarshal");
     VkResult vkAllocateDescriptorSets_VkResult_return = (VkResult)0;
     stream->read(&vkAllocateDescriptorSets_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5601,6 +5831,7 @@ VkResult VkEncoder::vkFreeDescriptorSets(
     uint32_t descriptorSetCount,
     const VkDescriptorSet* pDescriptorSets)
 {
+    AEMU_SCOPED_TRACE("vkFreeDescriptorSets encode");
     mImpl->log("start vkFreeDescriptorSets");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5667,6 +5898,8 @@ VkResult VkEncoder::vkFreeDescriptorSets(
             stream->write((uint64_t*)cgen_var_432, ((descriptorSetCount)) * 8);
         }
     }
+    AEMU_SCOPED_TRACE("vkFreeDescriptorSets readParams");
+    AEMU_SCOPED_TRACE("vkFreeDescriptorSets returnUnmarshal");
     VkResult vkFreeDescriptorSets_VkResult_return = (VkResult)0;
     stream->read(&vkFreeDescriptorSets_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5687,6 +5920,7 @@ void VkEncoder::vkUpdateDescriptorSets(
     uint32_t descriptorCopyCount,
     const VkCopyDescriptorSet* pDescriptorCopies)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSets encode");
     mImpl->log("start vkUpdateDescriptorSets");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5767,6 +6001,8 @@ void VkEncoder::vkUpdateDescriptorSets(
     {
         marshal_VkCopyDescriptorSet(stream, (VkCopyDescriptorSet*)(local_pDescriptorCopies + i));
     }
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSets readParams");
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSets returnUnmarshal");
     mImpl->log("finish vkUpdateDescriptorSets");;
 }
 
@@ -5776,6 +6012,7 @@ VkResult VkEncoder::vkCreateFramebuffer(
     const VkAllocationCallbacks* pAllocator,
     VkFramebuffer* pFramebuffer)
 {
+    AEMU_SCOPED_TRACE("vkCreateFramebuffer encode");
     mImpl->log("start vkCreateFramebuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5845,11 +6082,13 @@ VkResult VkEncoder::vkCreateFramebuffer(
     stream->handleMapping()->mapHandles_VkFramebuffer_u64(pFramebuffer, &cgen_var_440, 1);
     stream->write((uint64_t*)&cgen_var_440, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateFramebuffer readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_441;
     stream->read((uint64_t*)&cgen_var_441, 8);
     stream->handleMapping()->mapHandles_u64_VkFramebuffer(&cgen_var_441, (VkFramebuffer*)pFramebuffer, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateFramebuffer returnUnmarshal");
     VkResult vkCreateFramebuffer_VkResult_return = (VkResult)0;
     stream->read(&vkCreateFramebuffer_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -5864,6 +6103,7 @@ void VkEncoder::vkDestroyFramebuffer(
     VkFramebuffer framebuffer,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyFramebuffer encode");
     mImpl->log("start vkDestroyFramebuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5920,6 +6160,8 @@ void VkEncoder::vkDestroyFramebuffer(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyFramebuffer readParams");
+    AEMU_SCOPED_TRACE("vkDestroyFramebuffer returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkFramebuffer((VkFramebuffer*)&framebuffer);
     mImpl->log("finish vkDestroyFramebuffer");;
 }
@@ -5930,6 +6172,7 @@ VkResult VkEncoder::vkCreateRenderPass(
     const VkAllocationCallbacks* pAllocator,
     VkRenderPass* pRenderPass)
 {
+    AEMU_SCOPED_TRACE("vkCreateRenderPass encode");
     mImpl->log("start vkCreateRenderPass");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -5999,11 +6242,13 @@ VkResult VkEncoder::vkCreateRenderPass(
     stream->handleMapping()->mapHandles_VkRenderPass_u64(pRenderPass, &cgen_var_453, 1);
     stream->write((uint64_t*)&cgen_var_453, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateRenderPass readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_454;
     stream->read((uint64_t*)&cgen_var_454, 8);
     stream->handleMapping()->mapHandles_u64_VkRenderPass(&cgen_var_454, (VkRenderPass*)pRenderPass, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateRenderPass returnUnmarshal");
     VkResult vkCreateRenderPass_VkResult_return = (VkResult)0;
     stream->read(&vkCreateRenderPass_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6018,6 +6263,7 @@ void VkEncoder::vkDestroyRenderPass(
     VkRenderPass renderPass,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyRenderPass encode");
     mImpl->log("start vkDestroyRenderPass");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6074,6 +6320,8 @@ void VkEncoder::vkDestroyRenderPass(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyRenderPass readParams");
+    AEMU_SCOPED_TRACE("vkDestroyRenderPass returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkRenderPass((VkRenderPass*)&renderPass);
     mImpl->log("finish vkDestroyRenderPass");;
 }
@@ -6083,6 +6331,7 @@ void VkEncoder::vkGetRenderAreaGranularity(
     VkRenderPass renderPass,
     VkExtent2D* pGranularity)
 {
+    AEMU_SCOPED_TRACE("vkGetRenderAreaGranularity encode");
     mImpl->log("start vkGetRenderAreaGranularity");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6115,11 +6364,13 @@ void VkEncoder::vkGetRenderAreaGranularity(
     stream->handleMapping()->mapHandles_VkRenderPass_u64(&local_renderPass, &cgen_var_464, 1);
     stream->write((uint64_t*)&cgen_var_464, 1 * 8);
     marshal_VkExtent2D(stream, (VkExtent2D*)(pGranularity));
+    AEMU_SCOPED_TRACE("vkGetRenderAreaGranularity readParams");
     unmarshal_VkExtent2D(stream, (VkExtent2D*)(pGranularity));
     if (pGranularity)
     {
         transform_fromhost_VkExtent2D(mImpl->resources(), (VkExtent2D*)(pGranularity));
     }
+    AEMU_SCOPED_TRACE("vkGetRenderAreaGranularity returnUnmarshal");
     mImpl->log("finish vkGetRenderAreaGranularity");;
 }
 
@@ -6129,6 +6380,7 @@ VkResult VkEncoder::vkCreateCommandPool(
     const VkAllocationCallbacks* pAllocator,
     VkCommandPool* pCommandPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateCommandPool encode");
     mImpl->log("start vkCreateCommandPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6198,11 +6450,13 @@ VkResult VkEncoder::vkCreateCommandPool(
     stream->handleMapping()->mapHandles_VkCommandPool_u64(pCommandPool, &cgen_var_470, 1);
     stream->write((uint64_t*)&cgen_var_470, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateCommandPool readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_471;
     stream->read((uint64_t*)&cgen_var_471, 8);
     stream->handleMapping()->mapHandles_u64_VkCommandPool(&cgen_var_471, (VkCommandPool*)pCommandPool, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateCommandPool returnUnmarshal");
     VkResult vkCreateCommandPool_VkResult_return = (VkResult)0;
     stream->read(&vkCreateCommandPool_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6217,6 +6471,7 @@ void VkEncoder::vkDestroyCommandPool(
     VkCommandPool commandPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyCommandPool encode");
     mImpl->log("start vkDestroyCommandPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6273,6 +6528,8 @@ void VkEncoder::vkDestroyCommandPool(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyCommandPool readParams");
+    AEMU_SCOPED_TRACE("vkDestroyCommandPool returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkCommandPool((VkCommandPool*)&commandPool);
     mImpl->log("finish vkDestroyCommandPool");;
 }
@@ -6282,6 +6539,7 @@ VkResult VkEncoder::vkResetCommandPool(
     VkCommandPool commandPool,
     VkCommandPoolResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetCommandPool encode");
     mImpl->log("start vkResetCommandPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6316,6 +6574,8 @@ VkResult VkEncoder::vkResetCommandPool(
     stream->handleMapping()->mapHandles_VkCommandPool_u64(&local_commandPool, &cgen_var_481, 1);
     stream->write((uint64_t*)&cgen_var_481, 1 * 8);
     stream->write((VkCommandPoolResetFlags*)&local_flags, sizeof(VkCommandPoolResetFlags));
+    AEMU_SCOPED_TRACE("vkResetCommandPool readParams");
+    AEMU_SCOPED_TRACE("vkResetCommandPool returnUnmarshal");
     VkResult vkResetCommandPool_VkResult_return = (VkResult)0;
     stream->read(&vkResetCommandPool_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6330,6 +6590,7 @@ VkResult VkEncoder::vkAllocateCommandBuffers(
     const VkCommandBufferAllocateInfo* pAllocateInfo,
     VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkAllocateCommandBuffers encode");
     mImpl->log("start vkAllocateCommandBuffers");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6381,6 +6642,7 @@ VkResult VkEncoder::vkAllocateCommandBuffers(
         stream->write((uint64_t*)cgen_var_485, pAllocateInfo->commandBufferCount * 8);
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkAllocateCommandBuffers readParams");
     stream->setHandleMapping(resources->createMapping());
     if (pAllocateInfo->commandBufferCount)
     {
@@ -6390,6 +6652,7 @@ VkResult VkEncoder::vkAllocateCommandBuffers(
         stream->handleMapping()->mapHandles_u64_VkCommandBuffer(cgen_var_486, (VkCommandBuffer*)pCommandBuffers, pAllocateInfo->commandBufferCount);
     }
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkAllocateCommandBuffers returnUnmarshal");
     VkResult vkAllocateCommandBuffers_VkResult_return = (VkResult)0;
     stream->read(&vkAllocateCommandBuffers_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6405,6 +6668,7 @@ void VkEncoder::vkFreeCommandBuffers(
     uint32_t commandBufferCount,
     const VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkFreeCommandBuffers encode");
     mImpl->log("start vkFreeCommandBuffers");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6471,6 +6735,8 @@ void VkEncoder::vkFreeCommandBuffers(
             stream->write((uint64_t*)cgen_var_494, ((commandBufferCount)) * 8);
         }
     }
+    AEMU_SCOPED_TRACE("vkFreeCommandBuffers readParams");
+    AEMU_SCOPED_TRACE("vkFreeCommandBuffers returnUnmarshal");
     if (pCommandBuffers)
     {
         resources->destroyMapping()->mapHandles_VkCommandBuffer((VkCommandBuffer*)pCommandBuffers, ((commandBufferCount)));
@@ -6482,6 +6748,7 @@ VkResult VkEncoder::vkBeginCommandBuffer(
     VkCommandBuffer commandBuffer,
     const VkCommandBufferBeginInfo* pBeginInfo)
 {
+    AEMU_SCOPED_TRACE("vkBeginCommandBuffer encode");
     mImpl->log("start vkBeginCommandBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6517,6 +6784,8 @@ VkResult VkEncoder::vkBeginCommandBuffer(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_496, 1);
     stream->write((uint64_t*)&cgen_var_496, 1 * 8);
     marshal_VkCommandBufferBeginInfo(stream, (VkCommandBufferBeginInfo*)(local_pBeginInfo));
+    AEMU_SCOPED_TRACE("vkBeginCommandBuffer readParams");
+    AEMU_SCOPED_TRACE("vkBeginCommandBuffer returnUnmarshal");
     VkResult vkBeginCommandBuffer_VkResult_return = (VkResult)0;
     stream->read(&vkBeginCommandBuffer_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6529,6 +6798,7 @@ VkResult VkEncoder::vkBeginCommandBuffer(
 VkResult VkEncoder::vkEndCommandBuffer(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkEndCommandBuffer encode");
     mImpl->log("start vkEndCommandBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6551,6 +6821,8 @@ VkResult VkEncoder::vkEndCommandBuffer(
     uint64_t cgen_var_498;
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_498, 1);
     stream->write((uint64_t*)&cgen_var_498, 1 * 8);
+    AEMU_SCOPED_TRACE("vkEndCommandBuffer readParams");
+    AEMU_SCOPED_TRACE("vkEndCommandBuffer returnUnmarshal");
     VkResult vkEndCommandBuffer_VkResult_return = (VkResult)0;
     stream->read(&vkEndCommandBuffer_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6564,6 +6836,7 @@ VkResult VkEncoder::vkResetCommandBuffer(
     VkCommandBuffer commandBuffer,
     VkCommandBufferResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetCommandBuffer encode");
     mImpl->log("start vkResetCommandBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6590,6 +6863,8 @@ VkResult VkEncoder::vkResetCommandBuffer(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_500, 1);
     stream->write((uint64_t*)&cgen_var_500, 1 * 8);
     stream->write((VkCommandBufferResetFlags*)&local_flags, sizeof(VkCommandBufferResetFlags));
+    AEMU_SCOPED_TRACE("vkResetCommandBuffer readParams");
+    AEMU_SCOPED_TRACE("vkResetCommandBuffer returnUnmarshal");
     VkResult vkResetCommandBuffer_VkResult_return = (VkResult)0;
     stream->read(&vkResetCommandBuffer_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -6604,6 +6879,7 @@ void VkEncoder::vkCmdBindPipeline(
     VkPipelineBindPoint pipelineBindPoint,
     VkPipeline pipeline)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindPipeline encode");
     mImpl->log("start vkCmdBindPipeline");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6638,6 +6914,8 @@ void VkEncoder::vkCmdBindPipeline(
     uint64_t cgen_var_504;
     stream->handleMapping()->mapHandles_VkPipeline_u64(&local_pipeline, &cgen_var_504, 1);
     stream->write((uint64_t*)&cgen_var_504, 1 * 8);
+    AEMU_SCOPED_TRACE("vkCmdBindPipeline readParams");
+    AEMU_SCOPED_TRACE("vkCmdBindPipeline returnUnmarshal");
     mImpl->log("finish vkCmdBindPipeline");;
 }
 
@@ -6647,6 +6925,7 @@ void VkEncoder::vkCmdSetViewport(
     uint32_t viewportCount,
     const VkViewport* pViewports)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetViewport encode");
     mImpl->log("start vkCmdSetViewport");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6702,6 +6981,8 @@ void VkEncoder::vkCmdSetViewport(
     {
         marshal_VkViewport(stream, (VkViewport*)(local_pViewports + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdSetViewport readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetViewport returnUnmarshal");
     mImpl->log("finish vkCmdSetViewport");;
 }
 
@@ -6711,6 +6992,7 @@ void VkEncoder::vkCmdSetScissor(
     uint32_t scissorCount,
     const VkRect2D* pScissors)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetScissor encode");
     mImpl->log("start vkCmdSetScissor");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6766,6 +7048,8 @@ void VkEncoder::vkCmdSetScissor(
     {
         marshal_VkRect2D(stream, (VkRect2D*)(local_pScissors + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdSetScissor readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetScissor returnUnmarshal");
     mImpl->log("finish vkCmdSetScissor");;
 }
 
@@ -6773,6 +7057,7 @@ void VkEncoder::vkCmdSetLineWidth(
     VkCommandBuffer commandBuffer,
     float lineWidth)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetLineWidth encode");
     mImpl->log("start vkCmdSetLineWidth");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6799,6 +7084,8 @@ void VkEncoder::vkCmdSetLineWidth(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_510, 1);
     stream->write((uint64_t*)&cgen_var_510, 1 * 8);
     stream->write((float*)&local_lineWidth, sizeof(float));
+    AEMU_SCOPED_TRACE("vkCmdSetLineWidth readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetLineWidth returnUnmarshal");
     mImpl->log("finish vkCmdSetLineWidth");;
 }
 
@@ -6808,6 +7095,7 @@ void VkEncoder::vkCmdSetDepthBias(
     float depthBiasClamp,
     float depthBiasSlopeFactor)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBias encode");
     mImpl->log("start vkCmdSetDepthBias");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6842,6 +7130,8 @@ void VkEncoder::vkCmdSetDepthBias(
     stream->write((float*)&local_depthBiasConstantFactor, sizeof(float));
     stream->write((float*)&local_depthBiasClamp, sizeof(float));
     stream->write((float*)&local_depthBiasSlopeFactor, sizeof(float));
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBias readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBias returnUnmarshal");
     mImpl->log("finish vkCmdSetDepthBias");;
 }
 
@@ -6849,6 +7139,7 @@ void VkEncoder::vkCmdSetBlendConstants(
     VkCommandBuffer commandBuffer,
     const float blendConstants)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetBlendConstants encode");
     mImpl->log("start vkCmdSetBlendConstants");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6875,6 +7166,8 @@ void VkEncoder::vkCmdSetBlendConstants(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_514, 1);
     stream->write((uint64_t*)&cgen_var_514, 1 * 8);
     stream->write((float*)&local_blendConstants, 4 * sizeof(float));
+    AEMU_SCOPED_TRACE("vkCmdSetBlendConstants readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetBlendConstants returnUnmarshal");
     mImpl->log("finish vkCmdSetBlendConstants");;
 }
 
@@ -6883,6 +7176,7 @@ void VkEncoder::vkCmdSetDepthBounds(
     float minDepthBounds,
     float maxDepthBounds)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBounds encode");
     mImpl->log("start vkCmdSetDepthBounds");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6913,6 +7207,8 @@ void VkEncoder::vkCmdSetDepthBounds(
     stream->write((uint64_t*)&cgen_var_516, 1 * 8);
     stream->write((float*)&local_minDepthBounds, sizeof(float));
     stream->write((float*)&local_maxDepthBounds, sizeof(float));
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBounds readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBounds returnUnmarshal");
     mImpl->log("finish vkCmdSetDepthBounds");;
 }
 
@@ -6921,6 +7217,7 @@ void VkEncoder::vkCmdSetStencilCompareMask(
     VkStencilFaceFlags faceMask,
     uint32_t compareMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilCompareMask encode");
     mImpl->log("start vkCmdSetStencilCompareMask");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6951,6 +7248,8 @@ void VkEncoder::vkCmdSetStencilCompareMask(
     stream->write((uint64_t*)&cgen_var_518, 1 * 8);
     stream->write((VkStencilFaceFlags*)&local_faceMask, sizeof(VkStencilFaceFlags));
     stream->write((uint32_t*)&local_compareMask, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdSetStencilCompareMask readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetStencilCompareMask returnUnmarshal");
     mImpl->log("finish vkCmdSetStencilCompareMask");;
 }
 
@@ -6959,6 +7258,7 @@ void VkEncoder::vkCmdSetStencilWriteMask(
     VkStencilFaceFlags faceMask,
     uint32_t writeMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilWriteMask encode");
     mImpl->log("start vkCmdSetStencilWriteMask");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -6989,6 +7289,8 @@ void VkEncoder::vkCmdSetStencilWriteMask(
     stream->write((uint64_t*)&cgen_var_520, 1 * 8);
     stream->write((VkStencilFaceFlags*)&local_faceMask, sizeof(VkStencilFaceFlags));
     stream->write((uint32_t*)&local_writeMask, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdSetStencilWriteMask readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetStencilWriteMask returnUnmarshal");
     mImpl->log("finish vkCmdSetStencilWriteMask");;
 }
 
@@ -6997,6 +7299,7 @@ void VkEncoder::vkCmdSetStencilReference(
     VkStencilFaceFlags faceMask,
     uint32_t reference)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilReference encode");
     mImpl->log("start vkCmdSetStencilReference");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7027,6 +7330,8 @@ void VkEncoder::vkCmdSetStencilReference(
     stream->write((uint64_t*)&cgen_var_522, 1 * 8);
     stream->write((VkStencilFaceFlags*)&local_faceMask, sizeof(VkStencilFaceFlags));
     stream->write((uint32_t*)&local_reference, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdSetStencilReference readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetStencilReference returnUnmarshal");
     mImpl->log("finish vkCmdSetStencilReference");;
 }
 
@@ -7040,6 +7345,7 @@ void VkEncoder::vkCmdBindDescriptorSets(
     uint32_t dynamicOffsetCount,
     const uint32_t* pDynamicOffsets)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindDescriptorSets encode");
     mImpl->log("start vkCmdBindDescriptorSets");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7114,6 +7420,8 @@ void VkEncoder::vkCmdBindDescriptorSets(
     }
     stream->write((uint32_t*)&local_dynamicOffsetCount, sizeof(uint32_t));
     stream->write((uint32_t*)local_pDynamicOffsets, ((dynamicOffsetCount)) * sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdBindDescriptorSets readParams");
+    AEMU_SCOPED_TRACE("vkCmdBindDescriptorSets returnUnmarshal");
     mImpl->log("finish vkCmdBindDescriptorSets");;
 }
 
@@ -7123,6 +7431,7 @@ void VkEncoder::vkCmdBindIndexBuffer(
     VkDeviceSize offset,
     VkIndexType indexType)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindIndexBuffer encode");
     mImpl->log("start vkCmdBindIndexBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7161,6 +7470,8 @@ void VkEncoder::vkCmdBindIndexBuffer(
     stream->write((uint64_t*)&cgen_var_532, 1 * 8);
     stream->write((VkDeviceSize*)&local_offset, sizeof(VkDeviceSize));
     stream->write((VkIndexType*)&local_indexType, sizeof(VkIndexType));
+    AEMU_SCOPED_TRACE("vkCmdBindIndexBuffer readParams");
+    AEMU_SCOPED_TRACE("vkCmdBindIndexBuffer returnUnmarshal");
     mImpl->log("finish vkCmdBindIndexBuffer");;
 }
 
@@ -7171,6 +7482,7 @@ void VkEncoder::vkCmdBindVertexBuffers(
     const VkBuffer* pBuffers,
     const VkDeviceSize* pOffsets)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindVertexBuffers encode");
     mImpl->log("start vkCmdBindVertexBuffers");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7229,6 +7541,8 @@ void VkEncoder::vkCmdBindVertexBuffers(
         stream->write((uint64_t*)cgen_var_536, ((bindingCount)) * 8);
     }
     stream->write((VkDeviceSize*)local_pOffsets, ((bindingCount)) * sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkCmdBindVertexBuffers readParams");
+    AEMU_SCOPED_TRACE("vkCmdBindVertexBuffers returnUnmarshal");
     mImpl->log("finish vkCmdBindVertexBuffers");;
 }
 
@@ -7239,6 +7553,7 @@ void VkEncoder::vkCmdDraw(
     uint32_t firstVertex,
     uint32_t firstInstance)
 {
+    AEMU_SCOPED_TRACE("vkCmdDraw encode");
     mImpl->log("start vkCmdDraw");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7277,6 +7592,8 @@ void VkEncoder::vkCmdDraw(
     stream->write((uint32_t*)&local_instanceCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_firstVertex, sizeof(uint32_t));
     stream->write((uint32_t*)&local_firstInstance, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDraw readParams");
+    AEMU_SCOPED_TRACE("vkCmdDraw returnUnmarshal");
     mImpl->log("finish vkCmdDraw");;
 }
 
@@ -7288,6 +7605,7 @@ void VkEncoder::vkCmdDrawIndexed(
     int32_t vertexOffset,
     uint32_t firstInstance)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexed encode");
     mImpl->log("start vkCmdDrawIndexed");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7330,6 +7648,8 @@ void VkEncoder::vkCmdDrawIndexed(
     stream->write((uint32_t*)&local_firstIndex, sizeof(uint32_t));
     stream->write((int32_t*)&local_vertexOffset, sizeof(int32_t));
     stream->write((uint32_t*)&local_firstInstance, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexed readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexed returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndexed");;
 }
 
@@ -7340,6 +7660,7 @@ void VkEncoder::vkCmdDrawIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirect encode");
     mImpl->log("start vkCmdDrawIndirect");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7382,6 +7703,8 @@ void VkEncoder::vkCmdDrawIndirect(
     stream->write((VkDeviceSize*)&local_offset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_drawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirect readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirect returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndirect");;
 }
 
@@ -7392,6 +7715,7 @@ void VkEncoder::vkCmdDrawIndexedIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirect encode");
     mImpl->log("start vkCmdDrawIndexedIndirect");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7434,6 +7758,8 @@ void VkEncoder::vkCmdDrawIndexedIndirect(
     stream->write((VkDeviceSize*)&local_offset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_drawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirect readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirect returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndexedIndirect");;
 }
 
@@ -7443,6 +7769,7 @@ void VkEncoder::vkCmdDispatch(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatch encode");
     mImpl->log("start vkCmdDispatch");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7477,6 +7804,8 @@ void VkEncoder::vkCmdDispatch(
     stream->write((uint32_t*)&local_groupCountX, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountY, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountZ, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDispatch readParams");
+    AEMU_SCOPED_TRACE("vkCmdDispatch returnUnmarshal");
     mImpl->log("finish vkCmdDispatch");;
 }
 
@@ -7485,6 +7814,7 @@ void VkEncoder::vkCmdDispatchIndirect(
     VkBuffer buffer,
     VkDeviceSize offset)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchIndirect encode");
     mImpl->log("start vkCmdDispatchIndirect");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7519,6 +7849,8 @@ void VkEncoder::vkCmdDispatchIndirect(
     stream->handleMapping()->mapHandles_VkBuffer_u64(&local_buffer, &cgen_var_554, 1);
     stream->write((uint64_t*)&cgen_var_554, 1 * 8);
     stream->write((VkDeviceSize*)&local_offset, sizeof(VkDeviceSize));
+    AEMU_SCOPED_TRACE("vkCmdDispatchIndirect readParams");
+    AEMU_SCOPED_TRACE("vkCmdDispatchIndirect returnUnmarshal");
     mImpl->log("finish vkCmdDispatchIndirect");;
 }
 
@@ -7529,6 +7861,7 @@ void VkEncoder::vkCmdCopyBuffer(
     uint32_t regionCount,
     const VkBufferCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyBuffer encode");
     mImpl->log("start vkCmdCopyBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7596,6 +7929,8 @@ void VkEncoder::vkCmdCopyBuffer(
     {
         marshal_VkBufferCopy(stream, (VkBufferCopy*)(local_pRegions + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdCopyBuffer readParams");
+    AEMU_SCOPED_TRACE("vkCmdCopyBuffer returnUnmarshal");
     mImpl->log("finish vkCmdCopyBuffer");;
 }
 
@@ -7608,6 +7943,7 @@ void VkEncoder::vkCmdCopyImage(
     uint32_t regionCount,
     const VkImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyImage encode");
     mImpl->log("start vkCmdCopyImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7683,6 +8019,8 @@ void VkEncoder::vkCmdCopyImage(
     {
         marshal_VkImageCopy(stream, (VkImageCopy*)(local_pRegions + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdCopyImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdCopyImage returnUnmarshal");
     mImpl->log("finish vkCmdCopyImage");;
 }
 
@@ -7696,6 +8034,7 @@ void VkEncoder::vkCmdBlitImage(
     const VkImageBlit* pRegions,
     VkFilter filter)
 {
+    AEMU_SCOPED_TRACE("vkCmdBlitImage encode");
     mImpl->log("start vkCmdBlitImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7775,6 +8114,8 @@ void VkEncoder::vkCmdBlitImage(
         marshal_VkImageBlit(stream, (VkImageBlit*)(local_pRegions + i));
     }
     stream->write((VkFilter*)&local_filter, sizeof(VkFilter));
+    AEMU_SCOPED_TRACE("vkCmdBlitImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdBlitImage returnUnmarshal");
     mImpl->log("finish vkCmdBlitImage");;
 }
 
@@ -7786,6 +8127,7 @@ void VkEncoder::vkCmdCopyBufferToImage(
     uint32_t regionCount,
     const VkBufferImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyBufferToImage encode");
     mImpl->log("start vkCmdCopyBufferToImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7857,6 +8199,8 @@ void VkEncoder::vkCmdCopyBufferToImage(
     {
         marshal_VkBufferImageCopy(stream, (VkBufferImageCopy*)(local_pRegions + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdCopyBufferToImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdCopyBufferToImage returnUnmarshal");
     mImpl->log("finish vkCmdCopyBufferToImage");;
 }
 
@@ -7868,6 +8212,7 @@ void VkEncoder::vkCmdCopyImageToBuffer(
     uint32_t regionCount,
     const VkBufferImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyImageToBuffer encode");
     mImpl->log("start vkCmdCopyImageToBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7939,6 +8284,8 @@ void VkEncoder::vkCmdCopyImageToBuffer(
     {
         marshal_VkBufferImageCopy(stream, (VkBufferImageCopy*)(local_pRegions + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdCopyImageToBuffer readParams");
+    AEMU_SCOPED_TRACE("vkCmdCopyImageToBuffer returnUnmarshal");
     mImpl->log("finish vkCmdCopyImageToBuffer");;
 }
 
@@ -7949,6 +8296,7 @@ void VkEncoder::vkCmdUpdateBuffer(
     VkDeviceSize dataSize,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkCmdUpdateBuffer encode");
     mImpl->log("start vkCmdUpdateBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -7995,6 +8343,8 @@ void VkEncoder::vkCmdUpdateBuffer(
     stream->write((VkDeviceSize*)&local_dstOffset, sizeof(VkDeviceSize));
     stream->write((VkDeviceSize*)&local_dataSize, sizeof(VkDeviceSize));
     stream->write((void*)local_pData, ((dataSize)) * sizeof(uint8_t));
+    AEMU_SCOPED_TRACE("vkCmdUpdateBuffer readParams");
+    AEMU_SCOPED_TRACE("vkCmdUpdateBuffer returnUnmarshal");
     mImpl->log("finish vkCmdUpdateBuffer");;
 }
 
@@ -8005,6 +8355,7 @@ void VkEncoder::vkCmdFillBuffer(
     VkDeviceSize size,
     uint32_t data)
 {
+    AEMU_SCOPED_TRACE("vkCmdFillBuffer encode");
     mImpl->log("start vkCmdFillBuffer");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8047,6 +8398,8 @@ void VkEncoder::vkCmdFillBuffer(
     stream->write((VkDeviceSize*)&local_dstOffset, sizeof(VkDeviceSize));
     stream->write((VkDeviceSize*)&local_size, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_data, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdFillBuffer readParams");
+    AEMU_SCOPED_TRACE("vkCmdFillBuffer returnUnmarshal");
     mImpl->log("finish vkCmdFillBuffer");;
 }
 
@@ -8058,6 +8411,7 @@ void VkEncoder::vkCmdClearColorImage(
     uint32_t rangeCount,
     const VkImageSubresourceRange* pRanges)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearColorImage encode");
     mImpl->log("start vkCmdClearColorImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8134,6 +8488,8 @@ void VkEncoder::vkCmdClearColorImage(
     {
         marshal_VkImageSubresourceRange(stream, (VkImageSubresourceRange*)(local_pRanges + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdClearColorImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdClearColorImage returnUnmarshal");
     mImpl->log("finish vkCmdClearColorImage");;
 }
 
@@ -8145,6 +8501,7 @@ void VkEncoder::vkCmdClearDepthStencilImage(
     uint32_t rangeCount,
     const VkImageSubresourceRange* pRanges)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearDepthStencilImage encode");
     mImpl->log("start vkCmdClearDepthStencilImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8221,6 +8578,8 @@ void VkEncoder::vkCmdClearDepthStencilImage(
     {
         marshal_VkImageSubresourceRange(stream, (VkImageSubresourceRange*)(local_pRanges + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdClearDepthStencilImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdClearDepthStencilImage returnUnmarshal");
     mImpl->log("finish vkCmdClearDepthStencilImage");;
 }
 
@@ -8231,6 +8590,7 @@ void VkEncoder::vkCmdClearAttachments(
     uint32_t rectCount,
     const VkClearRect* pRects)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearAttachments encode");
     mImpl->log("start vkCmdClearAttachments");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8311,6 +8671,8 @@ void VkEncoder::vkCmdClearAttachments(
     {
         marshal_VkClearRect(stream, (VkClearRect*)(local_pRects + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdClearAttachments readParams");
+    AEMU_SCOPED_TRACE("vkCmdClearAttachments returnUnmarshal");
     mImpl->log("finish vkCmdClearAttachments");;
 }
 
@@ -8323,6 +8685,7 @@ void VkEncoder::vkCmdResolveImage(
     uint32_t regionCount,
     const VkImageResolve* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdResolveImage encode");
     mImpl->log("start vkCmdResolveImage");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8398,6 +8761,8 @@ void VkEncoder::vkCmdResolveImage(
     {
         marshal_VkImageResolve(stream, (VkImageResolve*)(local_pRegions + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdResolveImage readParams");
+    AEMU_SCOPED_TRACE("vkCmdResolveImage returnUnmarshal");
     mImpl->log("finish vkCmdResolveImage");;
 }
 
@@ -8406,6 +8771,7 @@ void VkEncoder::vkCmdSetEvent(
     VkEvent event,
     VkPipelineStageFlags stageMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetEvent encode");
     mImpl->log("start vkCmdSetEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8440,6 +8806,8 @@ void VkEncoder::vkCmdSetEvent(
     stream->handleMapping()->mapHandles_VkEvent_u64(&local_event, &cgen_var_612, 1);
     stream->write((uint64_t*)&cgen_var_612, 1 * 8);
     stream->write((VkPipelineStageFlags*)&local_stageMask, sizeof(VkPipelineStageFlags));
+    AEMU_SCOPED_TRACE("vkCmdSetEvent readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetEvent returnUnmarshal");
     mImpl->log("finish vkCmdSetEvent");;
 }
 
@@ -8448,6 +8816,7 @@ void VkEncoder::vkCmdResetEvent(
     VkEvent event,
     VkPipelineStageFlags stageMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdResetEvent encode");
     mImpl->log("start vkCmdResetEvent");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8482,6 +8851,8 @@ void VkEncoder::vkCmdResetEvent(
     stream->handleMapping()->mapHandles_VkEvent_u64(&local_event, &cgen_var_616, 1);
     stream->write((uint64_t*)&cgen_var_616, 1 * 8);
     stream->write((VkPipelineStageFlags*)&local_stageMask, sizeof(VkPipelineStageFlags));
+    AEMU_SCOPED_TRACE("vkCmdResetEvent readParams");
+    AEMU_SCOPED_TRACE("vkCmdResetEvent returnUnmarshal");
     mImpl->log("finish vkCmdResetEvent");;
 }
 
@@ -8498,6 +8869,7 @@ void VkEncoder::vkCmdWaitEvents(
     uint32_t imageMemoryBarrierCount,
     const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
+    AEMU_SCOPED_TRACE("vkCmdWaitEvents encode");
     mImpl->log("start vkCmdWaitEvents");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8639,6 +9011,8 @@ void VkEncoder::vkCmdWaitEvents(
     {
         marshal_VkImageMemoryBarrier(stream, (VkImageMemoryBarrier*)(local_pImageMemoryBarriers + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdWaitEvents readParams");
+    AEMU_SCOPED_TRACE("vkCmdWaitEvents returnUnmarshal");
     mImpl->log("finish vkCmdWaitEvents");;
 }
 
@@ -8654,6 +9028,7 @@ void VkEncoder::vkCmdPipelineBarrier(
     uint32_t imageMemoryBarrierCount,
     const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
+    AEMU_SCOPED_TRACE("vkCmdPipelineBarrier encode");
     mImpl->log("start vkCmdPipelineBarrier");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8775,6 +9150,8 @@ void VkEncoder::vkCmdPipelineBarrier(
     {
         marshal_VkImageMemoryBarrier(stream, (VkImageMemoryBarrier*)(local_pImageMemoryBarriers + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdPipelineBarrier readParams");
+    AEMU_SCOPED_TRACE("vkCmdPipelineBarrier returnUnmarshal");
     mImpl->log("finish vkCmdPipelineBarrier");;
 }
 
@@ -8784,6 +9161,7 @@ void VkEncoder::vkCmdBeginQuery(
     uint32_t query,
     VkQueryControlFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginQuery encode");
     mImpl->log("start vkCmdBeginQuery");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8822,6 +9200,8 @@ void VkEncoder::vkCmdBeginQuery(
     stream->write((uint64_t*)&cgen_var_626, 1 * 8);
     stream->write((uint32_t*)&local_query, sizeof(uint32_t));
     stream->write((VkQueryControlFlags*)&local_flags, sizeof(VkQueryControlFlags));
+    AEMU_SCOPED_TRACE("vkCmdBeginQuery readParams");
+    AEMU_SCOPED_TRACE("vkCmdBeginQuery returnUnmarshal");
     mImpl->log("finish vkCmdBeginQuery");;
 }
 
@@ -8830,6 +9210,7 @@ void VkEncoder::vkCmdEndQuery(
     VkQueryPool queryPool,
     uint32_t query)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndQuery encode");
     mImpl->log("start vkCmdEndQuery");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8864,6 +9245,8 @@ void VkEncoder::vkCmdEndQuery(
     stream->handleMapping()->mapHandles_VkQueryPool_u64(&local_queryPool, &cgen_var_630, 1);
     stream->write((uint64_t*)&cgen_var_630, 1 * 8);
     stream->write((uint32_t*)&local_query, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdEndQuery readParams");
+    AEMU_SCOPED_TRACE("vkCmdEndQuery returnUnmarshal");
     mImpl->log("finish vkCmdEndQuery");;
 }
 
@@ -8873,6 +9256,7 @@ void VkEncoder::vkCmdResetQueryPool(
     uint32_t firstQuery,
     uint32_t queryCount)
 {
+    AEMU_SCOPED_TRACE("vkCmdResetQueryPool encode");
     mImpl->log("start vkCmdResetQueryPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8911,6 +9295,8 @@ void VkEncoder::vkCmdResetQueryPool(
     stream->write((uint64_t*)&cgen_var_634, 1 * 8);
     stream->write((uint32_t*)&local_firstQuery, sizeof(uint32_t));
     stream->write((uint32_t*)&local_queryCount, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdResetQueryPool readParams");
+    AEMU_SCOPED_TRACE("vkCmdResetQueryPool returnUnmarshal");
     mImpl->log("finish vkCmdResetQueryPool");;
 }
 
@@ -8920,6 +9306,7 @@ void VkEncoder::vkCmdWriteTimestamp(
     VkQueryPool queryPool,
     uint32_t query)
 {
+    AEMU_SCOPED_TRACE("vkCmdWriteTimestamp encode");
     mImpl->log("start vkCmdWriteTimestamp");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -8958,6 +9345,8 @@ void VkEncoder::vkCmdWriteTimestamp(
     stream->handleMapping()->mapHandles_VkQueryPool_u64(&local_queryPool, &cgen_var_638, 1);
     stream->write((uint64_t*)&cgen_var_638, 1 * 8);
     stream->write((uint32_t*)&local_query, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdWriteTimestamp readParams");
+    AEMU_SCOPED_TRACE("vkCmdWriteTimestamp returnUnmarshal");
     mImpl->log("finish vkCmdWriteTimestamp");;
 }
 
@@ -8971,6 +9360,7 @@ void VkEncoder::vkCmdCopyQueryPoolResults(
     VkDeviceSize stride,
     VkQueryResultFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyQueryPoolResults encode");
     mImpl->log("start vkCmdCopyQueryPoolResults");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9029,6 +9419,8 @@ void VkEncoder::vkCmdCopyQueryPoolResults(
     stream->write((VkDeviceSize*)&local_dstOffset, sizeof(VkDeviceSize));
     stream->write((VkDeviceSize*)&local_stride, sizeof(VkDeviceSize));
     stream->write((VkQueryResultFlags*)&local_flags, sizeof(VkQueryResultFlags));
+    AEMU_SCOPED_TRACE("vkCmdCopyQueryPoolResults readParams");
+    AEMU_SCOPED_TRACE("vkCmdCopyQueryPoolResults returnUnmarshal");
     mImpl->log("finish vkCmdCopyQueryPoolResults");;
 }
 
@@ -9040,6 +9432,7 @@ void VkEncoder::vkCmdPushConstants(
     uint32_t size,
     const void* pValues)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushConstants encode");
     mImpl->log("start vkCmdPushConstants");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9090,6 +9483,8 @@ void VkEncoder::vkCmdPushConstants(
     stream->write((uint32_t*)&local_offset, sizeof(uint32_t));
     stream->write((uint32_t*)&local_size, sizeof(uint32_t));
     stream->write((void*)local_pValues, ((size)) * sizeof(uint8_t));
+    AEMU_SCOPED_TRACE("vkCmdPushConstants readParams");
+    AEMU_SCOPED_TRACE("vkCmdPushConstants returnUnmarshal");
     mImpl->log("finish vkCmdPushConstants");;
 }
 
@@ -9098,6 +9493,7 @@ void VkEncoder::vkCmdBeginRenderPass(
     const VkRenderPassBeginInfo* pRenderPassBegin,
     VkSubpassContents contents)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass encode");
     mImpl->log("start vkCmdBeginRenderPass");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9137,6 +9533,8 @@ void VkEncoder::vkCmdBeginRenderPass(
     stream->write((uint64_t*)&cgen_var_650, 1 * 8);
     marshal_VkRenderPassBeginInfo(stream, (VkRenderPassBeginInfo*)(local_pRenderPassBegin));
     stream->write((VkSubpassContents*)&local_contents, sizeof(VkSubpassContents));
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass readParams");
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass returnUnmarshal");
     mImpl->log("finish vkCmdBeginRenderPass");;
 }
 
@@ -9144,6 +9542,7 @@ void VkEncoder::vkCmdNextSubpass(
     VkCommandBuffer commandBuffer,
     VkSubpassContents contents)
 {
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass encode");
     mImpl->log("start vkCmdNextSubpass");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9170,12 +9569,15 @@ void VkEncoder::vkCmdNextSubpass(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_652, 1);
     stream->write((uint64_t*)&cgen_var_652, 1 * 8);
     stream->write((VkSubpassContents*)&local_contents, sizeof(VkSubpassContents));
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass readParams");
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass returnUnmarshal");
     mImpl->log("finish vkCmdNextSubpass");;
 }
 
 void VkEncoder::vkCmdEndRenderPass(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass encode");
     mImpl->log("start vkCmdEndRenderPass");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9198,6 +9600,8 @@ void VkEncoder::vkCmdEndRenderPass(
     uint64_t cgen_var_654;
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_654, 1);
     stream->write((uint64_t*)&cgen_var_654, 1 * 8);
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass readParams");
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass returnUnmarshal");
     mImpl->log("finish vkCmdEndRenderPass");;
 }
 
@@ -9206,6 +9610,7 @@ void VkEncoder::vkCmdExecuteCommands(
     uint32_t commandBufferCount,
     const VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkCmdExecuteCommands encode");
     mImpl->log("start vkCmdExecuteCommands");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9252,6 +9657,8 @@ void VkEncoder::vkCmdExecuteCommands(
         stream->handleMapping()->mapHandles_VkCommandBuffer_u64(local_pCommandBuffers, cgen_var_658, ((commandBufferCount)));
         stream->write((uint64_t*)cgen_var_658, ((commandBufferCount)) * 8);
     }
+    AEMU_SCOPED_TRACE("vkCmdExecuteCommands readParams");
+    AEMU_SCOPED_TRACE("vkCmdExecuteCommands returnUnmarshal");
     mImpl->log("finish vkCmdExecuteCommands");;
 }
 
@@ -9260,8 +9667,31 @@ void VkEncoder::vkCmdExecuteCommands(
 VkResult VkEncoder::vkEnumerateInstanceVersion(
     uint32_t* pApiVersion)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceVersion encode");
+    mImpl->log("start vkEnumerateInstanceVersion");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    countingStream->rewind();
+    {
+        countingStream->write((uint32_t*)pApiVersion, sizeof(uint32_t));
+    }
+    uint32_t packetSize_vkEnumerateInstanceVersion = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkEnumerateInstanceVersion = OP_vkEnumerateInstanceVersion;
+    stream->write(&opcode_vkEnumerateInstanceVersion, sizeof(uint32_t));
+    stream->write(&packetSize_vkEnumerateInstanceVersion, sizeof(uint32_t));
+    stream->write((uint32_t*)pApiVersion, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceVersion readParams");
+    stream->read((uint32_t*)pApiVersion, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceVersion returnUnmarshal");
     VkResult vkEnumerateInstanceVersion_VkResult_return = (VkResult)0;
-    vkEnumerateInstanceVersion_VkResult_return = mImpl->resources()->on_vkEnumerateInstanceVersion(this, VK_SUCCESS, pApiVersion);
+    stream->read(&vkEnumerateInstanceVersion_VkResult_return, sizeof(VkResult));
+    countingStream->clearPool();
+    stream->clearPool();
+    pool->freeAll();
     mImpl->log("finish vkEnumerateInstanceVersion");;
     return vkEnumerateInstanceVersion_VkResult_return;
 }
@@ -9271,6 +9701,7 @@ VkResult VkEncoder::vkBindBufferMemory2(
     uint32_t bindInfoCount,
     const VkBindBufferMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2 encode");
     mImpl->log("start vkBindBufferMemory2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9322,6 +9753,8 @@ VkResult VkEncoder::vkBindBufferMemory2(
     {
         marshal_VkBindBufferMemoryInfo(stream, (VkBindBufferMemoryInfo*)(local_pBindInfos + i));
     }
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2 readParams");
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2 returnUnmarshal");
     VkResult vkBindBufferMemory2_VkResult_return = (VkResult)0;
     stream->read(&vkBindBufferMemory2_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -9336,6 +9769,7 @@ VkResult VkEncoder::vkBindImageMemory2(
     uint32_t bindInfoCount,
     const VkBindImageMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory2 encode");
     mImpl->log("start vkBindImageMemory2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9387,6 +9821,8 @@ VkResult VkEncoder::vkBindImageMemory2(
     {
         marshal_VkBindImageMemoryInfo(stream, (VkBindImageMemoryInfo*)(local_pBindInfos + i));
     }
+    AEMU_SCOPED_TRACE("vkBindImageMemory2 readParams");
+    AEMU_SCOPED_TRACE("vkBindImageMemory2 returnUnmarshal");
     VkResult vkBindImageMemory2_VkResult_return = (VkResult)0;
     stream->read(&vkBindImageMemory2_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -9403,6 +9839,7 @@ void VkEncoder::vkGetDeviceGroupPeerMemoryFeatures(
     uint32_t remoteDeviceIndex,
     VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeatures encode");
     mImpl->log("start vkGetDeviceGroupPeerMemoryFeatures");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9439,7 +9876,9 @@ void VkEncoder::vkGetDeviceGroupPeerMemoryFeatures(
     stream->write((uint32_t*)&local_localDeviceIndex, sizeof(uint32_t));
     stream->write((uint32_t*)&local_remoteDeviceIndex, sizeof(uint32_t));
     stream->write((VkPeerMemoryFeatureFlags*)pPeerMemoryFeatures, sizeof(VkPeerMemoryFeatureFlags));
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeatures readParams");
     stream->read((VkPeerMemoryFeatureFlags*)pPeerMemoryFeatures, sizeof(VkPeerMemoryFeatureFlags));
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeatures returnUnmarshal");
     mImpl->log("finish vkGetDeviceGroupPeerMemoryFeatures");;
 }
 
@@ -9447,6 +9886,7 @@ void VkEncoder::vkCmdSetDeviceMask(
     VkCommandBuffer commandBuffer,
     uint32_t deviceMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMask encode");
     mImpl->log("start vkCmdSetDeviceMask");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9473,6 +9913,8 @@ void VkEncoder::vkCmdSetDeviceMask(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_666, 1);
     stream->write((uint64_t*)&cgen_var_666, 1 * 8);
     stream->write((uint32_t*)&local_deviceMask, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMask readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMask returnUnmarshal");
     mImpl->log("finish vkCmdSetDeviceMask");;
 }
 
@@ -9485,6 +9927,7 @@ void VkEncoder::vkCmdDispatchBase(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchBase encode");
     mImpl->log("start vkCmdDispatchBase");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9531,6 +9974,8 @@ void VkEncoder::vkCmdDispatchBase(
     stream->write((uint32_t*)&local_groupCountX, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountY, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountZ, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDispatchBase readParams");
+    AEMU_SCOPED_TRACE("vkCmdDispatchBase returnUnmarshal");
     mImpl->log("finish vkCmdDispatchBase");;
 }
 
@@ -9539,6 +9984,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroups(
     uint32_t* pPhysicalDeviceGroupCount,
     VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroups encode");
     mImpl->log("start vkEnumeratePhysicalDeviceGroups");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9595,6 +10041,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroups(
             marshal_VkPhysicalDeviceGroupProperties(stream, (VkPhysicalDeviceGroupProperties*)(pPhysicalDeviceGroupProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroups readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPhysicalDeviceGroupCount;
     check_pPhysicalDeviceGroupCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -9627,6 +10074,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroups(
             transform_fromhost_VkPhysicalDeviceGroupProperties(mImpl->resources(), (VkPhysicalDeviceGroupProperties*)(pPhysicalDeviceGroupProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroups returnUnmarshal");
     VkResult vkEnumeratePhysicalDeviceGroups_VkResult_return = (VkResult)0;
     stream->read(&vkEnumeratePhysicalDeviceGroups_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -9641,6 +10089,7 @@ void VkEncoder::vkGetImageMemoryRequirements2(
     const VkImageMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2 encode");
     mImpl->log("start vkGetImageMemoryRequirements2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9678,11 +10127,13 @@ void VkEncoder::vkGetImageMemoryRequirements2(
     stream->write((uint64_t*)&cgen_var_678, 1 * 8);
     marshal_VkImageMemoryRequirementsInfo2(stream, (VkImageMemoryRequirementsInfo2*)(local_pInfo));
     marshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2 readParams");
     unmarshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements2(mImpl->resources(), (VkMemoryRequirements2*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2 returnUnmarshal");
     mImpl->log("finish vkGetImageMemoryRequirements2");;
 }
 
@@ -9691,6 +10142,7 @@ void VkEncoder::vkGetBufferMemoryRequirements2(
     const VkBufferMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2 encode");
     mImpl->log("start vkGetBufferMemoryRequirements2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9728,11 +10180,13 @@ void VkEncoder::vkGetBufferMemoryRequirements2(
     stream->write((uint64_t*)&cgen_var_680, 1 * 8);
     marshal_VkBufferMemoryRequirementsInfo2(stream, (VkBufferMemoryRequirementsInfo2*)(local_pInfo));
     marshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2 readParams");
     unmarshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements2(mImpl->resources(), (VkMemoryRequirements2*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2 returnUnmarshal");
     mImpl->log("finish vkGetBufferMemoryRequirements2");;
 }
 
@@ -9742,6 +10196,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2 encode");
     mImpl->log("start vkGetImageSparseMemoryRequirements2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9811,6 +10266,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2(
             marshal_VkSparseImageMemoryRequirements2(stream, (VkSparseImageMemoryRequirements2*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2 readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSparseMemoryRequirementCount;
     check_pSparseMemoryRequirementCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -9843,6 +10299,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2(
             transform_fromhost_VkSparseImageMemoryRequirements2(mImpl->resources(), (VkSparseImageMemoryRequirements2*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2 returnUnmarshal");
     mImpl->log("finish vkGetImageSparseMemoryRequirements2");;
 }
 
@@ -9850,6 +10307,7 @@ void VkEncoder::vkGetPhysicalDeviceFeatures2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures2* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2 encode");
     mImpl->log("start vkGetPhysicalDeviceFeatures2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9874,11 +10332,13 @@ void VkEncoder::vkGetPhysicalDeviceFeatures2(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_690, 1);
     stream->write((uint64_t*)&cgen_var_690, 1 * 8);
     marshal_VkPhysicalDeviceFeatures2(stream, (VkPhysicalDeviceFeatures2*)(pFeatures));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2 readParams");
     unmarshal_VkPhysicalDeviceFeatures2(stream, (VkPhysicalDeviceFeatures2*)(pFeatures));
     if (pFeatures)
     {
         transform_fromhost_VkPhysicalDeviceFeatures2(mImpl->resources(), (VkPhysicalDeviceFeatures2*)(pFeatures));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2 returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFeatures2");;
 }
 
@@ -9886,6 +10346,7 @@ void VkEncoder::vkGetPhysicalDeviceProperties2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9910,11 +10371,13 @@ void VkEncoder::vkGetPhysicalDeviceProperties2(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_692, 1);
     stream->write((uint64_t*)&cgen_var_692, 1 * 8);
     marshal_VkPhysicalDeviceProperties2(stream, (VkPhysicalDeviceProperties2*)(pProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2 readParams");
     unmarshal_VkPhysicalDeviceProperties2(stream, (VkPhysicalDeviceProperties2*)(pProperties));
     if (pProperties)
     {
         transform_fromhost_VkPhysicalDeviceProperties2(mImpl->resources(), (VkPhysicalDeviceProperties2*)(pProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2 returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceProperties2");;
 }
 
@@ -9923,6 +10386,7 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties2(
     VkFormat format,
     VkFormatProperties2* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceFormatProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -9951,11 +10415,13 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties2(
     stream->write((uint64_t*)&cgen_var_694, 1 * 8);
     stream->write((VkFormat*)&local_format, sizeof(VkFormat));
     marshal_VkFormatProperties2(stream, (VkFormatProperties2*)(pFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2 readParams");
     unmarshal_VkFormatProperties2(stream, (VkFormatProperties2*)(pFormatProperties));
     if (pFormatProperties)
     {
         transform_fromhost_VkFormatProperties2(mImpl->resources(), (VkFormatProperties2*)(pFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2 returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFormatProperties2");;
 }
 
@@ -9964,6 +10430,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties2(
     const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
     VkImageFormatProperties2* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceImageFormatProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10001,11 +10468,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties2(
     stream->write((uint64_t*)&cgen_var_696, 1 * 8);
     marshal_VkPhysicalDeviceImageFormatInfo2(stream, (VkPhysicalDeviceImageFormatInfo2*)(local_pImageFormatInfo));
     marshal_VkImageFormatProperties2(stream, (VkImageFormatProperties2*)(pImageFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2 readParams");
     unmarshal_VkImageFormatProperties2(stream, (VkImageFormatProperties2*)(pImageFormatProperties));
     if (pImageFormatProperties)
     {
         transform_fromhost_VkImageFormatProperties2(mImpl->resources(), (VkImageFormatProperties2*)(pImageFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2 returnUnmarshal");
     VkResult vkGetPhysicalDeviceImageFormatProperties2_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceImageFormatProperties2_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -10020,6 +10489,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties2* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceQueueFamilyProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10076,6 +10546,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2(
             marshal_VkQueueFamilyProperties2(stream, (VkQueueFamilyProperties2*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2 readParams");
     // WARNING PTR CHECK
     uint32_t* check_pQueueFamilyPropertyCount;
     check_pQueueFamilyPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -10108,6 +10579,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2(
             transform_fromhost_VkQueueFamilyProperties2(mImpl->resources(), (VkQueueFamilyProperties2*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2 returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceQueueFamilyProperties2");;
 }
 
@@ -10115,6 +10587,7 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceMemoryProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10139,11 +10612,13 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties2(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_706, 1);
     stream->write((uint64_t*)&cgen_var_706, 1 * 8);
     marshal_VkPhysicalDeviceMemoryProperties2(stream, (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2 readParams");
     unmarshal_VkPhysicalDeviceMemoryProperties2(stream, (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
     if (pMemoryProperties)
     {
         transform_fromhost_VkPhysicalDeviceMemoryProperties2(mImpl->resources(), (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2 returnUnmarshal");
     mImpl->resources()->on_vkGetPhysicalDeviceMemoryProperties2(this, physicalDevice, pMemoryProperties);
     mImpl->log("finish vkGetPhysicalDeviceMemoryProperties2");;
 }
@@ -10154,6 +10629,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2 encode");
     mImpl->log("start vkGetPhysicalDeviceSparseImageFormatProperties2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10223,6 +10699,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2(
             marshal_VkSparseImageFormatProperties2(stream, (VkSparseImageFormatProperties2*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2 readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -10255,6 +10732,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2(
             transform_fromhost_VkSparseImageFormatProperties2(mImpl->resources(), (VkSparseImageFormatProperties2*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2 returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceSparseImageFormatProperties2");;
 }
 
@@ -10263,6 +10741,7 @@ void VkEncoder::vkTrimCommandPool(
     VkCommandPool commandPool,
     VkCommandPoolTrimFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkTrimCommandPool encode");
     mImpl->log("start vkTrimCommandPool");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10297,6 +10776,8 @@ void VkEncoder::vkTrimCommandPool(
     stream->handleMapping()->mapHandles_VkCommandPool_u64(&local_commandPool, &cgen_var_718, 1);
     stream->write((uint64_t*)&cgen_var_718, 1 * 8);
     stream->write((VkCommandPoolTrimFlags*)&local_flags, sizeof(VkCommandPoolTrimFlags));
+    AEMU_SCOPED_TRACE("vkTrimCommandPool readParams");
+    AEMU_SCOPED_TRACE("vkTrimCommandPool returnUnmarshal");
     mImpl->log("finish vkTrimCommandPool");;
 }
 
@@ -10305,6 +10786,7 @@ void VkEncoder::vkGetDeviceQueue2(
     const VkDeviceQueueInfo2* pQueueInfo,
     VkQueue* pQueue)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue2 encode");
     mImpl->log("start vkGetDeviceQueue2");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10348,9 +10830,11 @@ void VkEncoder::vkGetDeviceQueue2(
     stream->handleMapping()->mapHandles_VkQueue_u64(pQueue, &cgen_var_722, 1);
     stream->write((uint64_t*)&cgen_var_722, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue2 readParams");
     uint64_t cgen_var_723;
     stream->read((uint64_t*)&cgen_var_723, 8);
     stream->handleMapping()->mapHandles_u64_VkQueue(&cgen_var_723, (VkQueue*)pQueue, 1);
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue2 returnUnmarshal");
     mImpl->log("finish vkGetDeviceQueue2");;
 }
 
@@ -10360,6 +10844,7 @@ VkResult VkEncoder::vkCreateSamplerYcbcrConversion(
     const VkAllocationCallbacks* pAllocator,
     VkSamplerYcbcrConversion* pYcbcrConversion)
 {
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversion encode");
     mImpl->log("start vkCreateSamplerYcbcrConversion");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10429,11 +10914,13 @@ VkResult VkEncoder::vkCreateSamplerYcbcrConversion(
     stream->handleMapping()->mapHandles_VkSamplerYcbcrConversion_u64(pYcbcrConversion, &cgen_var_729, 1);
     stream->write((uint64_t*)&cgen_var_729, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversion readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_730;
     stream->read((uint64_t*)&cgen_var_730, 8);
     stream->handleMapping()->mapHandles_u64_VkSamplerYcbcrConversion(&cgen_var_730, (VkSamplerYcbcrConversion*)pYcbcrConversion, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversion returnUnmarshal");
     VkResult vkCreateSamplerYcbcrConversion_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSamplerYcbcrConversion_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -10448,6 +10935,7 @@ void VkEncoder::vkDestroySamplerYcbcrConversion(
     VkSamplerYcbcrConversion ycbcrConversion,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversion encode");
     mImpl->log("start vkDestroySamplerYcbcrConversion");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10504,6 +10992,8 @@ void VkEncoder::vkDestroySamplerYcbcrConversion(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversion readParams");
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversion returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkSamplerYcbcrConversion((VkSamplerYcbcrConversion*)&ycbcrConversion);
     mImpl->log("finish vkDestroySamplerYcbcrConversion");;
 }
@@ -10514,6 +11004,7 @@ VkResult VkEncoder::vkCreateDescriptorUpdateTemplate(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplate encode");
     mImpl->log("start vkCreateDescriptorUpdateTemplate");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10583,16 +11074,19 @@ VkResult VkEncoder::vkCreateDescriptorUpdateTemplate(
     stream->handleMapping()->mapHandles_VkDescriptorUpdateTemplate_u64(pDescriptorUpdateTemplate, &cgen_var_742, 1);
     stream->write((uint64_t*)&cgen_var_742, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplate readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_743;
     stream->read((uint64_t*)&cgen_var_743, 8);
     stream->handleMapping()->mapHandles_u64_VkDescriptorUpdateTemplate(&cgen_var_743, (VkDescriptorUpdateTemplate*)pDescriptorUpdateTemplate, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplate returnUnmarshal");
     VkResult vkCreateDescriptorUpdateTemplate_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDescriptorUpdateTemplate_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
     stream->clearPool();
     pool->freeAll();
+    mImpl->resources()->on_vkCreateDescriptorUpdateTemplate(this, vkCreateDescriptorUpdateTemplate_VkResult_return, device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
     mImpl->log("finish vkCreateDescriptorUpdateTemplate");;
     return vkCreateDescriptorUpdateTemplate_VkResult_return;
 }
@@ -10602,6 +11096,7 @@ void VkEncoder::vkDestroyDescriptorUpdateTemplate(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplate encode");
     mImpl->log("start vkDestroyDescriptorUpdateTemplate");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10658,6 +11153,8 @@ void VkEncoder::vkDestroyDescriptorUpdateTemplate(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplate readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplate returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDescriptorUpdateTemplate((VkDescriptorUpdateTemplate*)&descriptorUpdateTemplate);
     mImpl->log("finish vkDestroyDescriptorUpdateTemplate");;
 }
@@ -10668,6 +11165,7 @@ void VkEncoder::vkUpdateDescriptorSetWithTemplate(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplate encode");
     mImpl->log("start vkUpdateDescriptorSetWithTemplate");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10726,6 +11224,8 @@ void VkEncoder::vkUpdateDescriptorSetWithTemplate(
     {
         stream->write((void*)local_pData, sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplate readParams");
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplate returnUnmarshal");
     mImpl->log("finish vkUpdateDescriptorSetWithTemplate");;
 }
 
@@ -10734,6 +11234,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalBufferProperties(
     const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo,
     VkExternalBufferProperties* pExternalBufferProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferProperties encode");
     mImpl->log("start vkGetPhysicalDeviceExternalBufferProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10772,12 +11273,14 @@ void VkEncoder::vkGetPhysicalDeviceExternalBufferProperties(
     stream->write((uint64_t*)&cgen_var_759, 1 * 8);
     marshal_VkPhysicalDeviceExternalBufferInfo(stream, (VkPhysicalDeviceExternalBufferInfo*)(local_pExternalBufferInfo));
     marshal_VkExternalBufferProperties(stream, (VkExternalBufferProperties*)(pExternalBufferProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferProperties readParams");
     unmarshal_VkExternalBufferProperties(stream, (VkExternalBufferProperties*)(pExternalBufferProperties));
     if (pExternalBufferProperties)
     {
         mImpl->resources()->transformImpl_VkExternalBufferProperties_fromhost(pExternalBufferProperties, 1);
         transform_fromhost_VkExternalBufferProperties(mImpl->resources(), (VkExternalBufferProperties*)(pExternalBufferProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalBufferProperties");;
 }
 
@@ -10786,6 +11289,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalFenceProperties(
     const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
     VkExternalFenceProperties* pExternalFenceProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFenceProperties encode");
     mImpl->log("start vkGetPhysicalDeviceExternalFenceProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10823,11 +11327,13 @@ void VkEncoder::vkGetPhysicalDeviceExternalFenceProperties(
     stream->write((uint64_t*)&cgen_var_761, 1 * 8);
     marshal_VkPhysicalDeviceExternalFenceInfo(stream, (VkPhysicalDeviceExternalFenceInfo*)(local_pExternalFenceInfo));
     marshal_VkExternalFenceProperties(stream, (VkExternalFenceProperties*)(pExternalFenceProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFenceProperties readParams");
     unmarshal_VkExternalFenceProperties(stream, (VkExternalFenceProperties*)(pExternalFenceProperties));
     if (pExternalFenceProperties)
     {
         transform_fromhost_VkExternalFenceProperties(mImpl->resources(), (VkExternalFenceProperties*)(pExternalFenceProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFenceProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalFenceProperties");;
 }
 
@@ -10836,6 +11342,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalSemaphoreProperties(
     const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
     VkExternalSemaphoreProperties* pExternalSemaphoreProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphoreProperties encode");
     mImpl->log("start vkGetPhysicalDeviceExternalSemaphoreProperties");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10873,11 +11380,13 @@ void VkEncoder::vkGetPhysicalDeviceExternalSemaphoreProperties(
     stream->write((uint64_t*)&cgen_var_763, 1 * 8);
     marshal_VkPhysicalDeviceExternalSemaphoreInfo(stream, (VkPhysicalDeviceExternalSemaphoreInfo*)(local_pExternalSemaphoreInfo));
     marshal_VkExternalSemaphoreProperties(stream, (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphoreProperties readParams");
     unmarshal_VkExternalSemaphoreProperties(stream, (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
     if (pExternalSemaphoreProperties)
     {
         transform_fromhost_VkExternalSemaphoreProperties(mImpl->resources(), (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphoreProperties returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalSemaphoreProperties");;
 }
 
@@ -10886,6 +11395,7 @@ void VkEncoder::vkGetDescriptorSetLayoutSupport(
     const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
     VkDescriptorSetLayoutSupport* pSupport)
 {
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupport encode");
     mImpl->log("start vkGetDescriptorSetLayoutSupport");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10923,11 +11433,13 @@ void VkEncoder::vkGetDescriptorSetLayoutSupport(
     stream->write((uint64_t*)&cgen_var_765, 1 * 8);
     marshal_VkDescriptorSetLayoutCreateInfo(stream, (VkDescriptorSetLayoutCreateInfo*)(local_pCreateInfo));
     marshal_VkDescriptorSetLayoutSupport(stream, (VkDescriptorSetLayoutSupport*)(pSupport));
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupport readParams");
     unmarshal_VkDescriptorSetLayoutSupport(stream, (VkDescriptorSetLayoutSupport*)(pSupport));
     if (pSupport)
     {
         transform_fromhost_VkDescriptorSetLayoutSupport(mImpl->resources(), (VkDescriptorSetLayoutSupport*)(pSupport));
     }
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupport returnUnmarshal");
     mImpl->log("finish vkGetDescriptorSetLayoutSupport");;
 }
 
@@ -10938,6 +11450,7 @@ void VkEncoder::vkDestroySurfaceKHR(
     VkSurfaceKHR surface,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySurfaceKHR encode");
     mImpl->log("start vkDestroySurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -10994,6 +11507,8 @@ void VkEncoder::vkDestroySurfaceKHR(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySurfaceKHR readParams");
+    AEMU_SCOPED_TRACE("vkDestroySurfaceKHR returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkSurfaceKHR((VkSurfaceKHR*)&surface);
     mImpl->log("finish vkDestroySurfaceKHR");;
 }
@@ -11004,6 +11519,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceSupportKHR(
     VkSurfaceKHR surface,
     VkBool32* pSupported)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11040,7 +11556,9 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceSupportKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(&local_surface, &cgen_var_775, 1);
     stream->write((uint64_t*)&cgen_var_775, 1 * 8);
     stream->write((VkBool32*)pSupported, sizeof(VkBool32));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceSupportKHR readParams");
     stream->read((VkBool32*)pSupported, sizeof(VkBool32));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceSupportKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceSupportKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceSupportKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11055,6 +11573,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
     VkSurfaceKHR surface,
     VkSurfaceCapabilitiesKHR* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11087,11 +11606,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(&local_surface, &cgen_var_779, 1);
     stream->write((uint64_t*)&cgen_var_779, 1 * 8);
     marshal_VkSurfaceCapabilitiesKHR(stream, (VkSurfaceCapabilitiesKHR*)(pSurfaceCapabilities));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR readParams");
     unmarshal_VkSurfaceCapabilitiesKHR(stream, (VkSurfaceCapabilitiesKHR*)(pSurfaceCapabilities));
     if (pSurfaceCapabilities)
     {
         transform_fromhost_VkSurfaceCapabilitiesKHR(mImpl->resources(), (VkSurfaceCapabilitiesKHR*)(pSurfaceCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceCapabilitiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceCapabilitiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11107,6 +11628,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormatsKHR(
     uint32_t* pSurfaceFormatCount,
     VkSurfaceFormatKHR* pSurfaceFormats)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormatsKHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceFormatsKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11171,6 +11693,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormatsKHR(
             marshal_VkSurfaceFormatKHR(stream, (VkSurfaceFormatKHR*)(pSurfaceFormats + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormatsKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSurfaceFormatCount;
     check_pSurfaceFormatCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -11203,6 +11726,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormatsKHR(
             transform_fromhost_VkSurfaceFormatKHR(mImpl->resources(), (VkSurfaceFormatKHR*)(pSurfaceFormats + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormatsKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceFormatsKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceFormatsKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11218,6 +11742,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfacePresentModesKHR(
     uint32_t* pPresentModeCount,
     VkPresentModeKHR* pPresentModes)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfacePresentModesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfacePresentModesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11276,6 +11801,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfacePresentModesKHR(
     {
         stream->write((VkPresentModeKHR*)pPresentModes, (*(pPresentModeCount)) * sizeof(VkPresentModeKHR));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfacePresentModesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPresentModeCount;
     check_pPresentModeCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -11298,6 +11824,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfacePresentModesKHR(
         }
         stream->read((VkPresentModeKHR*)pPresentModes, (*(pPresentModeCount)) * sizeof(VkPresentModeKHR));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfacePresentModesKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfacePresentModesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfacePresentModesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11315,6 +11842,7 @@ VkResult VkEncoder::vkCreateSwapchainKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSwapchainKHR* pSwapchain)
 {
+    AEMU_SCOPED_TRACE("vkCreateSwapchainKHR encode");
     mImpl->log("start vkCreateSwapchainKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11384,11 +11912,13 @@ VkResult VkEncoder::vkCreateSwapchainKHR(
     stream->handleMapping()->mapHandles_VkSwapchainKHR_u64(pSwapchain, &cgen_var_805, 1);
     stream->write((uint64_t*)&cgen_var_805, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSwapchainKHR readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_806;
     stream->read((uint64_t*)&cgen_var_806, 8);
     stream->handleMapping()->mapHandles_u64_VkSwapchainKHR(&cgen_var_806, (VkSwapchainKHR*)pSwapchain, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateSwapchainKHR returnUnmarshal");
     VkResult vkCreateSwapchainKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSwapchainKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11403,6 +11933,7 @@ void VkEncoder::vkDestroySwapchainKHR(
     VkSwapchainKHR swapchain,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySwapchainKHR encode");
     mImpl->log("start vkDestroySwapchainKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11459,6 +11990,8 @@ void VkEncoder::vkDestroySwapchainKHR(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySwapchainKHR readParams");
+    AEMU_SCOPED_TRACE("vkDestroySwapchainKHR returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkSwapchainKHR((VkSwapchainKHR*)&swapchain);
     mImpl->log("finish vkDestroySwapchainKHR");;
 }
@@ -11469,6 +12002,7 @@ VkResult VkEncoder::vkGetSwapchainImagesKHR(
     uint32_t* pSwapchainImageCount,
     VkImage* pSwapchainImages)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainImagesKHR encode");
     mImpl->log("start vkGetSwapchainImagesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11541,6 +12075,7 @@ VkResult VkEncoder::vkGetSwapchainImagesKHR(
         }
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkGetSwapchainImagesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSwapchainImageCount;
     check_pSwapchainImageCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -11569,6 +12104,7 @@ VkResult VkEncoder::vkGetSwapchainImagesKHR(
             stream->handleMapping()->mapHandles_u64_VkImage(cgen_var_825, (VkImage*)pSwapchainImages, (*(pSwapchainImageCount)));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetSwapchainImagesKHR returnUnmarshal");
     VkResult vkGetSwapchainImagesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetSwapchainImagesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11586,6 +12122,7 @@ VkResult VkEncoder::vkAcquireNextImageKHR(
     VkFence fence,
     uint32_t* pImageIndex)
 {
+    AEMU_SCOPED_TRACE("vkAcquireNextImageKHR encode");
     mImpl->log("start vkAcquireNextImageKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11638,7 +12175,9 @@ VkResult VkEncoder::vkAcquireNextImageKHR(
     stream->handleMapping()->mapHandles_VkFence_u64(&local_fence, &cgen_var_833, 1);
     stream->write((uint64_t*)&cgen_var_833, 1 * 8);
     stream->write((uint32_t*)pImageIndex, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkAcquireNextImageKHR readParams");
     stream->read((uint32_t*)pImageIndex, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkAcquireNextImageKHR returnUnmarshal");
     VkResult vkAcquireNextImageKHR_VkResult_return = (VkResult)0;
     stream->read(&vkAcquireNextImageKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11652,6 +12191,7 @@ VkResult VkEncoder::vkQueuePresentKHR(
     VkQueue queue,
     const VkPresentInfoKHR* pPresentInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueuePresentKHR encode");
     mImpl->log("start vkQueuePresentKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11687,6 +12227,8 @@ VkResult VkEncoder::vkQueuePresentKHR(
     stream->handleMapping()->mapHandles_VkQueue_u64(&local_queue, &cgen_var_835, 1);
     stream->write((uint64_t*)&cgen_var_835, 1 * 8);
     marshal_VkPresentInfoKHR(stream, (VkPresentInfoKHR*)(local_pPresentInfo));
+    AEMU_SCOPED_TRACE("vkQueuePresentKHR readParams");
+    AEMU_SCOPED_TRACE("vkQueuePresentKHR returnUnmarshal");
     VkResult vkQueuePresentKHR_VkResult_return = (VkResult)0;
     stream->read(&vkQueuePresentKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11700,6 +12242,7 @@ VkResult VkEncoder::vkGetDeviceGroupPresentCapabilitiesKHR(
     VkDevice device,
     VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPresentCapabilitiesKHR encode");
     mImpl->log("start vkGetDeviceGroupPresentCapabilitiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11724,11 +12267,13 @@ VkResult VkEncoder::vkGetDeviceGroupPresentCapabilitiesKHR(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_837, 1);
     stream->write((uint64_t*)&cgen_var_837, 1 * 8);
     marshal_VkDeviceGroupPresentCapabilitiesKHR(stream, (VkDeviceGroupPresentCapabilitiesKHR*)(pDeviceGroupPresentCapabilities));
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPresentCapabilitiesKHR readParams");
     unmarshal_VkDeviceGroupPresentCapabilitiesKHR(stream, (VkDeviceGroupPresentCapabilitiesKHR*)(pDeviceGroupPresentCapabilities));
     if (pDeviceGroupPresentCapabilities)
     {
         transform_fromhost_VkDeviceGroupPresentCapabilitiesKHR(mImpl->resources(), (VkDeviceGroupPresentCapabilitiesKHR*)(pDeviceGroupPresentCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPresentCapabilitiesKHR returnUnmarshal");
     VkResult vkGetDeviceGroupPresentCapabilitiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDeviceGroupPresentCapabilitiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11743,6 +12288,7 @@ VkResult VkEncoder::vkGetDeviceGroupSurfacePresentModesKHR(
     VkSurfaceKHR surface,
     VkDeviceGroupPresentModeFlagsKHR* pModes)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupSurfacePresentModesKHR encode");
     mImpl->log("start vkGetDeviceGroupSurfacePresentModesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11787,6 +12333,7 @@ VkResult VkEncoder::vkGetDeviceGroupSurfacePresentModesKHR(
     {
         stream->write((VkDeviceGroupPresentModeFlagsKHR*)pModes, sizeof(VkDeviceGroupPresentModeFlagsKHR));
     }
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupSurfacePresentModesKHR readParams");
     // WARNING PTR CHECK
     VkDeviceGroupPresentModeFlagsKHR* check_pModes;
     check_pModes = (VkDeviceGroupPresentModeFlagsKHR*)(uintptr_t)stream->getBe64();
@@ -11798,6 +12345,7 @@ VkResult VkEncoder::vkGetDeviceGroupSurfacePresentModesKHR(
         }
         stream->read((VkDeviceGroupPresentModeFlagsKHR*)pModes, sizeof(VkDeviceGroupPresentModeFlagsKHR));
     }
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupSurfacePresentModesKHR returnUnmarshal");
     VkResult vkGetDeviceGroupSurfacePresentModesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDeviceGroupSurfacePresentModesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11813,6 +12361,7 @@ VkResult VkEncoder::vkGetPhysicalDevicePresentRectanglesKHR(
     uint32_t* pRectCount,
     VkRect2D* pRects)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDevicePresentRectanglesKHR encode");
     mImpl->log("start vkGetPhysicalDevicePresentRectanglesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11877,6 +12426,7 @@ VkResult VkEncoder::vkGetPhysicalDevicePresentRectanglesKHR(
             marshal_VkRect2D(stream, (VkRect2D*)(pRects + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDevicePresentRectanglesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pRectCount;
     check_pRectCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -11909,6 +12459,7 @@ VkResult VkEncoder::vkGetPhysicalDevicePresentRectanglesKHR(
             transform_fromhost_VkRect2D(mImpl->resources(), (VkRect2D*)(pRects + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDevicePresentRectanglesKHR returnUnmarshal");
     VkResult vkGetPhysicalDevicePresentRectanglesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDevicePresentRectanglesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11923,6 +12474,7 @@ VkResult VkEncoder::vkAcquireNextImage2KHR(
     const VkAcquireNextImageInfoKHR* pAcquireInfo,
     uint32_t* pImageIndex)
 {
+    AEMU_SCOPED_TRACE("vkAcquireNextImage2KHR encode");
     mImpl->log("start vkAcquireNextImage2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -11960,7 +12512,9 @@ VkResult VkEncoder::vkAcquireNextImage2KHR(
     stream->write((uint64_t*)&cgen_var_856, 1 * 8);
     marshal_VkAcquireNextImageInfoKHR(stream, (VkAcquireNextImageInfoKHR*)(local_pAcquireInfo));
     stream->write((uint32_t*)pImageIndex, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkAcquireNextImage2KHR readParams");
     stream->read((uint32_t*)pImageIndex, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkAcquireNextImage2KHR returnUnmarshal");
     VkResult vkAcquireNextImage2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkAcquireNextImage2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -11977,6 +12531,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayPropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPropertiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceDisplayPropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12033,6 +12588,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPropertiesKHR(
             marshal_VkDisplayPropertiesKHR(stream, (VkDisplayPropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPropertiesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -12065,6 +12621,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPropertiesKHR(
             transform_fromhost_VkDisplayPropertiesKHR(mImpl->resources(), (VkDisplayPropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPropertiesKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceDisplayPropertiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceDisplayPropertiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12079,6 +12636,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayPlanePropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlanePropertiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12135,6 +12693,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
             marshal_VkDisplayPlanePropertiesKHR(stream, (VkDisplayPlanePropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlanePropertiesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -12167,6 +12726,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
             transform_fromhost_VkDisplayPlanePropertiesKHR(mImpl->resources(), (VkDisplayPlanePropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlanePropertiesKHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceDisplayPlanePropertiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceDisplayPlanePropertiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12182,6 +12742,7 @@ VkResult VkEncoder::vkGetDisplayPlaneSupportedDisplaysKHR(
     uint32_t* pDisplayCount,
     VkDisplayKHR* pDisplays)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneSupportedDisplaysKHR encode");
     mImpl->log("start vkGetDisplayPlaneSupportedDisplaysKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12250,6 +12811,7 @@ VkResult VkEncoder::vkGetDisplayPlaneSupportedDisplaysKHR(
         }
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneSupportedDisplaysKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pDisplayCount;
     check_pDisplayCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -12278,6 +12840,7 @@ VkResult VkEncoder::vkGetDisplayPlaneSupportedDisplaysKHR(
             stream->handleMapping()->mapHandles_u64_VkDisplayKHR(cgen_var_883, (VkDisplayKHR*)pDisplays, (*(pDisplayCount)));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneSupportedDisplaysKHR returnUnmarshal");
     VkResult vkGetDisplayPlaneSupportedDisplaysKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDisplayPlaneSupportedDisplaysKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12293,6 +12856,7 @@ VkResult VkEncoder::vkGetDisplayModePropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayModePropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayModePropertiesKHR encode");
     mImpl->log("start vkGetDisplayModePropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12357,6 +12921,7 @@ VkResult VkEncoder::vkGetDisplayModePropertiesKHR(
             marshal_VkDisplayModePropertiesKHR(stream, (VkDisplayModePropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayModePropertiesKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -12389,6 +12954,7 @@ VkResult VkEncoder::vkGetDisplayModePropertiesKHR(
             transform_fromhost_VkDisplayModePropertiesKHR(mImpl->resources(), (VkDisplayModePropertiesKHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayModePropertiesKHR returnUnmarshal");
     VkResult vkGetDisplayModePropertiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDisplayModePropertiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12405,6 +12971,7 @@ VkResult VkEncoder::vkCreateDisplayModeKHR(
     const VkAllocationCallbacks* pAllocator,
     VkDisplayModeKHR* pMode)
 {
+    AEMU_SCOPED_TRACE("vkCreateDisplayModeKHR encode");
     mImpl->log("start vkCreateDisplayModeKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12482,11 +13049,13 @@ VkResult VkEncoder::vkCreateDisplayModeKHR(
     stream->handleMapping()->mapHandles_VkDisplayModeKHR_u64(pMode, &cgen_var_901, 1);
     stream->write((uint64_t*)&cgen_var_901, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDisplayModeKHR readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_902;
     stream->read((uint64_t*)&cgen_var_902, 8);
     stream->handleMapping()->mapHandles_u64_VkDisplayModeKHR(&cgen_var_902, (VkDisplayModeKHR*)pMode, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDisplayModeKHR returnUnmarshal");
     VkResult vkCreateDisplayModeKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDisplayModeKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12502,6 +13071,7 @@ VkResult VkEncoder::vkGetDisplayPlaneCapabilitiesKHR(
     uint32_t planeIndex,
     VkDisplayPlaneCapabilitiesKHR* pCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilitiesKHR encode");
     mImpl->log("start vkGetDisplayPlaneCapabilitiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12538,11 +13108,13 @@ VkResult VkEncoder::vkGetDisplayPlaneCapabilitiesKHR(
     stream->write((uint64_t*)&cgen_var_906, 1 * 8);
     stream->write((uint32_t*)&local_planeIndex, sizeof(uint32_t));
     marshal_VkDisplayPlaneCapabilitiesKHR(stream, (VkDisplayPlaneCapabilitiesKHR*)(pCapabilities));
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilitiesKHR readParams");
     unmarshal_VkDisplayPlaneCapabilitiesKHR(stream, (VkDisplayPlaneCapabilitiesKHR*)(pCapabilities));
     if (pCapabilities)
     {
         transform_fromhost_VkDisplayPlaneCapabilitiesKHR(mImpl->resources(), (VkDisplayPlaneCapabilitiesKHR*)(pCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilitiesKHR returnUnmarshal");
     VkResult vkGetDisplayPlaneCapabilitiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDisplayPlaneCapabilitiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12558,6 +13130,7 @@ VkResult VkEncoder::vkCreateDisplayPlaneSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateDisplayPlaneSurfaceKHR encode");
     mImpl->log("start vkCreateDisplayPlaneSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12627,9 +13200,11 @@ VkResult VkEncoder::vkCreateDisplayPlaneSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_912, 1);
     stream->write((uint64_t*)&cgen_var_912, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDisplayPlaneSurfaceKHR readParams");
     uint64_t cgen_var_913;
     stream->read((uint64_t*)&cgen_var_913, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_913, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateDisplayPlaneSurfaceKHR returnUnmarshal");
     VkResult vkCreateDisplayPlaneSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDisplayPlaneSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12648,6 +13223,7 @@ VkResult VkEncoder::vkCreateSharedSwapchainsKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSwapchainKHR* pSwapchains)
 {
+    AEMU_SCOPED_TRACE("vkCreateSharedSwapchainsKHR encode");
     mImpl->log("start vkCreateSharedSwapchainsKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12741,6 +13317,7 @@ VkResult VkEncoder::vkCreateSharedSwapchainsKHR(
         stream->write((uint64_t*)cgen_var_919, ((swapchainCount)) * 8);
     }
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSharedSwapchainsKHR readParams");
     if (((swapchainCount)))
     {
         uint64_t* cgen_var_920;
@@ -12748,6 +13325,7 @@ VkResult VkEncoder::vkCreateSharedSwapchainsKHR(
         stream->read((uint64_t*)cgen_var_920, ((swapchainCount)) * 8);
         stream->handleMapping()->mapHandles_u64_VkSwapchainKHR(cgen_var_920, (VkSwapchainKHR*)pSwapchains, ((swapchainCount)));
     }
+    AEMU_SCOPED_TRACE("vkCreateSharedSwapchainsKHR returnUnmarshal");
     VkResult vkCreateSharedSwapchainsKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSharedSwapchainsKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12765,6 +13343,7 @@ VkResult VkEncoder::vkCreateXlibSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateXlibSurfaceKHR encode");
     mImpl->log("start vkCreateXlibSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12834,9 +13413,11 @@ VkResult VkEncoder::vkCreateXlibSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_926, 1);
     stream->write((uint64_t*)&cgen_var_926, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateXlibSurfaceKHR readParams");
     uint64_t cgen_var_927;
     stream->read((uint64_t*)&cgen_var_927, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_927, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateXlibSurfaceKHR returnUnmarshal");
     VkResult vkCreateXlibSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateXlibSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12852,6 +13433,7 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceXlibPresentationSupportKHR(
     Display* dpy,
     VisualID visualID)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXlibPresentationSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceXlibPresentationSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12884,7 +13466,9 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceXlibPresentationSupportKHR(
     stream->write((uint32_t*)&local_queueFamilyIndex, sizeof(uint32_t));
     stream->write((Display*)dpy, sizeof(Display));
     stream->write((VisualID*)&local_visualID, sizeof(VisualID));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXlibPresentationSupportKHR readParams");
     stream->read((Display*)dpy, sizeof(Display));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXlibPresentationSupportKHR returnUnmarshal");
     VkBool32 vkGetPhysicalDeviceXlibPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     stream->read(&vkGetPhysicalDeviceXlibPresentationSupportKHR_VkBool32_return, sizeof(VkBool32));
     countingStream->clearPool();
@@ -12902,6 +13486,7 @@ VkResult VkEncoder::vkCreateXcbSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateXcbSurfaceKHR encode");
     mImpl->log("start vkCreateXcbSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -12971,9 +13556,11 @@ VkResult VkEncoder::vkCreateXcbSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_935, 1);
     stream->write((uint64_t*)&cgen_var_935, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateXcbSurfaceKHR readParams");
     uint64_t cgen_var_936;
     stream->read((uint64_t*)&cgen_var_936, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_936, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateXcbSurfaceKHR returnUnmarshal");
     VkResult vkCreateXcbSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateXcbSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -12989,6 +13576,7 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceXcbPresentationSupportKHR(
     xcb_connection_t* connection,
     xcb_visualid_t visual_id)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXcbPresentationSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceXcbPresentationSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13021,7 +13609,9 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceXcbPresentationSupportKHR(
     stream->write((uint32_t*)&local_queueFamilyIndex, sizeof(uint32_t));
     stream->write((xcb_connection_t*)connection, sizeof(xcb_connection_t));
     stream->write((xcb_visualid_t*)&local_visual_id, sizeof(xcb_visualid_t));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXcbPresentationSupportKHR readParams");
     stream->read((xcb_connection_t*)connection, sizeof(xcb_connection_t));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXcbPresentationSupportKHR returnUnmarshal");
     VkBool32 vkGetPhysicalDeviceXcbPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     stream->read(&vkGetPhysicalDeviceXcbPresentationSupportKHR_VkBool32_return, sizeof(VkBool32));
     countingStream->clearPool();
@@ -13039,6 +13629,7 @@ VkResult VkEncoder::vkCreateWaylandSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateWaylandSurfaceKHR encode");
     mImpl->log("start vkCreateWaylandSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13108,9 +13699,11 @@ VkResult VkEncoder::vkCreateWaylandSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_944, 1);
     stream->write((uint64_t*)&cgen_var_944, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateWaylandSurfaceKHR readParams");
     uint64_t cgen_var_945;
     stream->read((uint64_t*)&cgen_var_945, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_945, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateWaylandSurfaceKHR returnUnmarshal");
     VkResult vkCreateWaylandSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateWaylandSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -13125,6 +13718,7 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceWaylandPresentationSupportKHR(
     uint32_t queueFamilyIndex,
     wl_display* display)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWaylandPresentationSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceWaylandPresentationSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13153,7 +13747,9 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceWaylandPresentationSupportKHR(
     stream->write((uint64_t*)&cgen_var_947, 1 * 8);
     stream->write((uint32_t*)&local_queueFamilyIndex, sizeof(uint32_t));
     stream->write((wl_display*)display, sizeof(wl_display));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWaylandPresentationSupportKHR readParams");
     stream->read((wl_display*)display, sizeof(wl_display));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWaylandPresentationSupportKHR returnUnmarshal");
     VkBool32 vkGetPhysicalDeviceWaylandPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     stream->read(&vkGetPhysicalDeviceWaylandPresentationSupportKHR_VkBool32_return, sizeof(VkBool32));
     countingStream->clearPool();
@@ -13171,6 +13767,7 @@ VkResult VkEncoder::vkCreateMirSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateMirSurfaceKHR encode");
     mImpl->log("start vkCreateMirSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13240,9 +13837,11 @@ VkResult VkEncoder::vkCreateMirSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_953, 1);
     stream->write((uint64_t*)&cgen_var_953, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateMirSurfaceKHR readParams");
     uint64_t cgen_var_954;
     stream->read((uint64_t*)&cgen_var_954, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_954, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateMirSurfaceKHR returnUnmarshal");
     VkResult vkCreateMirSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateMirSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -13257,6 +13856,7 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceMirPresentationSupportKHR(
     uint32_t queueFamilyIndex,
     MirConnection* connection)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMirPresentationSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceMirPresentationSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13285,7 +13885,9 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceMirPresentationSupportKHR(
     stream->write((uint64_t*)&cgen_var_956, 1 * 8);
     stream->write((uint32_t*)&local_queueFamilyIndex, sizeof(uint32_t));
     stream->write((MirConnection*)connection, sizeof(MirConnection));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMirPresentationSupportKHR readParams");
     stream->read((MirConnection*)connection, sizeof(MirConnection));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMirPresentationSupportKHR returnUnmarshal");
     VkBool32 vkGetPhysicalDeviceMirPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     stream->read(&vkGetPhysicalDeviceMirPresentationSupportKHR_VkBool32_return, sizeof(VkBool32));
     countingStream->clearPool();
@@ -13303,6 +13905,7 @@ VkResult VkEncoder::vkCreateAndroidSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateAndroidSurfaceKHR encode");
     mImpl->log("start vkCreateAndroidSurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13372,9 +13975,11 @@ VkResult VkEncoder::vkCreateAndroidSurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_962, 1);
     stream->write((uint64_t*)&cgen_var_962, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateAndroidSurfaceKHR readParams");
     uint64_t cgen_var_963;
     stream->read((uint64_t*)&cgen_var_963, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_963, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateAndroidSurfaceKHR returnUnmarshal");
     VkResult vkCreateAndroidSurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateAndroidSurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -13392,6 +13997,7 @@ VkResult VkEncoder::vkCreateWin32SurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateWin32SurfaceKHR encode");
     mImpl->log("start vkCreateWin32SurfaceKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13461,9 +14067,11 @@ VkResult VkEncoder::vkCreateWin32SurfaceKHR(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_969, 1);
     stream->write((uint64_t*)&cgen_var_969, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateWin32SurfaceKHR readParams");
     uint64_t cgen_var_970;
     stream->read((uint64_t*)&cgen_var_970, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_970, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateWin32SurfaceKHR returnUnmarshal");
     VkResult vkCreateWin32SurfaceKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateWin32SurfaceKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -13477,6 +14085,7 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceWin32PresentationSupportKHR(
     VkPhysicalDevice physicalDevice,
     uint32_t queueFamilyIndex)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWin32PresentationSupportKHR encode");
     mImpl->log("start vkGetPhysicalDeviceWin32PresentationSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13503,6 +14112,8 @@ VkBool32 VkEncoder::vkGetPhysicalDeviceWin32PresentationSupportKHR(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_972, 1);
     stream->write((uint64_t*)&cgen_var_972, 1 * 8);
     stream->write((uint32_t*)&local_queueFamilyIndex, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWin32PresentationSupportKHR readParams");
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWin32PresentationSupportKHR returnUnmarshal");
     VkBool32 vkGetPhysicalDeviceWin32PresentationSupportKHR_VkBool32_return = (VkBool32)0;
     stream->read(&vkGetPhysicalDeviceWin32PresentationSupportKHR_VkBool32_return, sizeof(VkBool32));
     countingStream->clearPool();
@@ -13522,6 +14133,7 @@ void VkEncoder::vkGetPhysicalDeviceFeatures2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures2* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceFeatures2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13546,11 +14158,13 @@ void VkEncoder::vkGetPhysicalDeviceFeatures2KHR(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_974, 1);
     stream->write((uint64_t*)&cgen_var_974, 1 * 8);
     marshal_VkPhysicalDeviceFeatures2(stream, (VkPhysicalDeviceFeatures2*)(pFeatures));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2KHR readParams");
     unmarshal_VkPhysicalDeviceFeatures2(stream, (VkPhysicalDeviceFeatures2*)(pFeatures));
     if (pFeatures)
     {
         transform_fromhost_VkPhysicalDeviceFeatures2(mImpl->resources(), (VkPhysicalDeviceFeatures2*)(pFeatures));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2KHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFeatures2KHR");;
 }
 
@@ -13558,6 +14172,7 @@ void VkEncoder::vkGetPhysicalDeviceProperties2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13582,11 +14197,13 @@ void VkEncoder::vkGetPhysicalDeviceProperties2KHR(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_976, 1);
     stream->write((uint64_t*)&cgen_var_976, 1 * 8);
     marshal_VkPhysicalDeviceProperties2(stream, (VkPhysicalDeviceProperties2*)(pProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2KHR readParams");
     unmarshal_VkPhysicalDeviceProperties2(stream, (VkPhysicalDeviceProperties2*)(pProperties));
     if (pProperties)
     {
         transform_fromhost_VkPhysicalDeviceProperties2(mImpl->resources(), (VkPhysicalDeviceProperties2*)(pProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2KHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceProperties2KHR");;
 }
 
@@ -13595,6 +14212,7 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties2KHR(
     VkFormat format,
     VkFormatProperties2* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceFormatProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13623,11 +14241,13 @@ void VkEncoder::vkGetPhysicalDeviceFormatProperties2KHR(
     stream->write((uint64_t*)&cgen_var_978, 1 * 8);
     stream->write((VkFormat*)&local_format, sizeof(VkFormat));
     marshal_VkFormatProperties2(stream, (VkFormatProperties2*)(pFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2KHR readParams");
     unmarshal_VkFormatProperties2(stream, (VkFormatProperties2*)(pFormatProperties));
     if (pFormatProperties)
     {
         transform_fromhost_VkFormatProperties2(mImpl->resources(), (VkFormatProperties2*)(pFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2KHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceFormatProperties2KHR");;
 }
 
@@ -13636,6 +14256,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties2KHR(
     const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
     VkImageFormatProperties2* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceImageFormatProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13673,11 +14294,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceImageFormatProperties2KHR(
     stream->write((uint64_t*)&cgen_var_980, 1 * 8);
     marshal_VkPhysicalDeviceImageFormatInfo2(stream, (VkPhysicalDeviceImageFormatInfo2*)(local_pImageFormatInfo));
     marshal_VkImageFormatProperties2(stream, (VkImageFormatProperties2*)(pImageFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2KHR readParams");
     unmarshal_VkImageFormatProperties2(stream, (VkImageFormatProperties2*)(pImageFormatProperties));
     if (pImageFormatProperties)
     {
         transform_fromhost_VkImageFormatProperties2(mImpl->resources(), (VkImageFormatProperties2*)(pImageFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2KHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -13692,6 +14315,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2KHR(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties2* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceQueueFamilyProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13748,6 +14372,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2KHR(
             marshal_VkQueueFamilyProperties2(stream, (VkQueueFamilyProperties2*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pQueueFamilyPropertyCount;
     check_pQueueFamilyPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -13780,6 +14405,7 @@ void VkEncoder::vkGetPhysicalDeviceQueueFamilyProperties2KHR(
             transform_fromhost_VkQueueFamilyProperties2(mImpl->resources(), (VkQueueFamilyProperties2*)(pQueueFamilyProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2KHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceQueueFamilyProperties2KHR");;
 }
 
@@ -13787,6 +14413,7 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceMemoryProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13811,11 +14438,13 @@ void VkEncoder::vkGetPhysicalDeviceMemoryProperties2KHR(
     stream->handleMapping()->mapHandles_VkPhysicalDevice_u64(&local_physicalDevice, &cgen_var_990, 1);
     stream->write((uint64_t*)&cgen_var_990, 1 * 8);
     marshal_VkPhysicalDeviceMemoryProperties2(stream, (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2KHR readParams");
     unmarshal_VkPhysicalDeviceMemoryProperties2(stream, (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
     if (pMemoryProperties)
     {
         transform_fromhost_VkPhysicalDeviceMemoryProperties2(mImpl->resources(), (VkPhysicalDeviceMemoryProperties2*)(pMemoryProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2KHR returnUnmarshal");
     mImpl->resources()->on_vkGetPhysicalDeviceMemoryProperties2KHR(this, physicalDevice, pMemoryProperties);
     mImpl->log("finish vkGetPhysicalDeviceMemoryProperties2KHR");;
 }
@@ -13826,6 +14455,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13895,6 +14525,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
             marshal_VkSparseImageFormatProperties2(stream, (VkSparseImageFormatProperties2*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -13927,6 +14558,7 @@ void VkEncoder::vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
             transform_fromhost_VkSparseImageFormatProperties2(mImpl->resources(), (VkSparseImageFormatProperties2*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2KHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceSparseImageFormatProperties2KHR");;
 }
 
@@ -13939,6 +14571,7 @@ void VkEncoder::vkGetDeviceGroupPeerMemoryFeaturesKHR(
     uint32_t remoteDeviceIndex,
     VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeaturesKHR encode");
     mImpl->log("start vkGetDeviceGroupPeerMemoryFeaturesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -13975,7 +14608,9 @@ void VkEncoder::vkGetDeviceGroupPeerMemoryFeaturesKHR(
     stream->write((uint32_t*)&local_localDeviceIndex, sizeof(uint32_t));
     stream->write((uint32_t*)&local_remoteDeviceIndex, sizeof(uint32_t));
     stream->write((VkPeerMemoryFeatureFlags*)pPeerMemoryFeatures, sizeof(VkPeerMemoryFeatureFlags));
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeaturesKHR readParams");
     stream->read((VkPeerMemoryFeatureFlags*)pPeerMemoryFeatures, sizeof(VkPeerMemoryFeatureFlags));
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeaturesKHR returnUnmarshal");
     mImpl->log("finish vkGetDeviceGroupPeerMemoryFeaturesKHR");;
 }
 
@@ -13983,6 +14618,7 @@ void VkEncoder::vkCmdSetDeviceMaskKHR(
     VkCommandBuffer commandBuffer,
     uint32_t deviceMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMaskKHR encode");
     mImpl->log("start vkCmdSetDeviceMaskKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14009,6 +14645,8 @@ void VkEncoder::vkCmdSetDeviceMaskKHR(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1002, 1);
     stream->write((uint64_t*)&cgen_var_1002, 1 * 8);
     stream->write((uint32_t*)&local_deviceMask, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMaskKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMaskKHR returnUnmarshal");
     mImpl->log("finish vkCmdSetDeviceMaskKHR");;
 }
 
@@ -14021,6 +14659,7 @@ void VkEncoder::vkCmdDispatchBaseKHR(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchBaseKHR encode");
     mImpl->log("start vkCmdDispatchBaseKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14067,6 +14706,8 @@ void VkEncoder::vkCmdDispatchBaseKHR(
     stream->write((uint32_t*)&local_groupCountX, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountY, sizeof(uint32_t));
     stream->write((uint32_t*)&local_groupCountZ, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDispatchBaseKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdDispatchBaseKHR returnUnmarshal");
     mImpl->log("finish vkCmdDispatchBaseKHR");;
 }
 
@@ -14079,6 +14720,7 @@ void VkEncoder::vkTrimCommandPoolKHR(
     VkCommandPool commandPool,
     VkCommandPoolTrimFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkTrimCommandPoolKHR encode");
     mImpl->log("start vkTrimCommandPoolKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14113,6 +14755,8 @@ void VkEncoder::vkTrimCommandPoolKHR(
     stream->handleMapping()->mapHandles_VkCommandPool_u64(&local_commandPool, &cgen_var_1008, 1);
     stream->write((uint64_t*)&cgen_var_1008, 1 * 8);
     stream->write((VkCommandPoolTrimFlags*)&local_flags, sizeof(VkCommandPoolTrimFlags));
+    AEMU_SCOPED_TRACE("vkTrimCommandPoolKHR readParams");
+    AEMU_SCOPED_TRACE("vkTrimCommandPoolKHR returnUnmarshal");
     mImpl->log("finish vkTrimCommandPoolKHR");;
 }
 
@@ -14123,6 +14767,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroupsKHR(
     uint32_t* pPhysicalDeviceGroupCount,
     VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroupsKHR encode");
     mImpl->log("start vkEnumeratePhysicalDeviceGroupsKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14179,6 +14824,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroupsKHR(
             marshal_VkPhysicalDeviceGroupProperties(stream, (VkPhysicalDeviceGroupProperties*)(pPhysicalDeviceGroupProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroupsKHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPhysicalDeviceGroupCount;
     check_pPhysicalDeviceGroupCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -14211,6 +14857,7 @@ VkResult VkEncoder::vkEnumeratePhysicalDeviceGroupsKHR(
             transform_fromhost_VkPhysicalDeviceGroupProperties(mImpl->resources(), (VkPhysicalDeviceGroupProperties*)(pPhysicalDeviceGroupProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroupsKHR returnUnmarshal");
     VkResult vkEnumeratePhysicalDeviceGroupsKHR_VkResult_return = (VkResult)0;
     stream->read(&vkEnumeratePhysicalDeviceGroupsKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14227,6 +14874,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalBufferPropertiesKHR(
     const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo,
     VkExternalBufferProperties* pExternalBufferProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferPropertiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceExternalBufferPropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14265,12 +14913,14 @@ void VkEncoder::vkGetPhysicalDeviceExternalBufferPropertiesKHR(
     stream->write((uint64_t*)&cgen_var_1018, 1 * 8);
     marshal_VkPhysicalDeviceExternalBufferInfo(stream, (VkPhysicalDeviceExternalBufferInfo*)(local_pExternalBufferInfo));
     marshal_VkExternalBufferProperties(stream, (VkExternalBufferProperties*)(pExternalBufferProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferPropertiesKHR readParams");
     unmarshal_VkExternalBufferProperties(stream, (VkExternalBufferProperties*)(pExternalBufferProperties));
     if (pExternalBufferProperties)
     {
         mImpl->resources()->transformImpl_VkExternalBufferProperties_fromhost(pExternalBufferProperties, 1);
         transform_fromhost_VkExternalBufferProperties(mImpl->resources(), (VkExternalBufferProperties*)(pExternalBufferProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferPropertiesKHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalBufferPropertiesKHR");;
 }
 
@@ -14283,6 +14933,7 @@ VkResult VkEncoder::vkGetMemoryWin32HandleKHR(
     const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleKHR encode");
     mImpl->log("start vkGetMemoryWin32HandleKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14320,7 +14971,9 @@ VkResult VkEncoder::vkGetMemoryWin32HandleKHR(
     stream->write((uint64_t*)&cgen_var_1020, 1 * 8);
     marshal_VkMemoryGetWin32HandleInfoKHR(stream, (VkMemoryGetWin32HandleInfoKHR*)(local_pGetWin32HandleInfo));
     stream->write((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleKHR readParams");
     stream->read((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleKHR returnUnmarshal");
     VkResult vkGetMemoryWin32HandleKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryWin32HandleKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14336,6 +14989,7 @@ VkResult VkEncoder::vkGetMemoryWin32HandlePropertiesKHR(
     HANDLE handle,
     VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandlePropertiesKHR encode");
     mImpl->log("start vkGetMemoryWin32HandlePropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14368,11 +15022,13 @@ VkResult VkEncoder::vkGetMemoryWin32HandlePropertiesKHR(
     stream->write((VkExternalMemoryHandleTypeFlagBits*)&local_handleType, sizeof(VkExternalMemoryHandleTypeFlagBits));
     stream->write((HANDLE*)&local_handle, sizeof(HANDLE));
     marshal_VkMemoryWin32HandlePropertiesKHR(stream, (VkMemoryWin32HandlePropertiesKHR*)(pMemoryWin32HandleProperties));
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandlePropertiesKHR readParams");
     unmarshal_VkMemoryWin32HandlePropertiesKHR(stream, (VkMemoryWin32HandlePropertiesKHR*)(pMemoryWin32HandleProperties));
     if (pMemoryWin32HandleProperties)
     {
         transform_fromhost_VkMemoryWin32HandlePropertiesKHR(mImpl->resources(), (VkMemoryWin32HandlePropertiesKHR*)(pMemoryWin32HandleProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandlePropertiesKHR returnUnmarshal");
     VkResult vkGetMemoryWin32HandlePropertiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryWin32HandlePropertiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14389,6 +15045,7 @@ VkResult VkEncoder::vkGetMemoryFdKHR(
     const VkMemoryGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryFdKHR encode");
     mImpl->log("start vkGetMemoryFdKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14426,7 +15083,9 @@ VkResult VkEncoder::vkGetMemoryFdKHR(
     stream->write((uint64_t*)&cgen_var_1024, 1 * 8);
     marshal_VkMemoryGetFdInfoKHR(stream, (VkMemoryGetFdInfoKHR*)(local_pGetFdInfo));
     stream->write((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetMemoryFdKHR readParams");
     stream->read((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetMemoryFdKHR returnUnmarshal");
     VkResult vkGetMemoryFdKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryFdKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14442,6 +15101,7 @@ VkResult VkEncoder::vkGetMemoryFdPropertiesKHR(
     int fd,
     VkMemoryFdPropertiesKHR* pMemoryFdProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryFdPropertiesKHR encode");
     mImpl->log("start vkGetMemoryFdPropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14474,11 +15134,13 @@ VkResult VkEncoder::vkGetMemoryFdPropertiesKHR(
     stream->write((VkExternalMemoryHandleTypeFlagBits*)&local_handleType, sizeof(VkExternalMemoryHandleTypeFlagBits));
     stream->write((int*)&local_fd, sizeof(int));
     marshal_VkMemoryFdPropertiesKHR(stream, (VkMemoryFdPropertiesKHR*)(pMemoryFdProperties));
+    AEMU_SCOPED_TRACE("vkGetMemoryFdPropertiesKHR readParams");
     unmarshal_VkMemoryFdPropertiesKHR(stream, (VkMemoryFdPropertiesKHR*)(pMemoryFdProperties));
     if (pMemoryFdProperties)
     {
         transform_fromhost_VkMemoryFdPropertiesKHR(mImpl->resources(), (VkMemoryFdPropertiesKHR*)(pMemoryFdProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetMemoryFdPropertiesKHR returnUnmarshal");
     VkResult vkGetMemoryFdPropertiesKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryFdPropertiesKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14497,6 +15159,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
     const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
     VkExternalSemaphoreProperties* pExternalSemaphoreProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14534,11 +15197,13 @@ void VkEncoder::vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
     stream->write((uint64_t*)&cgen_var_1028, 1 * 8);
     marshal_VkPhysicalDeviceExternalSemaphoreInfo(stream, (VkPhysicalDeviceExternalSemaphoreInfo*)(local_pExternalSemaphoreInfo));
     marshal_VkExternalSemaphoreProperties(stream, (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR readParams");
     unmarshal_VkExternalSemaphoreProperties(stream, (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
     if (pExternalSemaphoreProperties)
     {
         transform_fromhost_VkExternalSemaphoreProperties(mImpl->resources(), (VkExternalSemaphoreProperties*)(pExternalSemaphoreProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");;
 }
 
@@ -14550,6 +15215,7 @@ VkResult VkEncoder::vkImportSemaphoreWin32HandleKHR(
     VkDevice device,
     const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportSemaphoreWin32HandleKHR encode");
     mImpl->log("start vkImportSemaphoreWin32HandleKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14585,6 +15251,8 @@ VkResult VkEncoder::vkImportSemaphoreWin32HandleKHR(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1030, 1);
     stream->write((uint64_t*)&cgen_var_1030, 1 * 8);
     marshal_VkImportSemaphoreWin32HandleInfoKHR(stream, (VkImportSemaphoreWin32HandleInfoKHR*)(local_pImportSemaphoreWin32HandleInfo));
+    AEMU_SCOPED_TRACE("vkImportSemaphoreWin32HandleKHR readParams");
+    AEMU_SCOPED_TRACE("vkImportSemaphoreWin32HandleKHR returnUnmarshal");
     VkResult vkImportSemaphoreWin32HandleKHR_VkResult_return = (VkResult)0;
     stream->read(&vkImportSemaphoreWin32HandleKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14599,6 +15267,7 @@ VkResult VkEncoder::vkGetSemaphoreWin32HandleKHR(
     const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetSemaphoreWin32HandleKHR encode");
     mImpl->log("start vkGetSemaphoreWin32HandleKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14636,7 +15305,9 @@ VkResult VkEncoder::vkGetSemaphoreWin32HandleKHR(
     stream->write((uint64_t*)&cgen_var_1032, 1 * 8);
     marshal_VkSemaphoreGetWin32HandleInfoKHR(stream, (VkSemaphoreGetWin32HandleInfoKHR*)(local_pGetWin32HandleInfo));
     stream->write((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetSemaphoreWin32HandleKHR readParams");
     stream->read((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetSemaphoreWin32HandleKHR returnUnmarshal");
     VkResult vkGetSemaphoreWin32HandleKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetSemaphoreWin32HandleKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14652,6 +15323,7 @@ VkResult VkEncoder::vkImportSemaphoreFdKHR(
     VkDevice device,
     const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportSemaphoreFdKHR encode");
     mImpl->log("start vkImportSemaphoreFdKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14687,6 +15359,8 @@ VkResult VkEncoder::vkImportSemaphoreFdKHR(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1034, 1);
     stream->write((uint64_t*)&cgen_var_1034, 1 * 8);
     marshal_VkImportSemaphoreFdInfoKHR(stream, (VkImportSemaphoreFdInfoKHR*)(local_pImportSemaphoreFdInfo));
+    AEMU_SCOPED_TRACE("vkImportSemaphoreFdKHR readParams");
+    AEMU_SCOPED_TRACE("vkImportSemaphoreFdKHR returnUnmarshal");
     VkResult vkImportSemaphoreFdKHR_VkResult_return = (VkResult)0;
     stream->read(&vkImportSemaphoreFdKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14701,6 +15375,7 @@ VkResult VkEncoder::vkGetSemaphoreFdKHR(
     const VkSemaphoreGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetSemaphoreFdKHR encode");
     mImpl->log("start vkGetSemaphoreFdKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14738,7 +15413,9 @@ VkResult VkEncoder::vkGetSemaphoreFdKHR(
     stream->write((uint64_t*)&cgen_var_1036, 1 * 8);
     marshal_VkSemaphoreGetFdInfoKHR(stream, (VkSemaphoreGetFdInfoKHR*)(local_pGetFdInfo));
     stream->write((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetSemaphoreFdKHR readParams");
     stream->read((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetSemaphoreFdKHR returnUnmarshal");
     VkResult vkGetSemaphoreFdKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetSemaphoreFdKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -14758,6 +15435,7 @@ void VkEncoder::vkCmdPushDescriptorSetKHR(
     uint32_t descriptorWriteCount,
     const VkWriteDescriptorSet* pDescriptorWrites)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetKHR encode");
     mImpl->log("start vkCmdPushDescriptorSetKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14825,6 +15503,8 @@ void VkEncoder::vkCmdPushDescriptorSetKHR(
     {
         marshal_VkWriteDescriptorSet(stream, (VkWriteDescriptorSet*)(local_pDescriptorWrites + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetKHR returnUnmarshal");
     mImpl->log("finish vkCmdPushDescriptorSetKHR");;
 }
 
@@ -14835,6 +15515,7 @@ void VkEncoder::vkCmdPushDescriptorSetWithTemplateKHR(
     uint32_t set,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetWithTemplateKHR encode");
     mImpl->log("start vkCmdPushDescriptorSetWithTemplateKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14897,6 +15578,8 @@ void VkEncoder::vkCmdPushDescriptorSetWithTemplateKHR(
     {
         stream->write((void*)local_pData, sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetWithTemplateKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetWithTemplateKHR returnUnmarshal");
     mImpl->log("finish vkCmdPushDescriptorSetWithTemplateKHR");;
 }
 
@@ -14912,6 +15595,7 @@ VkResult VkEncoder::vkCreateDescriptorUpdateTemplateKHR(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplateKHR encode");
     mImpl->log("start vkCreateDescriptorUpdateTemplateKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -14981,14 +15665,19 @@ VkResult VkEncoder::vkCreateDescriptorUpdateTemplateKHR(
     stream->handleMapping()->mapHandles_VkDescriptorUpdateTemplate_u64(pDescriptorUpdateTemplate, &cgen_var_1054, 1);
     stream->write((uint64_t*)&cgen_var_1054, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplateKHR readParams");
+    stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1055;
     stream->read((uint64_t*)&cgen_var_1055, 8);
     stream->handleMapping()->mapHandles_u64_VkDescriptorUpdateTemplate(&cgen_var_1055, (VkDescriptorUpdateTemplate*)pDescriptorUpdateTemplate, 1);
+    stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplateKHR returnUnmarshal");
     VkResult vkCreateDescriptorUpdateTemplateKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDescriptorUpdateTemplateKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
     stream->clearPool();
     pool->freeAll();
+    mImpl->resources()->on_vkCreateDescriptorUpdateTemplateKHR(this, vkCreateDescriptorUpdateTemplateKHR_VkResult_return, device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
     mImpl->log("finish vkCreateDescriptorUpdateTemplateKHR");;
     return vkCreateDescriptorUpdateTemplateKHR_VkResult_return;
 }
@@ -14998,6 +15687,7 @@ void VkEncoder::vkDestroyDescriptorUpdateTemplateKHR(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplateKHR encode");
     mImpl->log("start vkDestroyDescriptorUpdateTemplateKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15054,6 +15744,9 @@ void VkEncoder::vkDestroyDescriptorUpdateTemplateKHR(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplateKHR readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplateKHR returnUnmarshal");
+    resources->destroyMapping()->mapHandles_VkDescriptorUpdateTemplate((VkDescriptorUpdateTemplate*)&descriptorUpdateTemplate);
     mImpl->log("finish vkDestroyDescriptorUpdateTemplateKHR");;
 }
 
@@ -15063,6 +15756,7 @@ void VkEncoder::vkUpdateDescriptorSetWithTemplateKHR(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateKHR encode");
     mImpl->log("start vkUpdateDescriptorSetWithTemplateKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15121,6 +15815,8 @@ void VkEncoder::vkUpdateDescriptorSetWithTemplateKHR(
     {
         stream->write((void*)local_pData, sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateKHR readParams");
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateKHR returnUnmarshal");
     mImpl->log("finish vkUpdateDescriptorSetWithTemplateKHR");;
 }
 
@@ -15132,6 +15828,7 @@ VkResult VkEncoder::vkCreateRenderPass2KHR(
     const VkAllocationCallbacks* pAllocator,
     VkRenderPass* pRenderPass)
 {
+    AEMU_SCOPED_TRACE("vkCreateRenderPass2KHR encode");
     mImpl->log("start vkCreateRenderPass2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15201,9 +15898,11 @@ VkResult VkEncoder::vkCreateRenderPass2KHR(
     stream->handleMapping()->mapHandles_VkRenderPass_u64(pRenderPass, &cgen_var_1075, 1);
     stream->write((uint64_t*)&cgen_var_1075, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateRenderPass2KHR readParams");
     uint64_t cgen_var_1076;
     stream->read((uint64_t*)&cgen_var_1076, 8);
     stream->handleMapping()->mapHandles_u64_VkRenderPass(&cgen_var_1076, (VkRenderPass*)pRenderPass, 1);
+    AEMU_SCOPED_TRACE("vkCreateRenderPass2KHR returnUnmarshal");
     VkResult vkCreateRenderPass2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateRenderPass2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15218,6 +15917,7 @@ void VkEncoder::vkCmdBeginRenderPass2KHR(
     const VkRenderPassBeginInfo* pRenderPassBegin,
     const VkSubpassBeginInfoKHR* pSubpassBeginInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass2KHR encode");
     mImpl->log("start vkCmdBeginRenderPass2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15266,6 +15966,8 @@ void VkEncoder::vkCmdBeginRenderPass2KHR(
     stream->write((uint64_t*)&cgen_var_1078, 1 * 8);
     marshal_VkRenderPassBeginInfo(stream, (VkRenderPassBeginInfo*)(local_pRenderPassBegin));
     marshal_VkSubpassBeginInfoKHR(stream, (VkSubpassBeginInfoKHR*)(local_pSubpassBeginInfo));
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass2KHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass2KHR returnUnmarshal");
     mImpl->log("finish vkCmdBeginRenderPass2KHR");;
 }
 
@@ -15274,6 +15976,7 @@ void VkEncoder::vkCmdNextSubpass2KHR(
     const VkSubpassBeginInfoKHR* pSubpassBeginInfo,
     const VkSubpassEndInfoKHR* pSubpassEndInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass2KHR encode");
     mImpl->log("start vkCmdNextSubpass2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15322,6 +16025,8 @@ void VkEncoder::vkCmdNextSubpass2KHR(
     stream->write((uint64_t*)&cgen_var_1080, 1 * 8);
     marshal_VkSubpassBeginInfoKHR(stream, (VkSubpassBeginInfoKHR*)(local_pSubpassBeginInfo));
     marshal_VkSubpassEndInfoKHR(stream, (VkSubpassEndInfoKHR*)(local_pSubpassEndInfo));
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass2KHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass2KHR returnUnmarshal");
     mImpl->log("finish vkCmdNextSubpass2KHR");;
 }
 
@@ -15329,6 +16034,7 @@ void VkEncoder::vkCmdEndRenderPass2KHR(
     VkCommandBuffer commandBuffer,
     const VkSubpassEndInfoKHR* pSubpassEndInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass2KHR encode");
     mImpl->log("start vkCmdEndRenderPass2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15364,6 +16070,8 @@ void VkEncoder::vkCmdEndRenderPass2KHR(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1082, 1);
     stream->write((uint64_t*)&cgen_var_1082, 1 * 8);
     marshal_VkSubpassEndInfoKHR(stream, (VkSubpassEndInfoKHR*)(local_pSubpassEndInfo));
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass2KHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass2KHR returnUnmarshal");
     mImpl->log("finish vkCmdEndRenderPass2KHR");;
 }
 
@@ -15373,6 +16081,7 @@ VkResult VkEncoder::vkGetSwapchainStatusKHR(
     VkDevice device,
     VkSwapchainKHR swapchain)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainStatusKHR encode");
     mImpl->log("start vkGetSwapchainStatusKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15403,6 +16112,8 @@ VkResult VkEncoder::vkGetSwapchainStatusKHR(
     uint64_t cgen_var_1086;
     stream->handleMapping()->mapHandles_VkSwapchainKHR_u64(&local_swapchain, &cgen_var_1086, 1);
     stream->write((uint64_t*)&cgen_var_1086, 1 * 8);
+    AEMU_SCOPED_TRACE("vkGetSwapchainStatusKHR readParams");
+    AEMU_SCOPED_TRACE("vkGetSwapchainStatusKHR returnUnmarshal");
     VkResult vkGetSwapchainStatusKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetSwapchainStatusKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15419,6 +16130,7 @@ void VkEncoder::vkGetPhysicalDeviceExternalFencePropertiesKHR(
     const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
     VkExternalFenceProperties* pExternalFenceProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFencePropertiesKHR encode");
     mImpl->log("start vkGetPhysicalDeviceExternalFencePropertiesKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15456,11 +16168,13 @@ void VkEncoder::vkGetPhysicalDeviceExternalFencePropertiesKHR(
     stream->write((uint64_t*)&cgen_var_1088, 1 * 8);
     marshal_VkPhysicalDeviceExternalFenceInfo(stream, (VkPhysicalDeviceExternalFenceInfo*)(local_pExternalFenceInfo));
     marshal_VkExternalFenceProperties(stream, (VkExternalFenceProperties*)(pExternalFenceProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFencePropertiesKHR readParams");
     unmarshal_VkExternalFenceProperties(stream, (VkExternalFenceProperties*)(pExternalFenceProperties));
     if (pExternalFenceProperties)
     {
         transform_fromhost_VkExternalFenceProperties(mImpl->resources(), (VkExternalFenceProperties*)(pExternalFenceProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFencePropertiesKHR returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceExternalFencePropertiesKHR");;
 }
 
@@ -15472,6 +16186,7 @@ VkResult VkEncoder::vkImportFenceWin32HandleKHR(
     VkDevice device,
     const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportFenceWin32HandleKHR encode");
     mImpl->log("start vkImportFenceWin32HandleKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15507,6 +16222,8 @@ VkResult VkEncoder::vkImportFenceWin32HandleKHR(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1090, 1);
     stream->write((uint64_t*)&cgen_var_1090, 1 * 8);
     marshal_VkImportFenceWin32HandleInfoKHR(stream, (VkImportFenceWin32HandleInfoKHR*)(local_pImportFenceWin32HandleInfo));
+    AEMU_SCOPED_TRACE("vkImportFenceWin32HandleKHR readParams");
+    AEMU_SCOPED_TRACE("vkImportFenceWin32HandleKHR returnUnmarshal");
     VkResult vkImportFenceWin32HandleKHR_VkResult_return = (VkResult)0;
     stream->read(&vkImportFenceWin32HandleKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15521,6 +16238,7 @@ VkResult VkEncoder::vkGetFenceWin32HandleKHR(
     const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceWin32HandleKHR encode");
     mImpl->log("start vkGetFenceWin32HandleKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15558,7 +16276,9 @@ VkResult VkEncoder::vkGetFenceWin32HandleKHR(
     stream->write((uint64_t*)&cgen_var_1092, 1 * 8);
     marshal_VkFenceGetWin32HandleInfoKHR(stream, (VkFenceGetWin32HandleInfoKHR*)(local_pGetWin32HandleInfo));
     stream->write((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetFenceWin32HandleKHR readParams");
     stream->read((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetFenceWin32HandleKHR returnUnmarshal");
     VkResult vkGetFenceWin32HandleKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetFenceWin32HandleKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15574,6 +16294,7 @@ VkResult VkEncoder::vkImportFenceFdKHR(
     VkDevice device,
     const VkImportFenceFdInfoKHR* pImportFenceFdInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportFenceFdKHR encode");
     mImpl->log("start vkImportFenceFdKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15609,6 +16330,8 @@ VkResult VkEncoder::vkImportFenceFdKHR(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1094, 1);
     stream->write((uint64_t*)&cgen_var_1094, 1 * 8);
     marshal_VkImportFenceFdInfoKHR(stream, (VkImportFenceFdInfoKHR*)(local_pImportFenceFdInfo));
+    AEMU_SCOPED_TRACE("vkImportFenceFdKHR readParams");
+    AEMU_SCOPED_TRACE("vkImportFenceFdKHR returnUnmarshal");
     VkResult vkImportFenceFdKHR_VkResult_return = (VkResult)0;
     stream->read(&vkImportFenceFdKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15623,6 +16346,7 @@ VkResult VkEncoder::vkGetFenceFdKHR(
     const VkFenceGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceFdKHR encode");
     mImpl->log("start vkGetFenceFdKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15660,7 +16384,9 @@ VkResult VkEncoder::vkGetFenceFdKHR(
     stream->write((uint64_t*)&cgen_var_1096, 1 * 8);
     marshal_VkFenceGetFdInfoKHR(stream, (VkFenceGetFdInfoKHR*)(local_pGetFdInfo));
     stream->write((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetFenceFdKHR readParams");
     stream->read((int*)pFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetFenceFdKHR returnUnmarshal");
     VkResult vkGetFenceFdKHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetFenceFdKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15679,6 +16405,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilities2KHR(
     const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo,
     VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceCapabilities2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15716,11 +16443,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilities2KHR(
     stream->write((uint64_t*)&cgen_var_1098, 1 * 8);
     marshal_VkPhysicalDeviceSurfaceInfo2KHR(stream, (VkPhysicalDeviceSurfaceInfo2KHR*)(local_pSurfaceInfo));
     marshal_VkSurfaceCapabilities2KHR(stream, (VkSurfaceCapabilities2KHR*)(pSurfaceCapabilities));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2KHR readParams");
     unmarshal_VkSurfaceCapabilities2KHR(stream, (VkSurfaceCapabilities2KHR*)(pSurfaceCapabilities));
     if (pSurfaceCapabilities)
     {
         transform_fromhost_VkSurfaceCapabilities2KHR(mImpl->resources(), (VkSurfaceCapabilities2KHR*)(pSurfaceCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2KHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceCapabilities2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15736,6 +16465,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormats2KHR(
     uint32_t* pSurfaceFormatCount,
     VkSurfaceFormat2KHR* pSurfaceFormats)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormats2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceFormats2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15805,6 +16535,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormats2KHR(
             marshal_VkSurfaceFormat2KHR(stream, (VkSurfaceFormat2KHR*)(pSurfaceFormats + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormats2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSurfaceFormatCount;
     check_pSurfaceFormatCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -15837,6 +16568,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceFormats2KHR(
             transform_fromhost_VkSurfaceFormat2KHR(mImpl->resources(), (VkSurfaceFormat2KHR*)(pSurfaceFormats + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormats2KHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceFormats2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceFormats2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15855,6 +16587,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceDisplayProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -15911,6 +16644,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayProperties2KHR(
             marshal_VkDisplayProperties2KHR(stream, (VkDisplayProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayProperties2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -15943,6 +16677,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayProperties2KHR(
             transform_fromhost_VkDisplayProperties2KHR(mImpl->resources(), (VkDisplayProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayProperties2KHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceDisplayProperties2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceDisplayProperties2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -15957,6 +16692,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlaneProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayPlaneProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlaneProperties2KHR encode");
     mImpl->log("start vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16013,6 +16749,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlaneProperties2KHR(
             marshal_VkDisplayPlaneProperties2KHR(stream, (VkDisplayPlaneProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlaneProperties2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -16045,6 +16782,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceDisplayPlaneProperties2KHR(
             transform_fromhost_VkDisplayPlaneProperties2KHR(mImpl->resources(), (VkDisplayPlaneProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlaneProperties2KHR returnUnmarshal");
     VkResult vkGetPhysicalDeviceDisplayPlaneProperties2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceDisplayPlaneProperties2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16060,6 +16798,7 @@ VkResult VkEncoder::vkGetDisplayModeProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayModeProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayModeProperties2KHR encode");
     mImpl->log("start vkGetDisplayModeProperties2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16124,6 +16863,7 @@ VkResult VkEncoder::vkGetDisplayModeProperties2KHR(
             marshal_VkDisplayModeProperties2KHR(stream, (VkDisplayModeProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayModeProperties2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPropertyCount;
     check_pPropertyCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -16156,6 +16896,7 @@ VkResult VkEncoder::vkGetDisplayModeProperties2KHR(
             transform_fromhost_VkDisplayModeProperties2KHR(mImpl->resources(), (VkDisplayModeProperties2KHR*)(pProperties + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayModeProperties2KHR returnUnmarshal");
     VkResult vkGetDisplayModeProperties2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDisplayModeProperties2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16170,6 +16911,7 @@ VkResult VkEncoder::vkGetDisplayPlaneCapabilities2KHR(
     const VkDisplayPlaneInfo2KHR* pDisplayPlaneInfo,
     VkDisplayPlaneCapabilities2KHR* pCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilities2KHR encode");
     mImpl->log("start vkGetDisplayPlaneCapabilities2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16207,11 +16949,13 @@ VkResult VkEncoder::vkGetDisplayPlaneCapabilities2KHR(
     stream->write((uint64_t*)&cgen_var_1134, 1 * 8);
     marshal_VkDisplayPlaneInfo2KHR(stream, (VkDisplayPlaneInfo2KHR*)(local_pDisplayPlaneInfo));
     marshal_VkDisplayPlaneCapabilities2KHR(stream, (VkDisplayPlaneCapabilities2KHR*)(pCapabilities));
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilities2KHR readParams");
     unmarshal_VkDisplayPlaneCapabilities2KHR(stream, (VkDisplayPlaneCapabilities2KHR*)(pCapabilities));
     if (pCapabilities)
     {
         transform_fromhost_VkDisplayPlaneCapabilities2KHR(mImpl->resources(), (VkDisplayPlaneCapabilities2KHR*)(pCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilities2KHR returnUnmarshal");
     VkResult vkGetDisplayPlaneCapabilities2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkGetDisplayPlaneCapabilities2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16234,6 +16978,7 @@ void VkEncoder::vkGetImageMemoryRequirements2KHR(
     const VkImageMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2KHR encode");
     mImpl->log("start vkGetImageMemoryRequirements2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16271,11 +17016,13 @@ void VkEncoder::vkGetImageMemoryRequirements2KHR(
     stream->write((uint64_t*)&cgen_var_1136, 1 * 8);
     marshal_VkImageMemoryRequirementsInfo2(stream, (VkImageMemoryRequirementsInfo2*)(local_pInfo));
     marshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2KHR readParams");
     unmarshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements2(mImpl->resources(), (VkMemoryRequirements2*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2KHR returnUnmarshal");
     mImpl->log("finish vkGetImageMemoryRequirements2KHR");;
 }
 
@@ -16284,6 +17031,7 @@ void VkEncoder::vkGetBufferMemoryRequirements2KHR(
     const VkBufferMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2KHR encode");
     mImpl->log("start vkGetBufferMemoryRequirements2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16321,11 +17069,13 @@ void VkEncoder::vkGetBufferMemoryRequirements2KHR(
     stream->write((uint64_t*)&cgen_var_1138, 1 * 8);
     marshal_VkBufferMemoryRequirementsInfo2(stream, (VkBufferMemoryRequirementsInfo2*)(local_pInfo));
     marshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2KHR readParams");
     unmarshal_VkMemoryRequirements2(stream, (VkMemoryRequirements2*)(pMemoryRequirements));
     if (pMemoryRequirements)
     {
         transform_fromhost_VkMemoryRequirements2(mImpl->resources(), (VkMemoryRequirements2*)(pMemoryRequirements));
     }
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2KHR returnUnmarshal");
     mImpl->log("finish vkGetBufferMemoryRequirements2KHR");;
 }
 
@@ -16335,6 +17085,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2KHR(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2KHR encode");
     mImpl->log("start vkGetImageSparseMemoryRequirements2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16404,6 +17155,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2KHR(
             marshal_VkSparseImageMemoryRequirements2(stream, (VkSparseImageMemoryRequirements2*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2KHR readParams");
     // WARNING PTR CHECK
     uint32_t* check_pSparseMemoryRequirementCount;
     check_pSparseMemoryRequirementCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -16436,6 +17188,7 @@ void VkEncoder::vkGetImageSparseMemoryRequirements2KHR(
             transform_fromhost_VkSparseImageMemoryRequirements2(mImpl->resources(), (VkSparseImageMemoryRequirements2*)(pSparseMemoryRequirements + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2KHR returnUnmarshal");
     mImpl->log("finish vkGetImageSparseMemoryRequirements2KHR");;
 }
 
@@ -16449,6 +17202,7 @@ VkResult VkEncoder::vkCreateSamplerYcbcrConversionKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSamplerYcbcrConversion* pYcbcrConversion)
 {
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversionKHR encode");
     mImpl->log("start vkCreateSamplerYcbcrConversionKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16518,9 +17272,13 @@ VkResult VkEncoder::vkCreateSamplerYcbcrConversionKHR(
     stream->handleMapping()->mapHandles_VkSamplerYcbcrConversion_u64(pYcbcrConversion, &cgen_var_1152, 1);
     stream->write((uint64_t*)&cgen_var_1152, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversionKHR readParams");
+    stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1153;
     stream->read((uint64_t*)&cgen_var_1153, 8);
     stream->handleMapping()->mapHandles_u64_VkSamplerYcbcrConversion(&cgen_var_1153, (VkSamplerYcbcrConversion*)pYcbcrConversion, 1);
+    stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversionKHR returnUnmarshal");
     VkResult vkCreateSamplerYcbcrConversionKHR_VkResult_return = (VkResult)0;
     stream->read(&vkCreateSamplerYcbcrConversionKHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16535,6 +17293,7 @@ void VkEncoder::vkDestroySamplerYcbcrConversionKHR(
     VkSamplerYcbcrConversion ycbcrConversion,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversionKHR encode");
     mImpl->log("start vkDestroySamplerYcbcrConversionKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16591,6 +17350,9 @@ void VkEncoder::vkDestroySamplerYcbcrConversionKHR(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversionKHR readParams");
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversionKHR returnUnmarshal");
+    resources->destroyMapping()->mapHandles_VkSamplerYcbcrConversion((VkSamplerYcbcrConversion*)&ycbcrConversion);
     mImpl->log("finish vkDestroySamplerYcbcrConversionKHR");;
 }
 
@@ -16601,6 +17363,7 @@ VkResult VkEncoder::vkBindBufferMemory2KHR(
     uint32_t bindInfoCount,
     const VkBindBufferMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2KHR encode");
     mImpl->log("start vkBindBufferMemory2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16652,6 +17415,8 @@ VkResult VkEncoder::vkBindBufferMemory2KHR(
     {
         marshal_VkBindBufferMemoryInfo(stream, (VkBindBufferMemoryInfo*)(local_pBindInfos + i));
     }
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2KHR readParams");
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2KHR returnUnmarshal");
     VkResult vkBindBufferMemory2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkBindBufferMemory2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16666,6 +17431,7 @@ VkResult VkEncoder::vkBindImageMemory2KHR(
     uint32_t bindInfoCount,
     const VkBindImageMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory2KHR encode");
     mImpl->log("start vkBindImageMemory2KHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16717,6 +17483,8 @@ VkResult VkEncoder::vkBindImageMemory2KHR(
     {
         marshal_VkBindImageMemoryInfo(stream, (VkBindImageMemoryInfo*)(local_pBindInfos + i));
     }
+    AEMU_SCOPED_TRACE("vkBindImageMemory2KHR readParams");
+    AEMU_SCOPED_TRACE("vkBindImageMemory2KHR returnUnmarshal");
     VkResult vkBindImageMemory2KHR_VkResult_return = (VkResult)0;
     stream->read(&vkBindImageMemory2KHR_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16733,6 +17501,7 @@ void VkEncoder::vkGetDescriptorSetLayoutSupportKHR(
     const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
     VkDescriptorSetLayoutSupport* pSupport)
 {
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupportKHR encode");
     mImpl->log("start vkGetDescriptorSetLayoutSupportKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16770,11 +17539,13 @@ void VkEncoder::vkGetDescriptorSetLayoutSupportKHR(
     stream->write((uint64_t*)&cgen_var_1165, 1 * 8);
     marshal_VkDescriptorSetLayoutCreateInfo(stream, (VkDescriptorSetLayoutCreateInfo*)(local_pCreateInfo));
     marshal_VkDescriptorSetLayoutSupport(stream, (VkDescriptorSetLayoutSupport*)(pSupport));
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupportKHR readParams");
     unmarshal_VkDescriptorSetLayoutSupport(stream, (VkDescriptorSetLayoutSupport*)(pSupport));
     if (pSupport)
     {
         transform_fromhost_VkDescriptorSetLayoutSupport(mImpl->resources(), (VkDescriptorSetLayoutSupport*)(pSupport));
     }
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupportKHR returnUnmarshal");
     mImpl->log("finish vkGetDescriptorSetLayoutSupportKHR");;
 }
 
@@ -16789,6 +17560,7 @@ void VkEncoder::vkCmdDrawIndirectCountKHR(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountKHR encode");
     mImpl->log("start vkCmdDrawIndirectCountKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16843,6 +17615,8 @@ void VkEncoder::vkCmdDrawIndirectCountKHR(
     stream->write((VkDeviceSize*)&local_countBufferOffset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_maxDrawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountKHR returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndirectCountKHR");;
 }
 
@@ -16855,6 +17629,7 @@ void VkEncoder::vkCmdDrawIndexedIndirectCountKHR(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountKHR encode");
     mImpl->log("start vkCmdDrawIndexedIndirectCountKHR");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16909,6 +17684,8 @@ void VkEncoder::vkCmdDrawIndexedIndirectCountKHR(
     stream->write((VkDeviceSize*)&local_countBufferOffset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_maxDrawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountKHR readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountKHR returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndexedIndirectCountKHR");;
 }
 
@@ -16922,6 +17699,7 @@ VkResult VkEncoder::vkGetSwapchainGrallocUsageANDROID(
     VkImageUsageFlags imageUsage,
     int* grallocUsage)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainGrallocUsageANDROID encode");
     mImpl->log("start vkGetSwapchainGrallocUsageANDROID");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -16954,7 +17732,9 @@ VkResult VkEncoder::vkGetSwapchainGrallocUsageANDROID(
     stream->write((VkFormat*)&local_format, sizeof(VkFormat));
     stream->write((VkImageUsageFlags*)&local_imageUsage, sizeof(VkImageUsageFlags));
     stream->write((int*)grallocUsage, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetSwapchainGrallocUsageANDROID readParams");
     stream->read((int*)grallocUsage, sizeof(int));
+    AEMU_SCOPED_TRACE("vkGetSwapchainGrallocUsageANDROID returnUnmarshal");
     VkResult vkGetSwapchainGrallocUsageANDROID_VkResult_return = (VkResult)0;
     stream->read(&vkGetSwapchainGrallocUsageANDROID_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -16971,6 +17751,7 @@ VkResult VkEncoder::vkAcquireImageANDROID(
     VkSemaphore semaphore,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkAcquireImageANDROID encode");
     mImpl->log("start vkAcquireImageANDROID");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17022,6 +17803,8 @@ VkResult VkEncoder::vkAcquireImageANDROID(
     uint64_t cgen_var_1187;
     stream->handleMapping()->mapHandles_VkFence_u64(&local_fence, &cgen_var_1187, 1);
     stream->write((uint64_t*)&cgen_var_1187, 1 * 8);
+    AEMU_SCOPED_TRACE("vkAcquireImageANDROID readParams");
+    AEMU_SCOPED_TRACE("vkAcquireImageANDROID returnUnmarshal");
     VkResult vkAcquireImageANDROID_VkResult_return = (VkResult)0;
     stream->read(&vkAcquireImageANDROID_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17038,6 +17821,7 @@ VkResult VkEncoder::vkQueueSignalReleaseImageANDROID(
     VkImage image,
     int* pNativeFenceFd)
 {
+    AEMU_SCOPED_TRACE("vkQueueSignalReleaseImageANDROID encode");
     mImpl->log("start vkQueueSignalReleaseImageANDROID");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17106,7 +17890,9 @@ VkResult VkEncoder::vkQueueSignalReleaseImageANDROID(
     stream->handleMapping()->mapHandles_VkImage_u64(&local_image, &cgen_var_1195, 1);
     stream->write((uint64_t*)&cgen_var_1195, 1 * 8);
     stream->write((int*)pNativeFenceFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkQueueSignalReleaseImageANDROID readParams");
     stream->read((int*)pNativeFenceFd, sizeof(int));
+    AEMU_SCOPED_TRACE("vkQueueSignalReleaseImageANDROID returnUnmarshal");
     VkResult vkQueueSignalReleaseImageANDROID_VkResult_return = (VkResult)0;
     stream->read(&vkQueueSignalReleaseImageANDROID_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17124,6 +17910,7 @@ VkResult VkEncoder::vkCreateDebugReportCallbackEXT(
     const VkAllocationCallbacks* pAllocator,
     VkDebugReportCallbackEXT* pCallback)
 {
+    AEMU_SCOPED_TRACE("vkCreateDebugReportCallbackEXT encode");
     mImpl->log("start vkCreateDebugReportCallbackEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17193,11 +17980,13 @@ VkResult VkEncoder::vkCreateDebugReportCallbackEXT(
     stream->handleMapping()->mapHandles_VkDebugReportCallbackEXT_u64(pCallback, &cgen_var_1201, 1);
     stream->write((uint64_t*)&cgen_var_1201, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDebugReportCallbackEXT readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1202;
     stream->read((uint64_t*)&cgen_var_1202, 8);
     stream->handleMapping()->mapHandles_u64_VkDebugReportCallbackEXT(&cgen_var_1202, (VkDebugReportCallbackEXT*)pCallback, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDebugReportCallbackEXT returnUnmarshal");
     VkResult vkCreateDebugReportCallbackEXT_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDebugReportCallbackEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17212,6 +18001,7 @@ void VkEncoder::vkDestroyDebugReportCallbackEXT(
     VkDebugReportCallbackEXT callback,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDebugReportCallbackEXT encode");
     mImpl->log("start vkDestroyDebugReportCallbackEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17268,6 +18058,8 @@ void VkEncoder::vkDestroyDebugReportCallbackEXT(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDebugReportCallbackEXT readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDebugReportCallbackEXT returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDebugReportCallbackEXT((VkDebugReportCallbackEXT*)&callback);
     mImpl->log("finish vkDestroyDebugReportCallbackEXT");;
 }
@@ -17282,6 +18074,7 @@ void VkEncoder::vkDebugReportMessageEXT(
     const char* pLayerPrefix,
     const char* pMessage)
 {
+    AEMU_SCOPED_TRACE("vkDebugReportMessageEXT encode");
     mImpl->log("start vkDebugReportMessageEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17342,6 +18135,8 @@ void VkEncoder::vkDebugReportMessageEXT(
     stream->write((int32_t*)&local_messageCode, sizeof(int32_t));
     stream->putString(local_pLayerPrefix);
     stream->putString(local_pMessage);
+    AEMU_SCOPED_TRACE("vkDebugReportMessageEXT readParams");
+    AEMU_SCOPED_TRACE("vkDebugReportMessageEXT returnUnmarshal");
     mImpl->log("finish vkDebugReportMessageEXT");;
 }
 
@@ -17363,6 +18158,7 @@ VkResult VkEncoder::vkDebugMarkerSetObjectTagEXT(
     VkDevice device,
     const VkDebugMarkerObjectTagInfoEXT* pTagInfo)
 {
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectTagEXT encode");
     mImpl->log("start vkDebugMarkerSetObjectTagEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17398,6 +18194,8 @@ VkResult VkEncoder::vkDebugMarkerSetObjectTagEXT(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1214, 1);
     stream->write((uint64_t*)&cgen_var_1214, 1 * 8);
     marshal_VkDebugMarkerObjectTagInfoEXT(stream, (VkDebugMarkerObjectTagInfoEXT*)(local_pTagInfo));
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectTagEXT readParams");
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectTagEXT returnUnmarshal");
     VkResult vkDebugMarkerSetObjectTagEXT_VkResult_return = (VkResult)0;
     stream->read(&vkDebugMarkerSetObjectTagEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17411,6 +18209,7 @@ VkResult VkEncoder::vkDebugMarkerSetObjectNameEXT(
     VkDevice device,
     const VkDebugMarkerObjectNameInfoEXT* pNameInfo)
 {
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectNameEXT encode");
     mImpl->log("start vkDebugMarkerSetObjectNameEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17446,6 +18245,8 @@ VkResult VkEncoder::vkDebugMarkerSetObjectNameEXT(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1216, 1);
     stream->write((uint64_t*)&cgen_var_1216, 1 * 8);
     marshal_VkDebugMarkerObjectNameInfoEXT(stream, (VkDebugMarkerObjectNameInfoEXT*)(local_pNameInfo));
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectNameEXT readParams");
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectNameEXT returnUnmarshal");
     VkResult vkDebugMarkerSetObjectNameEXT_VkResult_return = (VkResult)0;
     stream->read(&vkDebugMarkerSetObjectNameEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17459,6 +18260,7 @@ void VkEncoder::vkCmdDebugMarkerBeginEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerBeginEXT encode");
     mImpl->log("start vkCmdDebugMarkerBeginEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17494,12 +18296,15 @@ void VkEncoder::vkCmdDebugMarkerBeginEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1218, 1);
     stream->write((uint64_t*)&cgen_var_1218, 1 * 8);
     marshal_VkDebugMarkerMarkerInfoEXT(stream, (VkDebugMarkerMarkerInfoEXT*)(local_pMarkerInfo));
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerBeginEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerBeginEXT returnUnmarshal");
     mImpl->log("finish vkCmdDebugMarkerBeginEXT");;
 }
 
 void VkEncoder::vkCmdDebugMarkerEndEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerEndEXT encode");
     mImpl->log("start vkCmdDebugMarkerEndEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17522,6 +18327,8 @@ void VkEncoder::vkCmdDebugMarkerEndEXT(
     uint64_t cgen_var_1220;
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1220, 1);
     stream->write((uint64_t*)&cgen_var_1220, 1 * 8);
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerEndEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerEndEXT returnUnmarshal");
     mImpl->log("finish vkCmdDebugMarkerEndEXT");;
 }
 
@@ -17529,6 +18336,7 @@ void VkEncoder::vkCmdDebugMarkerInsertEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerInsertEXT encode");
     mImpl->log("start vkCmdDebugMarkerInsertEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17564,6 +18372,8 @@ void VkEncoder::vkCmdDebugMarkerInsertEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1222, 1);
     stream->write((uint64_t*)&cgen_var_1222, 1 * 8);
     marshal_VkDebugMarkerMarkerInfoEXT(stream, (VkDebugMarkerMarkerInfoEXT*)(local_pMarkerInfo));
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerInsertEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerInsertEXT returnUnmarshal");
     mImpl->log("finish vkCmdDebugMarkerInsertEXT");;
 }
 
@@ -17582,6 +18392,7 @@ void VkEncoder::vkCmdDrawIndirectCountAMD(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountAMD encode");
     mImpl->log("start vkCmdDrawIndirectCountAMD");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17636,6 +18447,8 @@ void VkEncoder::vkCmdDrawIndirectCountAMD(
     stream->write((VkDeviceSize*)&local_countBufferOffset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_maxDrawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountAMD readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountAMD returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndirectCountAMD");;
 }
 
@@ -17648,6 +18461,7 @@ void VkEncoder::vkCmdDrawIndexedIndirectCountAMD(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountAMD encode");
     mImpl->log("start vkCmdDrawIndexedIndirectCountAMD");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17702,6 +18516,8 @@ void VkEncoder::vkCmdDrawIndexedIndirectCountAMD(
     stream->write((VkDeviceSize*)&local_countBufferOffset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_maxDrawCount, sizeof(uint32_t));
     stream->write((uint32_t*)&local_stride, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountAMD readParams");
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountAMD returnUnmarshal");
     mImpl->log("finish vkCmdDrawIndexedIndirectCountAMD");;
 }
 
@@ -17723,6 +18539,7 @@ VkResult VkEncoder::vkGetShaderInfoAMD(
     size_t* pInfoSize,
     void* pInfo)
 {
+    AEMU_SCOPED_TRACE("vkGetShaderInfoAMD encode");
     mImpl->log("start vkGetShaderInfoAMD");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17791,6 +18608,7 @@ VkResult VkEncoder::vkGetShaderInfoAMD(
     {
         stream->write((void*)pInfo, (*(pInfoSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetShaderInfoAMD readParams");
     // WARNING PTR CHECK
     size_t* check_pInfoSize;
     check_pInfoSize = (size_t*)(uintptr_t)stream->getBe64();
@@ -17813,6 +18631,7 @@ VkResult VkEncoder::vkGetShaderInfoAMD(
         }
         stream->read((void*)pInfo, (*(pInfoSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetShaderInfoAMD returnUnmarshal");
     VkResult vkGetShaderInfoAMD_VkResult_return = (VkResult)0;
     stream->read(&vkGetShaderInfoAMD_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17838,6 +18657,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceExternalImageFormatPropertiesNV(
     VkExternalMemoryHandleTypeFlagsNV externalHandleType,
     VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalImageFormatPropertiesNV encode");
     mImpl->log("start vkGetPhysicalDeviceExternalImageFormatPropertiesNV");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17886,11 +18706,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceExternalImageFormatPropertiesNV(
     stream->write((VkImageCreateFlags*)&local_flags, sizeof(VkImageCreateFlags));
     stream->write((VkExternalMemoryHandleTypeFlagsNV*)&local_externalHandleType, sizeof(VkExternalMemoryHandleTypeFlagsNV));
     marshal_VkExternalImageFormatPropertiesNV(stream, (VkExternalImageFormatPropertiesNV*)(pExternalImageFormatProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalImageFormatPropertiesNV readParams");
     unmarshal_VkExternalImageFormatPropertiesNV(stream, (VkExternalImageFormatPropertiesNV*)(pExternalImageFormatProperties));
     if (pExternalImageFormatProperties)
     {
         transform_fromhost_VkExternalImageFormatPropertiesNV(mImpl->resources(), (VkExternalImageFormatPropertiesNV*)(pExternalImageFormatProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalImageFormatPropertiesNV returnUnmarshal");
     VkResult vkGetPhysicalDeviceExternalImageFormatPropertiesNV_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceExternalImageFormatPropertiesNV_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17910,6 +18732,7 @@ VkResult VkEncoder::vkGetMemoryWin32HandleNV(
     VkExternalMemoryHandleTypeFlagsNV handleType,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleNV encode");
     mImpl->log("start vkGetMemoryWin32HandleNV");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -17947,7 +18770,9 @@ VkResult VkEncoder::vkGetMemoryWin32HandleNV(
     stream->write((uint64_t*)&cgen_var_1253, 1 * 8);
     stream->write((VkExternalMemoryHandleTypeFlagsNV*)&local_handleType, sizeof(VkExternalMemoryHandleTypeFlagsNV));
     stream->write((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleNV readParams");
     stream->read((HANDLE*)pHandle, sizeof(HANDLE));
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleNV returnUnmarshal");
     VkResult vkGetMemoryWin32HandleNV_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryWin32HandleNV_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -17969,6 +18794,7 @@ VkResult VkEncoder::vkCreateViSurfaceNN(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateViSurfaceNN encode");
     mImpl->log("start vkCreateViSurfaceNN");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18038,9 +18864,11 @@ VkResult VkEncoder::vkCreateViSurfaceNN(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_1259, 1);
     stream->write((uint64_t*)&cgen_var_1259, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateViSurfaceNN readParams");
     uint64_t cgen_var_1260;
     stream->read((uint64_t*)&cgen_var_1260, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_1260, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateViSurfaceNN returnUnmarshal");
     VkResult vkCreateViSurfaceNN_VkResult_return = (VkResult)0;
     stream->read(&vkCreateViSurfaceNN_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18060,6 +18888,7 @@ void VkEncoder::vkCmdBeginConditionalRenderingEXT(
     VkCommandBuffer commandBuffer,
     const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginConditionalRenderingEXT encode");
     mImpl->log("start vkCmdBeginConditionalRenderingEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18095,12 +18924,15 @@ void VkEncoder::vkCmdBeginConditionalRenderingEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1262, 1);
     stream->write((uint64_t*)&cgen_var_1262, 1 * 8);
     marshal_VkConditionalRenderingBeginInfoEXT(stream, (VkConditionalRenderingBeginInfoEXT*)(local_pConditionalRenderingBegin));
+    AEMU_SCOPED_TRACE("vkCmdBeginConditionalRenderingEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdBeginConditionalRenderingEXT returnUnmarshal");
     mImpl->log("finish vkCmdBeginConditionalRenderingEXT");;
 }
 
 void VkEncoder::vkCmdEndConditionalRenderingEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndConditionalRenderingEXT encode");
     mImpl->log("start vkCmdEndConditionalRenderingEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18123,6 +18955,8 @@ void VkEncoder::vkCmdEndConditionalRenderingEXT(
     uint64_t cgen_var_1264;
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1264, 1);
     stream->write((uint64_t*)&cgen_var_1264, 1 * 8);
+    AEMU_SCOPED_TRACE("vkCmdEndConditionalRenderingEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdEndConditionalRenderingEXT returnUnmarshal");
     mImpl->log("finish vkCmdEndConditionalRenderingEXT");;
 }
 
@@ -18132,6 +18966,7 @@ void VkEncoder::vkCmdProcessCommandsNVX(
     VkCommandBuffer commandBuffer,
     const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdProcessCommandsNVX encode");
     mImpl->log("start vkCmdProcessCommandsNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18167,6 +19002,8 @@ void VkEncoder::vkCmdProcessCommandsNVX(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1266, 1);
     stream->write((uint64_t*)&cgen_var_1266, 1 * 8);
     marshal_VkCmdProcessCommandsInfoNVX(stream, (VkCmdProcessCommandsInfoNVX*)(local_pProcessCommandsInfo));
+    AEMU_SCOPED_TRACE("vkCmdProcessCommandsNVX readParams");
+    AEMU_SCOPED_TRACE("vkCmdProcessCommandsNVX returnUnmarshal");
     mImpl->log("finish vkCmdProcessCommandsNVX");;
 }
 
@@ -18174,6 +19011,7 @@ void VkEncoder::vkCmdReserveSpaceForCommandsNVX(
     VkCommandBuffer commandBuffer,
     const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdReserveSpaceForCommandsNVX encode");
     mImpl->log("start vkCmdReserveSpaceForCommandsNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18209,6 +19047,8 @@ void VkEncoder::vkCmdReserveSpaceForCommandsNVX(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1268, 1);
     stream->write((uint64_t*)&cgen_var_1268, 1 * 8);
     marshal_VkCmdReserveSpaceForCommandsInfoNVX(stream, (VkCmdReserveSpaceForCommandsInfoNVX*)(local_pReserveSpaceInfo));
+    AEMU_SCOPED_TRACE("vkCmdReserveSpaceForCommandsNVX readParams");
+    AEMU_SCOPED_TRACE("vkCmdReserveSpaceForCommandsNVX returnUnmarshal");
     mImpl->log("finish vkCmdReserveSpaceForCommandsNVX");;
 }
 
@@ -18218,6 +19058,7 @@ VkResult VkEncoder::vkCreateIndirectCommandsLayoutNVX(
     const VkAllocationCallbacks* pAllocator,
     VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreateIndirectCommandsLayoutNVX encode");
     mImpl->log("start vkCreateIndirectCommandsLayoutNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18287,11 +19128,13 @@ VkResult VkEncoder::vkCreateIndirectCommandsLayoutNVX(
     stream->handleMapping()->mapHandles_VkIndirectCommandsLayoutNVX_u64(pIndirectCommandsLayout, &cgen_var_1274, 1);
     stream->write((uint64_t*)&cgen_var_1274, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateIndirectCommandsLayoutNVX readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1275;
     stream->read((uint64_t*)&cgen_var_1275, 8);
     stream->handleMapping()->mapHandles_u64_VkIndirectCommandsLayoutNVX(&cgen_var_1275, (VkIndirectCommandsLayoutNVX*)pIndirectCommandsLayout, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateIndirectCommandsLayoutNVX returnUnmarshal");
     VkResult vkCreateIndirectCommandsLayoutNVX_VkResult_return = (VkResult)0;
     stream->read(&vkCreateIndirectCommandsLayoutNVX_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18306,6 +19149,7 @@ void VkEncoder::vkDestroyIndirectCommandsLayoutNVX(
     VkIndirectCommandsLayoutNVX indirectCommandsLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyIndirectCommandsLayoutNVX encode");
     mImpl->log("start vkDestroyIndirectCommandsLayoutNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18362,6 +19206,8 @@ void VkEncoder::vkDestroyIndirectCommandsLayoutNVX(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyIndirectCommandsLayoutNVX readParams");
+    AEMU_SCOPED_TRACE("vkDestroyIndirectCommandsLayoutNVX returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkIndirectCommandsLayoutNVX((VkIndirectCommandsLayoutNVX*)&indirectCommandsLayout);
     mImpl->log("finish vkDestroyIndirectCommandsLayoutNVX");;
 }
@@ -18372,6 +19218,7 @@ VkResult VkEncoder::vkCreateObjectTableNVX(
     const VkAllocationCallbacks* pAllocator,
     VkObjectTableNVX* pObjectTable)
 {
+    AEMU_SCOPED_TRACE("vkCreateObjectTableNVX encode");
     mImpl->log("start vkCreateObjectTableNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18441,11 +19288,13 @@ VkResult VkEncoder::vkCreateObjectTableNVX(
     stream->handleMapping()->mapHandles_VkObjectTableNVX_u64(pObjectTable, &cgen_var_1287, 1);
     stream->write((uint64_t*)&cgen_var_1287, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateObjectTableNVX readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1288;
     stream->read((uint64_t*)&cgen_var_1288, 8);
     stream->handleMapping()->mapHandles_u64_VkObjectTableNVX(&cgen_var_1288, (VkObjectTableNVX*)pObjectTable, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateObjectTableNVX returnUnmarshal");
     VkResult vkCreateObjectTableNVX_VkResult_return = (VkResult)0;
     stream->read(&vkCreateObjectTableNVX_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18460,6 +19309,7 @@ void VkEncoder::vkDestroyObjectTableNVX(
     VkObjectTableNVX objectTable,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyObjectTableNVX encode");
     mImpl->log("start vkDestroyObjectTableNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18516,6 +19366,8 @@ void VkEncoder::vkDestroyObjectTableNVX(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyObjectTableNVX readParams");
+    AEMU_SCOPED_TRACE("vkDestroyObjectTableNVX returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkObjectTableNVX((VkObjectTableNVX*)&objectTable);
     mImpl->log("finish vkDestroyObjectTableNVX");;
 }
@@ -18527,6 +19379,7 @@ VkResult VkEncoder::vkRegisterObjectsNVX(
     const VkObjectTableEntryNVX* const* ppObjectTableEntries,
     const uint32_t* pObjectIndices)
 {
+    AEMU_SCOPED_TRACE("vkRegisterObjectsNVX encode");
     mImpl->log("start vkRegisterObjectsNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18574,6 +19427,8 @@ VkResult VkEncoder::vkRegisterObjectsNVX(
     stream->write((uint32_t*)&local_objectCount, sizeof(uint32_t));
     (void)local_ppObjectTableEntries;
     stream->write((uint32_t*)local_pObjectIndices, ((objectCount)) * sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkRegisterObjectsNVX readParams");
+    AEMU_SCOPED_TRACE("vkRegisterObjectsNVX returnUnmarshal");
     VkResult vkRegisterObjectsNVX_VkResult_return = (VkResult)0;
     stream->read(&vkRegisterObjectsNVX_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18590,6 +19445,7 @@ VkResult VkEncoder::vkUnregisterObjectsNVX(
     const VkObjectEntryTypeNVX* pObjectEntryTypes,
     const uint32_t* pObjectIndices)
 {
+    AEMU_SCOPED_TRACE("vkUnregisterObjectsNVX encode");
     mImpl->log("start vkUnregisterObjectsNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18640,6 +19496,8 @@ VkResult VkEncoder::vkUnregisterObjectsNVX(
     stream->write((uint32_t*)&local_objectCount, sizeof(uint32_t));
     stream->write((VkObjectEntryTypeNVX*)local_pObjectEntryTypes, ((objectCount)) * sizeof(VkObjectEntryTypeNVX));
     stream->write((uint32_t*)local_pObjectIndices, ((objectCount)) * sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkUnregisterObjectsNVX readParams");
+    AEMU_SCOPED_TRACE("vkUnregisterObjectsNVX returnUnmarshal");
     VkResult vkUnregisterObjectsNVX_VkResult_return = (VkResult)0;
     stream->read(&vkUnregisterObjectsNVX_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18654,6 +19512,7 @@ void VkEncoder::vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(
     VkDeviceGeneratedCommandsFeaturesNVX* pFeatures,
     VkDeviceGeneratedCommandsLimitsNVX* pLimits)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX encode");
     mImpl->log("start vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18680,6 +19539,7 @@ void VkEncoder::vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(
     stream->write((uint64_t*)&cgen_var_1304, 1 * 8);
     marshal_VkDeviceGeneratedCommandsFeaturesNVX(stream, (VkDeviceGeneratedCommandsFeaturesNVX*)(pFeatures));
     marshal_VkDeviceGeneratedCommandsLimitsNVX(stream, (VkDeviceGeneratedCommandsLimitsNVX*)(pLimits));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX readParams");
     unmarshal_VkDeviceGeneratedCommandsFeaturesNVX(stream, (VkDeviceGeneratedCommandsFeaturesNVX*)(pFeatures));
     if (pFeatures)
     {
@@ -18690,6 +19550,7 @@ void VkEncoder::vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(
     {
         transform_fromhost_VkDeviceGeneratedCommandsLimitsNVX(mImpl->resources(), (VkDeviceGeneratedCommandsLimitsNVX*)(pLimits));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX");;
 }
 
@@ -18701,6 +19562,7 @@ void VkEncoder::vkCmdSetViewportWScalingNV(
     uint32_t viewportCount,
     const VkViewportWScalingNV* pViewportWScalings)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetViewportWScalingNV encode");
     mImpl->log("start vkCmdSetViewportWScalingNV");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18756,6 +19618,8 @@ void VkEncoder::vkCmdSetViewportWScalingNV(
     {
         marshal_VkViewportWScalingNV(stream, (VkViewportWScalingNV*)(local_pViewportWScalings + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdSetViewportWScalingNV readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetViewportWScalingNV returnUnmarshal");
     mImpl->log("finish vkCmdSetViewportWScalingNV");;
 }
 
@@ -18765,6 +19629,7 @@ VkResult VkEncoder::vkReleaseDisplayEXT(
     VkPhysicalDevice physicalDevice,
     VkDisplayKHR display)
 {
+    AEMU_SCOPED_TRACE("vkReleaseDisplayEXT encode");
     mImpl->log("start vkReleaseDisplayEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18795,6 +19660,8 @@ VkResult VkEncoder::vkReleaseDisplayEXT(
     uint64_t cgen_var_1310;
     stream->handleMapping()->mapHandles_VkDisplayKHR_u64(&local_display, &cgen_var_1310, 1);
     stream->write((uint64_t*)&cgen_var_1310, 1 * 8);
+    AEMU_SCOPED_TRACE("vkReleaseDisplayEXT readParams");
+    AEMU_SCOPED_TRACE("vkReleaseDisplayEXT returnUnmarshal");
     VkResult vkReleaseDisplayEXT_VkResult_return = (VkResult)0;
     stream->read(&vkReleaseDisplayEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18811,6 +19678,7 @@ VkResult VkEncoder::vkAcquireXlibDisplayEXT(
     Display* dpy,
     VkDisplayKHR display)
 {
+    AEMU_SCOPED_TRACE("vkAcquireXlibDisplayEXT encode");
     mImpl->log("start vkAcquireXlibDisplayEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18843,7 +19711,9 @@ VkResult VkEncoder::vkAcquireXlibDisplayEXT(
     uint64_t cgen_var_1314;
     stream->handleMapping()->mapHandles_VkDisplayKHR_u64(&local_display, &cgen_var_1314, 1);
     stream->write((uint64_t*)&cgen_var_1314, 1 * 8);
+    AEMU_SCOPED_TRACE("vkAcquireXlibDisplayEXT readParams");
     stream->read((Display*)dpy, sizeof(Display));
+    AEMU_SCOPED_TRACE("vkAcquireXlibDisplayEXT returnUnmarshal");
     VkResult vkAcquireXlibDisplayEXT_VkResult_return = (VkResult)0;
     stream->read(&vkAcquireXlibDisplayEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18859,6 +19729,7 @@ VkResult VkEncoder::vkGetRandROutputDisplayEXT(
     RROutput rrOutput,
     VkDisplayKHR* pDisplay)
 {
+    AEMU_SCOPED_TRACE("vkGetRandROutputDisplayEXT encode");
     mImpl->log("start vkGetRandROutputDisplayEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18895,10 +19766,12 @@ VkResult VkEncoder::vkGetRandROutputDisplayEXT(
     stream->handleMapping()->mapHandles_VkDisplayKHR_u64(pDisplay, &cgen_var_1318, 1);
     stream->write((uint64_t*)&cgen_var_1318, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkGetRandROutputDisplayEXT readParams");
     stream->read((Display*)dpy, sizeof(Display));
     uint64_t cgen_var_1319;
     stream->read((uint64_t*)&cgen_var_1319, 8);
     stream->handleMapping()->mapHandles_u64_VkDisplayKHR(&cgen_var_1319, (VkDisplayKHR*)pDisplay, 1);
+    AEMU_SCOPED_TRACE("vkGetRandROutputDisplayEXT returnUnmarshal");
     VkResult vkGetRandROutputDisplayEXT_VkResult_return = (VkResult)0;
     stream->read(&vkGetRandROutputDisplayEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18915,6 +19788,7 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilities2EXT(
     VkSurfaceKHR surface,
     VkSurfaceCapabilities2EXT* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2EXT encode");
     mImpl->log("start vkGetPhysicalDeviceSurfaceCapabilities2EXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -18947,11 +19821,13 @@ VkResult VkEncoder::vkGetPhysicalDeviceSurfaceCapabilities2EXT(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(&local_surface, &cgen_var_1323, 1);
     stream->write((uint64_t*)&cgen_var_1323, 1 * 8);
     marshal_VkSurfaceCapabilities2EXT(stream, (VkSurfaceCapabilities2EXT*)(pSurfaceCapabilities));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2EXT readParams");
     unmarshal_VkSurfaceCapabilities2EXT(stream, (VkSurfaceCapabilities2EXT*)(pSurfaceCapabilities));
     if (pSurfaceCapabilities)
     {
         transform_fromhost_VkSurfaceCapabilities2EXT(mImpl->resources(), (VkSurfaceCapabilities2EXT*)(pSurfaceCapabilities));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2EXT returnUnmarshal");
     VkResult vkGetPhysicalDeviceSurfaceCapabilities2EXT_VkResult_return = (VkResult)0;
     stream->read(&vkGetPhysicalDeviceSurfaceCapabilities2EXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -18968,6 +19844,7 @@ VkResult VkEncoder::vkDisplayPowerControlEXT(
     VkDisplayKHR display,
     const VkDisplayPowerInfoEXT* pDisplayPowerInfo)
 {
+    AEMU_SCOPED_TRACE("vkDisplayPowerControlEXT encode");
     mImpl->log("start vkDisplayPowerControlEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19011,6 +19888,8 @@ VkResult VkEncoder::vkDisplayPowerControlEXT(
     stream->handleMapping()->mapHandles_VkDisplayKHR_u64(&local_display, &cgen_var_1327, 1);
     stream->write((uint64_t*)&cgen_var_1327, 1 * 8);
     marshal_VkDisplayPowerInfoEXT(stream, (VkDisplayPowerInfoEXT*)(local_pDisplayPowerInfo));
+    AEMU_SCOPED_TRACE("vkDisplayPowerControlEXT readParams");
+    AEMU_SCOPED_TRACE("vkDisplayPowerControlEXT returnUnmarshal");
     VkResult vkDisplayPowerControlEXT_VkResult_return = (VkResult)0;
     stream->read(&vkDisplayPowerControlEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19026,6 +19905,7 @@ VkResult VkEncoder::vkRegisterDeviceEventEXT(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkRegisterDeviceEventEXT encode");
     mImpl->log("start vkRegisterDeviceEventEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19095,9 +19975,11 @@ VkResult VkEncoder::vkRegisterDeviceEventEXT(
     stream->handleMapping()->mapHandles_VkFence_u64(pFence, &cgen_var_1333, 1);
     stream->write((uint64_t*)&cgen_var_1333, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkRegisterDeviceEventEXT readParams");
     uint64_t cgen_var_1334;
     stream->read((uint64_t*)&cgen_var_1334, 8);
     stream->handleMapping()->mapHandles_u64_VkFence(&cgen_var_1334, (VkFence*)pFence, 1);
+    AEMU_SCOPED_TRACE("vkRegisterDeviceEventEXT returnUnmarshal");
     VkResult vkRegisterDeviceEventEXT_VkResult_return = (VkResult)0;
     stream->read(&vkRegisterDeviceEventEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19114,6 +19996,7 @@ VkResult VkEncoder::vkRegisterDisplayEventEXT(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkRegisterDisplayEventEXT encode");
     mImpl->log("start vkRegisterDisplayEventEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19191,9 +20074,11 @@ VkResult VkEncoder::vkRegisterDisplayEventEXT(
     stream->handleMapping()->mapHandles_VkFence_u64(pFence, &cgen_var_1342, 1);
     stream->write((uint64_t*)&cgen_var_1342, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkRegisterDisplayEventEXT readParams");
     uint64_t cgen_var_1343;
     stream->read((uint64_t*)&cgen_var_1343, 8);
     stream->handleMapping()->mapHandles_u64_VkFence(&cgen_var_1343, (VkFence*)pFence, 1);
+    AEMU_SCOPED_TRACE("vkRegisterDisplayEventEXT returnUnmarshal");
     VkResult vkRegisterDisplayEventEXT_VkResult_return = (VkResult)0;
     stream->read(&vkRegisterDisplayEventEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19209,6 +20094,7 @@ VkResult VkEncoder::vkGetSwapchainCounterEXT(
     VkSurfaceCounterFlagBitsEXT counter,
     uint64_t* pCounterValue)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainCounterEXT encode");
     mImpl->log("start vkGetSwapchainCounterEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19245,7 +20131,9 @@ VkResult VkEncoder::vkGetSwapchainCounterEXT(
     stream->write((uint64_t*)&cgen_var_1347, 1 * 8);
     stream->write((VkSurfaceCounterFlagBitsEXT*)&local_counter, sizeof(VkSurfaceCounterFlagBitsEXT));
     stream->write((uint64_t*)pCounterValue, sizeof(uint64_t));
+    AEMU_SCOPED_TRACE("vkGetSwapchainCounterEXT readParams");
     stream->read((uint64_t*)pCounterValue, sizeof(uint64_t));
+    AEMU_SCOPED_TRACE("vkGetSwapchainCounterEXT returnUnmarshal");
     VkResult vkGetSwapchainCounterEXT_VkResult_return = (VkResult)0;
     stream->read(&vkGetSwapchainCounterEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19262,6 +20150,7 @@ VkResult VkEncoder::vkGetRefreshCycleDurationGOOGLE(
     VkSwapchainKHR swapchain,
     VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetRefreshCycleDurationGOOGLE encode");
     mImpl->log("start vkGetRefreshCycleDurationGOOGLE");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19294,11 +20183,13 @@ VkResult VkEncoder::vkGetRefreshCycleDurationGOOGLE(
     stream->handleMapping()->mapHandles_VkSwapchainKHR_u64(&local_swapchain, &cgen_var_1351, 1);
     stream->write((uint64_t*)&cgen_var_1351, 1 * 8);
     marshal_VkRefreshCycleDurationGOOGLE(stream, (VkRefreshCycleDurationGOOGLE*)(pDisplayTimingProperties));
+    AEMU_SCOPED_TRACE("vkGetRefreshCycleDurationGOOGLE readParams");
     unmarshal_VkRefreshCycleDurationGOOGLE(stream, (VkRefreshCycleDurationGOOGLE*)(pDisplayTimingProperties));
     if (pDisplayTimingProperties)
     {
         transform_fromhost_VkRefreshCycleDurationGOOGLE(mImpl->resources(), (VkRefreshCycleDurationGOOGLE*)(pDisplayTimingProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetRefreshCycleDurationGOOGLE returnUnmarshal");
     VkResult vkGetRefreshCycleDurationGOOGLE_VkResult_return = (VkResult)0;
     stream->read(&vkGetRefreshCycleDurationGOOGLE_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19314,6 +20205,7 @@ VkResult VkEncoder::vkGetPastPresentationTimingGOOGLE(
     uint32_t* pPresentationTimingCount,
     VkPastPresentationTimingGOOGLE* pPresentationTimings)
 {
+    AEMU_SCOPED_TRACE("vkGetPastPresentationTimingGOOGLE encode");
     mImpl->log("start vkGetPastPresentationTimingGOOGLE");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19378,6 +20270,7 @@ VkResult VkEncoder::vkGetPastPresentationTimingGOOGLE(
             marshal_VkPastPresentationTimingGOOGLE(stream, (VkPastPresentationTimingGOOGLE*)(pPresentationTimings + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPastPresentationTimingGOOGLE readParams");
     // WARNING PTR CHECK
     uint32_t* check_pPresentationTimingCount;
     check_pPresentationTimingCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -19410,6 +20303,7 @@ VkResult VkEncoder::vkGetPastPresentationTimingGOOGLE(
             transform_fromhost_VkPastPresentationTimingGOOGLE(mImpl->resources(), (VkPastPresentationTimingGOOGLE*)(pPresentationTimings + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetPastPresentationTimingGOOGLE returnUnmarshal");
     VkResult vkGetPastPresentationTimingGOOGLE_VkResult_return = (VkResult)0;
     stream->read(&vkGetPastPresentationTimingGOOGLE_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19437,6 +20331,7 @@ void VkEncoder::vkCmdSetDiscardRectangleEXT(
     uint32_t discardRectangleCount,
     const VkRect2D* pDiscardRectangles)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDiscardRectangleEXT encode");
     mImpl->log("start vkCmdSetDiscardRectangleEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19492,6 +20387,8 @@ void VkEncoder::vkCmdSetDiscardRectangleEXT(
     {
         marshal_VkRect2D(stream, (VkRect2D*)(local_pDiscardRectangles + i));
     }
+    AEMU_SCOPED_TRACE("vkCmdSetDiscardRectangleEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetDiscardRectangleEXT returnUnmarshal");
     mImpl->log("finish vkCmdSetDiscardRectangleEXT");;
 }
 
@@ -19507,6 +20404,7 @@ void VkEncoder::vkSetHdrMetadataEXT(
     const VkSwapchainKHR* pSwapchains,
     const VkHdrMetadataEXT* pMetadata)
 {
+    AEMU_SCOPED_TRACE("vkSetHdrMetadataEXT encode");
     mImpl->log("start vkSetHdrMetadataEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19578,6 +20476,8 @@ void VkEncoder::vkSetHdrMetadataEXT(
     {
         marshal_VkHdrMetadataEXT(stream, (VkHdrMetadataEXT*)(local_pMetadata + i));
     }
+    AEMU_SCOPED_TRACE("vkSetHdrMetadataEXT readParams");
+    AEMU_SCOPED_TRACE("vkSetHdrMetadataEXT returnUnmarshal");
     mImpl->log("finish vkSetHdrMetadataEXT");;
 }
 
@@ -19589,6 +20489,7 @@ VkResult VkEncoder::vkCreateIOSSurfaceMVK(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateIOSSurfaceMVK encode");
     mImpl->log("start vkCreateIOSSurfaceMVK");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19658,9 +20559,11 @@ VkResult VkEncoder::vkCreateIOSSurfaceMVK(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_1373, 1);
     stream->write((uint64_t*)&cgen_var_1373, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateIOSSurfaceMVK readParams");
     uint64_t cgen_var_1374;
     stream->read((uint64_t*)&cgen_var_1374, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_1374, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateIOSSurfaceMVK returnUnmarshal");
     VkResult vkCreateIOSSurfaceMVK_VkResult_return = (VkResult)0;
     stream->read(&vkCreateIOSSurfaceMVK_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19678,6 +20581,7 @@ VkResult VkEncoder::vkCreateMacOSSurfaceMVK(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateMacOSSurfaceMVK encode");
     mImpl->log("start vkCreateMacOSSurfaceMVK");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19747,9 +20651,11 @@ VkResult VkEncoder::vkCreateMacOSSurfaceMVK(
     stream->handleMapping()->mapHandles_VkSurfaceKHR_u64(pSurface, &cgen_var_1380, 1);
     stream->write((uint64_t*)&cgen_var_1380, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateMacOSSurfaceMVK readParams");
     uint64_t cgen_var_1381;
     stream->read((uint64_t*)&cgen_var_1381, 8);
     stream->handleMapping()->mapHandles_u64_VkSurfaceKHR(&cgen_var_1381, (VkSurfaceKHR*)pSurface, 1);
+    AEMU_SCOPED_TRACE("vkCreateMacOSSurfaceMVK returnUnmarshal");
     VkResult vkCreateMacOSSurfaceMVK_VkResult_return = (VkResult)0;
     stream->read(&vkCreateMacOSSurfaceMVK_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19769,6 +20675,7 @@ VkResult VkEncoder::vkSetDebugUtilsObjectNameEXT(
     VkDevice device,
     const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
 {
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectNameEXT encode");
     mImpl->log("start vkSetDebugUtilsObjectNameEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19804,6 +20711,8 @@ VkResult VkEncoder::vkSetDebugUtilsObjectNameEXT(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1383, 1);
     stream->write((uint64_t*)&cgen_var_1383, 1 * 8);
     marshal_VkDebugUtilsObjectNameInfoEXT(stream, (VkDebugUtilsObjectNameInfoEXT*)(local_pNameInfo));
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectNameEXT readParams");
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectNameEXT returnUnmarshal");
     VkResult vkSetDebugUtilsObjectNameEXT_VkResult_return = (VkResult)0;
     stream->read(&vkSetDebugUtilsObjectNameEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19817,6 +20726,7 @@ VkResult VkEncoder::vkSetDebugUtilsObjectTagEXT(
     VkDevice device,
     const VkDebugUtilsObjectTagInfoEXT* pTagInfo)
 {
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectTagEXT encode");
     mImpl->log("start vkSetDebugUtilsObjectTagEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19852,6 +20762,8 @@ VkResult VkEncoder::vkSetDebugUtilsObjectTagEXT(
     stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1385, 1);
     stream->write((uint64_t*)&cgen_var_1385, 1 * 8);
     marshal_VkDebugUtilsObjectTagInfoEXT(stream, (VkDebugUtilsObjectTagInfoEXT*)(local_pTagInfo));
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectTagEXT readParams");
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectTagEXT returnUnmarshal");
     VkResult vkSetDebugUtilsObjectTagEXT_VkResult_return = (VkResult)0;
     stream->read(&vkSetDebugUtilsObjectTagEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -19865,6 +20777,7 @@ void VkEncoder::vkQueueBeginDebugUtilsLabelEXT(
     VkQueue queue,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueueBeginDebugUtilsLabelEXT encode");
     mImpl->log("start vkQueueBeginDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19900,12 +20813,15 @@ void VkEncoder::vkQueueBeginDebugUtilsLabelEXT(
     stream->handleMapping()->mapHandles_VkQueue_u64(&local_queue, &cgen_var_1387, 1);
     stream->write((uint64_t*)&cgen_var_1387, 1 * 8);
     marshal_VkDebugUtilsLabelEXT(stream, (VkDebugUtilsLabelEXT*)(local_pLabelInfo));
+    AEMU_SCOPED_TRACE("vkQueueBeginDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkQueueBeginDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkQueueBeginDebugUtilsLabelEXT");;
 }
 
 void VkEncoder::vkQueueEndDebugUtilsLabelEXT(
     VkQueue queue)
 {
+    AEMU_SCOPED_TRACE("vkQueueEndDebugUtilsLabelEXT encode");
     mImpl->log("start vkQueueEndDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19928,6 +20844,8 @@ void VkEncoder::vkQueueEndDebugUtilsLabelEXT(
     uint64_t cgen_var_1389;
     stream->handleMapping()->mapHandles_VkQueue_u64(&local_queue, &cgen_var_1389, 1);
     stream->write((uint64_t*)&cgen_var_1389, 1 * 8);
+    AEMU_SCOPED_TRACE("vkQueueEndDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkQueueEndDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkQueueEndDebugUtilsLabelEXT");;
 }
 
@@ -19935,6 +20853,7 @@ void VkEncoder::vkQueueInsertDebugUtilsLabelEXT(
     VkQueue queue,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueueInsertDebugUtilsLabelEXT encode");
     mImpl->log("start vkQueueInsertDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -19970,6 +20889,8 @@ void VkEncoder::vkQueueInsertDebugUtilsLabelEXT(
     stream->handleMapping()->mapHandles_VkQueue_u64(&local_queue, &cgen_var_1391, 1);
     stream->write((uint64_t*)&cgen_var_1391, 1 * 8);
     marshal_VkDebugUtilsLabelEXT(stream, (VkDebugUtilsLabelEXT*)(local_pLabelInfo));
+    AEMU_SCOPED_TRACE("vkQueueInsertDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkQueueInsertDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkQueueInsertDebugUtilsLabelEXT");;
 }
 
@@ -19977,6 +20898,7 @@ void VkEncoder::vkCmdBeginDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginDebugUtilsLabelEXT encode");
     mImpl->log("start vkCmdBeginDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20012,12 +20934,15 @@ void VkEncoder::vkCmdBeginDebugUtilsLabelEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1393, 1);
     stream->write((uint64_t*)&cgen_var_1393, 1 * 8);
     marshal_VkDebugUtilsLabelEXT(stream, (VkDebugUtilsLabelEXT*)(local_pLabelInfo));
+    AEMU_SCOPED_TRACE("vkCmdBeginDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdBeginDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkCmdBeginDebugUtilsLabelEXT");;
 }
 
 void VkEncoder::vkCmdEndDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndDebugUtilsLabelEXT encode");
     mImpl->log("start vkCmdEndDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20040,6 +20965,8 @@ void VkEncoder::vkCmdEndDebugUtilsLabelEXT(
     uint64_t cgen_var_1395;
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1395, 1);
     stream->write((uint64_t*)&cgen_var_1395, 1 * 8);
+    AEMU_SCOPED_TRACE("vkCmdEndDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdEndDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkCmdEndDebugUtilsLabelEXT");;
 }
 
@@ -20047,6 +20974,7 @@ void VkEncoder::vkCmdInsertDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdInsertDebugUtilsLabelEXT encode");
     mImpl->log("start vkCmdInsertDebugUtilsLabelEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20082,6 +21010,8 @@ void VkEncoder::vkCmdInsertDebugUtilsLabelEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1397, 1);
     stream->write((uint64_t*)&cgen_var_1397, 1 * 8);
     marshal_VkDebugUtilsLabelEXT(stream, (VkDebugUtilsLabelEXT*)(local_pLabelInfo));
+    AEMU_SCOPED_TRACE("vkCmdInsertDebugUtilsLabelEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdInsertDebugUtilsLabelEXT returnUnmarshal");
     mImpl->log("finish vkCmdInsertDebugUtilsLabelEXT");;
 }
 
@@ -20091,6 +21021,7 @@ VkResult VkEncoder::vkCreateDebugUtilsMessengerEXT(
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pMessenger)
 {
+    AEMU_SCOPED_TRACE("vkCreateDebugUtilsMessengerEXT encode");
     mImpl->log("start vkCreateDebugUtilsMessengerEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20160,11 +21091,13 @@ VkResult VkEncoder::vkCreateDebugUtilsMessengerEXT(
     stream->handleMapping()->mapHandles_VkDebugUtilsMessengerEXT_u64(pMessenger, &cgen_var_1403, 1);
     stream->write((uint64_t*)&cgen_var_1403, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateDebugUtilsMessengerEXT readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1404;
     stream->read((uint64_t*)&cgen_var_1404, 8);
     stream->handleMapping()->mapHandles_u64_VkDebugUtilsMessengerEXT(&cgen_var_1404, (VkDebugUtilsMessengerEXT*)pMessenger, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateDebugUtilsMessengerEXT returnUnmarshal");
     VkResult vkCreateDebugUtilsMessengerEXT_VkResult_return = (VkResult)0;
     stream->read(&vkCreateDebugUtilsMessengerEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20179,6 +21112,7 @@ void VkEncoder::vkDestroyDebugUtilsMessengerEXT(
     VkDebugUtilsMessengerEXT messenger,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDebugUtilsMessengerEXT encode");
     mImpl->log("start vkDestroyDebugUtilsMessengerEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20235,6 +21169,8 @@ void VkEncoder::vkDestroyDebugUtilsMessengerEXT(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyDebugUtilsMessengerEXT readParams");
+    AEMU_SCOPED_TRACE("vkDestroyDebugUtilsMessengerEXT returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkDebugUtilsMessengerEXT((VkDebugUtilsMessengerEXT*)&messenger);
     mImpl->log("finish vkDestroyDebugUtilsMessengerEXT");;
 }
@@ -20245,6 +21181,7 @@ void VkEncoder::vkSubmitDebugUtilsMessageEXT(
     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
 {
+    AEMU_SCOPED_TRACE("vkSubmitDebugUtilsMessageEXT encode");
     mImpl->log("start vkSubmitDebugUtilsMessageEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20288,6 +21225,8 @@ void VkEncoder::vkSubmitDebugUtilsMessageEXT(
     stream->write((VkDebugUtilsMessageSeverityFlagBitsEXT*)&local_messageSeverity, sizeof(VkDebugUtilsMessageSeverityFlagBitsEXT));
     stream->write((VkDebugUtilsMessageTypeFlagsEXT*)&local_messageTypes, sizeof(VkDebugUtilsMessageTypeFlagsEXT));
     marshal_VkDebugUtilsMessengerCallbackDataEXT(stream, (VkDebugUtilsMessengerCallbackDataEXT*)(local_pCallbackData));
+    AEMU_SCOPED_TRACE("vkSubmitDebugUtilsMessageEXT readParams");
+    AEMU_SCOPED_TRACE("vkSubmitDebugUtilsMessageEXT returnUnmarshal");
     mImpl->log("finish vkSubmitDebugUtilsMessageEXT");;
 }
 
@@ -20298,6 +21237,7 @@ VkResult VkEncoder::vkGetAndroidHardwareBufferPropertiesANDROID(
     const AHardwareBuffer* buffer,
     VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetAndroidHardwareBufferPropertiesANDROID encode");
     mImpl->log("start vkGetAndroidHardwareBufferPropertiesANDROID");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20330,11 +21270,13 @@ VkResult VkEncoder::vkGetAndroidHardwareBufferPropertiesANDROID(
     stream->write((uint64_t*)&cgen_var_1414, 1 * 8);
     stream->write((AHardwareBuffer*)local_buffer, sizeof(AHardwareBuffer));
     marshal_VkAndroidHardwareBufferPropertiesANDROID(stream, (VkAndroidHardwareBufferPropertiesANDROID*)(pProperties));
+    AEMU_SCOPED_TRACE("vkGetAndroidHardwareBufferPropertiesANDROID readParams");
     unmarshal_VkAndroidHardwareBufferPropertiesANDROID(stream, (VkAndroidHardwareBufferPropertiesANDROID*)(pProperties));
     if (pProperties)
     {
         transform_fromhost_VkAndroidHardwareBufferPropertiesANDROID(mImpl->resources(), (VkAndroidHardwareBufferPropertiesANDROID*)(pProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetAndroidHardwareBufferPropertiesANDROID returnUnmarshal");
     VkResult vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return = (VkResult)0;
     stream->read(&vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20349,6 +21291,7 @@ VkResult VkEncoder::vkGetMemoryAndroidHardwareBufferANDROID(
     const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo,
     AHardwareBuffer** pBuffer)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryAndroidHardwareBufferANDROID encode");
     mImpl->log("start vkGetMemoryAndroidHardwareBufferANDROID");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20386,7 +21329,9 @@ VkResult VkEncoder::vkGetMemoryAndroidHardwareBufferANDROID(
     stream->write((uint64_t*)&cgen_var_1416, 1 * 8);
     marshal_VkMemoryGetAndroidHardwareBufferInfoANDROID(stream, (VkMemoryGetAndroidHardwareBufferInfoANDROID*)(local_pInfo));
     stream->write((AHardwareBuffer**)pBuffer, sizeof(AHardwareBuffer*));
+    AEMU_SCOPED_TRACE("vkGetMemoryAndroidHardwareBufferANDROID readParams");
     stream->read((AHardwareBuffer**)pBuffer, sizeof(AHardwareBuffer*));
+    AEMU_SCOPED_TRACE("vkGetMemoryAndroidHardwareBufferANDROID returnUnmarshal");
     VkResult vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20412,6 +21357,7 @@ void VkEncoder::vkCmdSetSampleLocationsEXT(
     VkCommandBuffer commandBuffer,
     const VkSampleLocationsInfoEXT* pSampleLocationsInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetSampleLocationsEXT encode");
     mImpl->log("start vkCmdSetSampleLocationsEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20447,6 +21393,8 @@ void VkEncoder::vkCmdSetSampleLocationsEXT(
     stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1418, 1);
     stream->write((uint64_t*)&cgen_var_1418, 1 * 8);
     marshal_VkSampleLocationsInfoEXT(stream, (VkSampleLocationsInfoEXT*)(local_pSampleLocationsInfo));
+    AEMU_SCOPED_TRACE("vkCmdSetSampleLocationsEXT readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetSampleLocationsEXT returnUnmarshal");
     mImpl->log("finish vkCmdSetSampleLocationsEXT");;
 }
 
@@ -20455,6 +21403,7 @@ void VkEncoder::vkGetPhysicalDeviceMultisamplePropertiesEXT(
     VkSampleCountFlagBits samples,
     VkMultisamplePropertiesEXT* pMultisampleProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMultisamplePropertiesEXT encode");
     mImpl->log("start vkGetPhysicalDeviceMultisamplePropertiesEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20483,11 +21432,13 @@ void VkEncoder::vkGetPhysicalDeviceMultisamplePropertiesEXT(
     stream->write((uint64_t*)&cgen_var_1420, 1 * 8);
     stream->write((VkSampleCountFlagBits*)&local_samples, sizeof(VkSampleCountFlagBits));
     marshal_VkMultisamplePropertiesEXT(stream, (VkMultisamplePropertiesEXT*)(pMultisampleProperties));
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMultisamplePropertiesEXT readParams");
     unmarshal_VkMultisamplePropertiesEXT(stream, (VkMultisamplePropertiesEXT*)(pMultisampleProperties));
     if (pMultisampleProperties)
     {
         transform_fromhost_VkMultisamplePropertiesEXT(mImpl->resources(), (VkMultisamplePropertiesEXT*)(pMultisampleProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMultisamplePropertiesEXT returnUnmarshal");
     mImpl->log("finish vkGetPhysicalDeviceMultisamplePropertiesEXT");;
 }
 
@@ -20509,6 +21460,7 @@ VkResult VkEncoder::vkCreateValidationCacheEXT(
     const VkAllocationCallbacks* pAllocator,
     VkValidationCacheEXT* pValidationCache)
 {
+    AEMU_SCOPED_TRACE("vkCreateValidationCacheEXT encode");
     mImpl->log("start vkCreateValidationCacheEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20578,11 +21530,13 @@ VkResult VkEncoder::vkCreateValidationCacheEXT(
     stream->handleMapping()->mapHandles_VkValidationCacheEXT_u64(pValidationCache, &cgen_var_1426, 1);
     stream->write((uint64_t*)&cgen_var_1426, 8);
     stream->setHandleMapping(resources->unwrapMapping());
+    AEMU_SCOPED_TRACE("vkCreateValidationCacheEXT readParams");
     stream->setHandleMapping(resources->createMapping());
     uint64_t cgen_var_1427;
     stream->read((uint64_t*)&cgen_var_1427, 8);
     stream->handleMapping()->mapHandles_u64_VkValidationCacheEXT(&cgen_var_1427, (VkValidationCacheEXT*)pValidationCache, 1);
     stream->unsetHandleMapping();
+    AEMU_SCOPED_TRACE("vkCreateValidationCacheEXT returnUnmarshal");
     VkResult vkCreateValidationCacheEXT_VkResult_return = (VkResult)0;
     stream->read(&vkCreateValidationCacheEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20597,6 +21551,7 @@ void VkEncoder::vkDestroyValidationCacheEXT(
     VkValidationCacheEXT validationCache,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyValidationCacheEXT encode");
     mImpl->log("start vkDestroyValidationCacheEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20653,6 +21608,8 @@ void VkEncoder::vkDestroyValidationCacheEXT(
     {
         marshal_VkAllocationCallbacks(stream, (VkAllocationCallbacks*)(local_pAllocator));
     }
+    AEMU_SCOPED_TRACE("vkDestroyValidationCacheEXT readParams");
+    AEMU_SCOPED_TRACE("vkDestroyValidationCacheEXT returnUnmarshal");
     resources->destroyMapping()->mapHandles_VkValidationCacheEXT((VkValidationCacheEXT*)&validationCache);
     mImpl->log("finish vkDestroyValidationCacheEXT");;
 }
@@ -20663,6 +21620,7 @@ VkResult VkEncoder::vkMergeValidationCachesEXT(
     uint32_t srcCacheCount,
     const VkValidationCacheEXT* pSrcCaches)
 {
+    AEMU_SCOPED_TRACE("vkMergeValidationCachesEXT encode");
     mImpl->log("start vkMergeValidationCachesEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20717,6 +21675,8 @@ VkResult VkEncoder::vkMergeValidationCachesEXT(
         stream->handleMapping()->mapHandles_VkValidationCacheEXT_u64(local_pSrcCaches, cgen_var_1439, ((srcCacheCount)));
         stream->write((uint64_t*)cgen_var_1439, ((srcCacheCount)) * 8);
     }
+    AEMU_SCOPED_TRACE("vkMergeValidationCachesEXT readParams");
+    AEMU_SCOPED_TRACE("vkMergeValidationCachesEXT returnUnmarshal");
     VkResult vkMergeValidationCachesEXT_VkResult_return = (VkResult)0;
     stream->read(&vkMergeValidationCachesEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20732,6 +21692,7 @@ VkResult VkEncoder::vkGetValidationCacheDataEXT(
     size_t* pDataSize,
     void* pData)
 {
+    AEMU_SCOPED_TRACE("vkGetValidationCacheDataEXT encode");
     mImpl->log("start vkGetValidationCacheDataEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20792,6 +21753,7 @@ VkResult VkEncoder::vkGetValidationCacheDataEXT(
     {
         stream->write((void*)pData, (*(pDataSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetValidationCacheDataEXT readParams");
     // WARNING PTR CHECK
     size_t* check_pDataSize;
     check_pDataSize = (size_t*)(uintptr_t)stream->getBe64();
@@ -20814,6 +21776,7 @@ VkResult VkEncoder::vkGetValidationCacheDataEXT(
         }
         stream->read((void*)pData, (*(pDataSize)) * sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkGetValidationCacheDataEXT returnUnmarshal");
     VkResult vkGetValidationCacheDataEXT_VkResult_return = (VkResult)0;
     stream->read(&vkGetValidationCacheDataEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20837,6 +21800,7 @@ VkResult VkEncoder::vkGetMemoryHostPointerPropertiesEXT(
     const void* pHostPointer,
     VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryHostPointerPropertiesEXT encode");
     mImpl->log("start vkGetMemoryHostPointerPropertiesEXT");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20885,11 +21849,13 @@ VkResult VkEncoder::vkGetMemoryHostPointerPropertiesEXT(
         stream->write((void*)local_pHostPointer, sizeof(uint8_t));
     }
     marshal_VkMemoryHostPointerPropertiesEXT(stream, (VkMemoryHostPointerPropertiesEXT*)(pMemoryHostPointerProperties));
+    AEMU_SCOPED_TRACE("vkGetMemoryHostPointerPropertiesEXT readParams");
     unmarshal_VkMemoryHostPointerPropertiesEXT(stream, (VkMemoryHostPointerPropertiesEXT*)(pMemoryHostPointerProperties));
     if (pMemoryHostPointerProperties)
     {
         transform_fromhost_VkMemoryHostPointerPropertiesEXT(mImpl->resources(), (VkMemoryHostPointerPropertiesEXT*)(pMemoryHostPointerProperties));
     }
+    AEMU_SCOPED_TRACE("vkGetMemoryHostPointerPropertiesEXT returnUnmarshal");
     VkResult vkGetMemoryHostPointerPropertiesEXT_VkResult_return = (VkResult)0;
     stream->read(&vkGetMemoryHostPointerPropertiesEXT_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -20908,6 +21874,7 @@ void VkEncoder::vkCmdWriteBufferMarkerAMD(
     VkDeviceSize dstOffset,
     uint32_t marker)
 {
+    AEMU_SCOPED_TRACE("vkCmdWriteBufferMarkerAMD encode");
     mImpl->log("start vkCmdWriteBufferMarkerAMD");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -20950,6 +21917,8 @@ void VkEncoder::vkCmdWriteBufferMarkerAMD(
     stream->write((uint64_t*)&cgen_var_1460, 1 * 8);
     stream->write((VkDeviceSize*)&local_dstOffset, sizeof(VkDeviceSize));
     stream->write((uint32_t*)&local_marker, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkCmdWriteBufferMarkerAMD readParams");
+    AEMU_SCOPED_TRACE("vkCmdWriteBufferMarkerAMD returnUnmarshal");
     mImpl->log("finish vkCmdWriteBufferMarkerAMD");;
 }
 
@@ -20965,6 +21934,7 @@ void VkEncoder::vkCmdSetCheckpointNV(
     VkCommandBuffer commandBuffer,
     const void* pCheckpointMarker)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetCheckpointNV encode");
     mImpl->log("start vkCmdSetCheckpointNV");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -21007,6 +21977,8 @@ void VkEncoder::vkCmdSetCheckpointNV(
     {
         stream->write((void*)local_pCheckpointMarker, sizeof(uint8_t));
     }
+    AEMU_SCOPED_TRACE("vkCmdSetCheckpointNV readParams");
+    AEMU_SCOPED_TRACE("vkCmdSetCheckpointNV returnUnmarshal");
     mImpl->log("finish vkCmdSetCheckpointNV");;
 }
 
@@ -21015,6 +21987,7 @@ void VkEncoder::vkGetQueueCheckpointDataNV(
     uint32_t* pCheckpointDataCount,
     VkCheckpointDataNV* pCheckpointData)
 {
+    AEMU_SCOPED_TRACE("vkGetQueueCheckpointDataNV encode");
     mImpl->log("start vkGetQueueCheckpointDataNV");
     auto stream = mImpl->stream();
     auto countingStream = mImpl->countingStream();
@@ -21071,6 +22044,7 @@ void VkEncoder::vkGetQueueCheckpointDataNV(
             marshal_VkCheckpointDataNV(stream, (VkCheckpointDataNV*)(pCheckpointData + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetQueueCheckpointDataNV readParams");
     // WARNING PTR CHECK
     uint32_t* check_pCheckpointDataCount;
     check_pCheckpointDataCount = (uint32_t*)(uintptr_t)stream->getBe64();
@@ -21103,6 +22077,7 @@ void VkEncoder::vkGetQueueCheckpointDataNV(
             transform_fromhost_VkCheckpointDataNV(mImpl->resources(), (VkCheckpointDataNV*)(pCheckpointData + i));
         }
     }
+    AEMU_SCOPED_TRACE("vkGetQueueCheckpointDataNV returnUnmarshal");
     mImpl->log("finish vkGetQueueCheckpointDataNV");;
 }
 
@@ -21113,6 +22088,7 @@ VkResult VkEncoder::vkMapMemoryIntoAddressSpaceGOOGLE(
     VkDeviceMemory memory,
     uint64_t* pAddress)
 {
+    AEMU_SCOPED_TRACE("vkMapMemoryIntoAddressSpaceGOOGLE encode");
     mImpl->log("start vkMapMemoryIntoAddressSpaceGOOGLE");
     mImpl->resources()->on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(this, VK_SUCCESS, device, memory, pAddress);
     auto stream = mImpl->stream();
@@ -21159,6 +22135,7 @@ VkResult VkEncoder::vkMapMemoryIntoAddressSpaceGOOGLE(
     {
         stream->write((uint64_t*)pAddress, sizeof(uint64_t));
     }
+    AEMU_SCOPED_TRACE("vkMapMemoryIntoAddressSpaceGOOGLE readParams");
     // WARNING PTR CHECK
     uint64_t* check_pAddress;
     check_pAddress = (uint64_t*)(uintptr_t)stream->getBe64();
@@ -21170,6 +22147,7 @@ VkResult VkEncoder::vkMapMemoryIntoAddressSpaceGOOGLE(
         }
         stream->read((uint64_t*)pAddress, sizeof(uint64_t));
     }
+    AEMU_SCOPED_TRACE("vkMapMemoryIntoAddressSpaceGOOGLE returnUnmarshal");
     VkResult vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return = (VkResult)0;
     stream->read(&vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return, sizeof(VkResult));
     countingStream->clearPool();
@@ -21178,6 +22156,462 @@ VkResult VkEncoder::vkMapMemoryIntoAddressSpaceGOOGLE(
     mImpl->resources()->on_vkMapMemoryIntoAddressSpaceGOOGLE(this, vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return, device, memory, pAddress);
     mImpl->log("finish vkMapMemoryIntoAddressSpaceGOOGLE");;
     return vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return;
+}
+
+#endif
+#ifdef VK_GOOGLE_color_buffer
+VkResult VkEncoder::vkRegisterImageColorBufferGOOGLE(
+    VkDevice device,
+    VkImage image,
+    uint32_t colorBuffer)
+{
+    AEMU_SCOPED_TRACE("vkRegisterImageColorBufferGOOGLE encode");
+    mImpl->log("start vkRegisterImageColorBufferGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkDevice local_device;
+    VkImage local_image;
+    uint32_t local_colorBuffer;
+    local_device = device;
+    local_image = image;
+    local_colorBuffer = colorBuffer;
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1480;
+        countingStream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1480, 1);
+        countingStream->write((uint64_t*)&cgen_var_1480, 1 * 8);
+        uint64_t cgen_var_1481;
+        countingStream->handleMapping()->mapHandles_VkImage_u64(&local_image, &cgen_var_1481, 1);
+        countingStream->write((uint64_t*)&cgen_var_1481, 1 * 8);
+        countingStream->write((uint32_t*)&local_colorBuffer, sizeof(uint32_t));
+    }
+    uint32_t packetSize_vkRegisterImageColorBufferGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkRegisterImageColorBufferGOOGLE = OP_vkRegisterImageColorBufferGOOGLE;
+    stream->write(&opcode_vkRegisterImageColorBufferGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkRegisterImageColorBufferGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1482;
+    stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1482, 1);
+    stream->write((uint64_t*)&cgen_var_1482, 1 * 8);
+    uint64_t cgen_var_1483;
+    stream->handleMapping()->mapHandles_VkImage_u64(&local_image, &cgen_var_1483, 1);
+    stream->write((uint64_t*)&cgen_var_1483, 1 * 8);
+    stream->write((uint32_t*)&local_colorBuffer, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkRegisterImageColorBufferGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkRegisterImageColorBufferGOOGLE returnUnmarshal");
+    VkResult vkRegisterImageColorBufferGOOGLE_VkResult_return = (VkResult)0;
+    stream->read(&vkRegisterImageColorBufferGOOGLE_VkResult_return, sizeof(VkResult));
+    countingStream->clearPool();
+    stream->clearPool();
+    pool->freeAll();
+    mImpl->log("finish vkRegisterImageColorBufferGOOGLE");;
+    return vkRegisterImageColorBufferGOOGLE_VkResult_return;
+}
+
+VkResult VkEncoder::vkRegisterBufferColorBufferGOOGLE(
+    VkDevice device,
+    VkBuffer buffer,
+    uint32_t colorBuffer)
+{
+    AEMU_SCOPED_TRACE("vkRegisterBufferColorBufferGOOGLE encode");
+    mImpl->log("start vkRegisterBufferColorBufferGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkDevice local_device;
+    VkBuffer local_buffer;
+    uint32_t local_colorBuffer;
+    local_device = device;
+    local_buffer = buffer;
+    local_colorBuffer = colorBuffer;
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1484;
+        countingStream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1484, 1);
+        countingStream->write((uint64_t*)&cgen_var_1484, 1 * 8);
+        uint64_t cgen_var_1485;
+        countingStream->handleMapping()->mapHandles_VkBuffer_u64(&local_buffer, &cgen_var_1485, 1);
+        countingStream->write((uint64_t*)&cgen_var_1485, 1 * 8);
+        countingStream->write((uint32_t*)&local_colorBuffer, sizeof(uint32_t));
+    }
+    uint32_t packetSize_vkRegisterBufferColorBufferGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkRegisterBufferColorBufferGOOGLE = OP_vkRegisterBufferColorBufferGOOGLE;
+    stream->write(&opcode_vkRegisterBufferColorBufferGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkRegisterBufferColorBufferGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1486;
+    stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1486, 1);
+    stream->write((uint64_t*)&cgen_var_1486, 1 * 8);
+    uint64_t cgen_var_1487;
+    stream->handleMapping()->mapHandles_VkBuffer_u64(&local_buffer, &cgen_var_1487, 1);
+    stream->write((uint64_t*)&cgen_var_1487, 1 * 8);
+    stream->write((uint32_t*)&local_colorBuffer, sizeof(uint32_t));
+    AEMU_SCOPED_TRACE("vkRegisterBufferColorBufferGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkRegisterBufferColorBufferGOOGLE returnUnmarshal");
+    VkResult vkRegisterBufferColorBufferGOOGLE_VkResult_return = (VkResult)0;
+    stream->read(&vkRegisterBufferColorBufferGOOGLE_VkResult_return, sizeof(VkResult));
+    countingStream->clearPool();
+    stream->clearPool();
+    pool->freeAll();
+    mImpl->log("finish vkRegisterBufferColorBufferGOOGLE");;
+    return vkRegisterBufferColorBufferGOOGLE_VkResult_return;
+}
+
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+void VkEncoder::vkUpdateDescriptorSetWithTemplateSizedGOOGLE(
+    VkDevice device,
+    VkDescriptorSet descriptorSet,
+    VkDescriptorUpdateTemplate descriptorUpdateTemplate,
+    uint32_t imageInfoCount,
+    uint32_t bufferInfoCount,
+    uint32_t bufferViewCount,
+    const uint32_t* pImageInfoEntryIndices,
+    const uint32_t* pBufferInfoEntryIndices,
+    const uint32_t* pBufferViewEntryIndices,
+    const VkDescriptorImageInfo* pImageInfos,
+    const VkDescriptorBufferInfo* pBufferInfos,
+    const VkBufferView* pBufferViews)
+{
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateSizedGOOGLE encode");
+    mImpl->log("start vkUpdateDescriptorSetWithTemplateSizedGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkDevice local_device;
+    VkDescriptorSet local_descriptorSet;
+    VkDescriptorUpdateTemplate local_descriptorUpdateTemplate;
+    uint32_t local_imageInfoCount;
+    uint32_t local_bufferInfoCount;
+    uint32_t local_bufferViewCount;
+    uint32_t* local_pImageInfoEntryIndices;
+    uint32_t* local_pBufferInfoEntryIndices;
+    uint32_t* local_pBufferViewEntryIndices;
+    VkDescriptorImageInfo* local_pImageInfos;
+    VkDescriptorBufferInfo* local_pBufferInfos;
+    VkBufferView* local_pBufferViews;
+    local_device = device;
+    local_descriptorSet = descriptorSet;
+    local_descriptorUpdateTemplate = descriptorUpdateTemplate;
+    local_imageInfoCount = imageInfoCount;
+    local_bufferInfoCount = bufferInfoCount;
+    local_bufferViewCount = bufferViewCount;
+    local_pImageInfoEntryIndices = nullptr;
+    if (pImageInfoEntryIndices)
+    {
+        local_pImageInfoEntryIndices = (uint32_t*)pool->dupArray(pImageInfoEntryIndices, ((imageInfoCount)) * sizeof(const uint32_t));
+    }
+    local_pBufferInfoEntryIndices = nullptr;
+    if (pBufferInfoEntryIndices)
+    {
+        local_pBufferInfoEntryIndices = (uint32_t*)pool->dupArray(pBufferInfoEntryIndices, ((bufferInfoCount)) * sizeof(const uint32_t));
+    }
+    local_pBufferViewEntryIndices = nullptr;
+    if (pBufferViewEntryIndices)
+    {
+        local_pBufferViewEntryIndices = (uint32_t*)pool->dupArray(pBufferViewEntryIndices, ((bufferViewCount)) * sizeof(const uint32_t));
+    }
+    local_pImageInfos = nullptr;
+    if (pImageInfos)
+    {
+        local_pImageInfos = (VkDescriptorImageInfo*)pool->alloc(((imageInfoCount)) * sizeof(const VkDescriptorImageInfo));
+        for (uint32_t i = 0; i < (uint32_t)((imageInfoCount)); ++i)
+        {
+            deepcopy_VkDescriptorImageInfo(pool, pImageInfos + i, (VkDescriptorImageInfo*)(local_pImageInfos + i));
+        }
+    }
+    local_pBufferInfos = nullptr;
+    if (pBufferInfos)
+    {
+        local_pBufferInfos = (VkDescriptorBufferInfo*)pool->alloc(((bufferInfoCount)) * sizeof(const VkDescriptorBufferInfo));
+        for (uint32_t i = 0; i < (uint32_t)((bufferInfoCount)); ++i)
+        {
+            deepcopy_VkDescriptorBufferInfo(pool, pBufferInfos + i, (VkDescriptorBufferInfo*)(local_pBufferInfos + i));
+        }
+    }
+    local_pBufferViews = nullptr;
+    if (pBufferViews)
+    {
+        local_pBufferViews = (VkBufferView*)pool->dupArray(pBufferViews, ((bufferViewCount)) * sizeof(const VkBufferView));
+    }
+    if (local_pImageInfos)
+    {
+        for (uint32_t i = 0; i < (uint32_t)((imageInfoCount)); ++i)
+        {
+            transform_tohost_VkDescriptorImageInfo(mImpl->resources(), (VkDescriptorImageInfo*)(local_pImageInfos + i));
+        }
+    }
+    if (local_pBufferInfos)
+    {
+        for (uint32_t i = 0; i < (uint32_t)((bufferInfoCount)); ++i)
+        {
+            transform_tohost_VkDescriptorBufferInfo(mImpl->resources(), (VkDescriptorBufferInfo*)(local_pBufferInfos + i));
+        }
+    }
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1488;
+        countingStream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1488, 1);
+        countingStream->write((uint64_t*)&cgen_var_1488, 1 * 8);
+        uint64_t cgen_var_1489;
+        countingStream->handleMapping()->mapHandles_VkDescriptorSet_u64(&local_descriptorSet, &cgen_var_1489, 1);
+        countingStream->write((uint64_t*)&cgen_var_1489, 1 * 8);
+        uint64_t cgen_var_1490;
+        countingStream->handleMapping()->mapHandles_VkDescriptorUpdateTemplate_u64(&local_descriptorUpdateTemplate, &cgen_var_1490, 1);
+        countingStream->write((uint64_t*)&cgen_var_1490, 1 * 8);
+        countingStream->write((uint32_t*)&local_imageInfoCount, sizeof(uint32_t));
+        countingStream->write((uint32_t*)&local_bufferInfoCount, sizeof(uint32_t));
+        countingStream->write((uint32_t*)&local_bufferViewCount, sizeof(uint32_t));
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1491 = (uint64_t)(uintptr_t)local_pImageInfoEntryIndices;
+        countingStream->putBe64(cgen_var_1491);
+        if (local_pImageInfoEntryIndices)
+        {
+            countingStream->write((uint32_t*)local_pImageInfoEntryIndices, ((imageInfoCount)) * sizeof(uint32_t));
+        }
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1492 = (uint64_t)(uintptr_t)local_pBufferInfoEntryIndices;
+        countingStream->putBe64(cgen_var_1492);
+        if (local_pBufferInfoEntryIndices)
+        {
+            countingStream->write((uint32_t*)local_pBufferInfoEntryIndices, ((bufferInfoCount)) * sizeof(uint32_t));
+        }
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1493 = (uint64_t)(uintptr_t)local_pBufferViewEntryIndices;
+        countingStream->putBe64(cgen_var_1493);
+        if (local_pBufferViewEntryIndices)
+        {
+            countingStream->write((uint32_t*)local_pBufferViewEntryIndices, ((bufferViewCount)) * sizeof(uint32_t));
+        }
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1494 = (uint64_t)(uintptr_t)local_pImageInfos;
+        countingStream->putBe64(cgen_var_1494);
+        if (local_pImageInfos)
+        {
+            for (uint32_t i = 0; i < (uint32_t)((imageInfoCount)); ++i)
+            {
+                marshal_VkDescriptorImageInfo(countingStream, (VkDescriptorImageInfo*)(local_pImageInfos + i));
+            }
+        }
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1495 = (uint64_t)(uintptr_t)local_pBufferInfos;
+        countingStream->putBe64(cgen_var_1495);
+        if (local_pBufferInfos)
+        {
+            for (uint32_t i = 0; i < (uint32_t)((bufferInfoCount)); ++i)
+            {
+                marshal_VkDescriptorBufferInfo(countingStream, (VkDescriptorBufferInfo*)(local_pBufferInfos + i));
+            }
+        }
+        // WARNING PTR CHECK
+        uint64_t cgen_var_1496 = (uint64_t)(uintptr_t)local_pBufferViews;
+        countingStream->putBe64(cgen_var_1496);
+        if (local_pBufferViews)
+        {
+            if (((bufferViewCount)))
+            {
+                uint64_t* cgen_var_1497;
+                countingStream->alloc((void**)&cgen_var_1497, ((bufferViewCount)) * 8);
+                countingStream->handleMapping()->mapHandles_VkBufferView_u64(local_pBufferViews, cgen_var_1497, ((bufferViewCount)));
+                countingStream->write((uint64_t*)cgen_var_1497, ((bufferViewCount)) * 8);
+            }
+        }
+    }
+    uint32_t packetSize_vkUpdateDescriptorSetWithTemplateSizedGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkUpdateDescriptorSetWithTemplateSizedGOOGLE = OP_vkUpdateDescriptorSetWithTemplateSizedGOOGLE;
+    stream->write(&opcode_vkUpdateDescriptorSetWithTemplateSizedGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkUpdateDescriptorSetWithTemplateSizedGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1498;
+    stream->handleMapping()->mapHandles_VkDevice_u64(&local_device, &cgen_var_1498, 1);
+    stream->write((uint64_t*)&cgen_var_1498, 1 * 8);
+    uint64_t cgen_var_1499;
+    stream->handleMapping()->mapHandles_VkDescriptorSet_u64(&local_descriptorSet, &cgen_var_1499, 1);
+    stream->write((uint64_t*)&cgen_var_1499, 1 * 8);
+    uint64_t cgen_var_1500;
+    stream->handleMapping()->mapHandles_VkDescriptorUpdateTemplate_u64(&local_descriptorUpdateTemplate, &cgen_var_1500, 1);
+    stream->write((uint64_t*)&cgen_var_1500, 1 * 8);
+    stream->write((uint32_t*)&local_imageInfoCount, sizeof(uint32_t));
+    stream->write((uint32_t*)&local_bufferInfoCount, sizeof(uint32_t));
+    stream->write((uint32_t*)&local_bufferViewCount, sizeof(uint32_t));
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1501 = (uint64_t)(uintptr_t)local_pImageInfoEntryIndices;
+    stream->putBe64(cgen_var_1501);
+    if (local_pImageInfoEntryIndices)
+    {
+        stream->write((uint32_t*)local_pImageInfoEntryIndices, ((imageInfoCount)) * sizeof(uint32_t));
+    }
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1502 = (uint64_t)(uintptr_t)local_pBufferInfoEntryIndices;
+    stream->putBe64(cgen_var_1502);
+    if (local_pBufferInfoEntryIndices)
+    {
+        stream->write((uint32_t*)local_pBufferInfoEntryIndices, ((bufferInfoCount)) * sizeof(uint32_t));
+    }
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1503 = (uint64_t)(uintptr_t)local_pBufferViewEntryIndices;
+    stream->putBe64(cgen_var_1503);
+    if (local_pBufferViewEntryIndices)
+    {
+        stream->write((uint32_t*)local_pBufferViewEntryIndices, ((bufferViewCount)) * sizeof(uint32_t));
+    }
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1504 = (uint64_t)(uintptr_t)local_pImageInfos;
+    stream->putBe64(cgen_var_1504);
+    if (local_pImageInfos)
+    {
+        for (uint32_t i = 0; i < (uint32_t)((imageInfoCount)); ++i)
+        {
+            marshal_VkDescriptorImageInfo(stream, (VkDescriptorImageInfo*)(local_pImageInfos + i));
+        }
+    }
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1505 = (uint64_t)(uintptr_t)local_pBufferInfos;
+    stream->putBe64(cgen_var_1505);
+    if (local_pBufferInfos)
+    {
+        for (uint32_t i = 0; i < (uint32_t)((bufferInfoCount)); ++i)
+        {
+            marshal_VkDescriptorBufferInfo(stream, (VkDescriptorBufferInfo*)(local_pBufferInfos + i));
+        }
+    }
+    // WARNING PTR CHECK
+    uint64_t cgen_var_1506 = (uint64_t)(uintptr_t)local_pBufferViews;
+    stream->putBe64(cgen_var_1506);
+    if (local_pBufferViews)
+    {
+        if (((bufferViewCount)))
+        {
+            uint64_t* cgen_var_1507;
+            stream->alloc((void**)&cgen_var_1507, ((bufferViewCount)) * 8);
+            stream->handleMapping()->mapHandles_VkBufferView_u64(local_pBufferViews, cgen_var_1507, ((bufferViewCount)));
+            stream->write((uint64_t*)cgen_var_1507, ((bufferViewCount)) * 8);
+        }
+    }
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateSizedGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateSizedGOOGLE returnUnmarshal");
+    mImpl->log("finish vkUpdateDescriptorSetWithTemplateSizedGOOGLE");;
+}
+
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+void VkEncoder::vkBeginCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+    const VkCommandBufferBeginInfo* pBeginInfo)
+{
+    AEMU_SCOPED_TRACE("vkBeginCommandBufferAsyncGOOGLE encode");
+    mImpl->log("start vkBeginCommandBufferAsyncGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkCommandBuffer local_commandBuffer;
+    VkCommandBufferBeginInfo* local_pBeginInfo;
+    local_commandBuffer = commandBuffer;
+    local_pBeginInfo = nullptr;
+    if (pBeginInfo)
+    {
+        local_pBeginInfo = (VkCommandBufferBeginInfo*)pool->alloc(sizeof(const VkCommandBufferBeginInfo));
+        deepcopy_VkCommandBufferBeginInfo(pool, pBeginInfo, (VkCommandBufferBeginInfo*)(local_pBeginInfo));
+    }
+    if (local_pBeginInfo)
+    {
+        transform_tohost_VkCommandBufferBeginInfo(mImpl->resources(), (VkCommandBufferBeginInfo*)(local_pBeginInfo));
+    }
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1508;
+        countingStream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1508, 1);
+        countingStream->write((uint64_t*)&cgen_var_1508, 1 * 8);
+        marshal_VkCommandBufferBeginInfo(countingStream, (VkCommandBufferBeginInfo*)(local_pBeginInfo));
+    }
+    uint32_t packetSize_vkBeginCommandBufferAsyncGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkBeginCommandBufferAsyncGOOGLE = OP_vkBeginCommandBufferAsyncGOOGLE;
+    stream->write(&opcode_vkBeginCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkBeginCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1509;
+    stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1509, 1);
+    stream->write((uint64_t*)&cgen_var_1509, 1 * 8);
+    marshal_VkCommandBufferBeginInfo(stream, (VkCommandBufferBeginInfo*)(local_pBeginInfo));
+    AEMU_SCOPED_TRACE("vkBeginCommandBufferAsyncGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkBeginCommandBufferAsyncGOOGLE returnUnmarshal");
+    mImpl->log("finish vkBeginCommandBufferAsyncGOOGLE");;
+}
+
+void VkEncoder::vkEndCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer)
+{
+    AEMU_SCOPED_TRACE("vkEndCommandBufferAsyncGOOGLE encode");
+    mImpl->log("start vkEndCommandBufferAsyncGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkCommandBuffer local_commandBuffer;
+    local_commandBuffer = commandBuffer;
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1510;
+        countingStream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1510, 1);
+        countingStream->write((uint64_t*)&cgen_var_1510, 1 * 8);
+    }
+    uint32_t packetSize_vkEndCommandBufferAsyncGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkEndCommandBufferAsyncGOOGLE = OP_vkEndCommandBufferAsyncGOOGLE;
+    stream->write(&opcode_vkEndCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkEndCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1511;
+    stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1511, 1);
+    stream->write((uint64_t*)&cgen_var_1511, 1 * 8);
+    AEMU_SCOPED_TRACE("vkEndCommandBufferAsyncGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkEndCommandBufferAsyncGOOGLE returnUnmarshal");
+    mImpl->log("finish vkEndCommandBufferAsyncGOOGLE");;
+}
+
+void VkEncoder::vkResetCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+    VkCommandBufferResetFlags flags)
+{
+    AEMU_SCOPED_TRACE("vkResetCommandBufferAsyncGOOGLE encode");
+    mImpl->log("start vkResetCommandBufferAsyncGOOGLE");
+    auto stream = mImpl->stream();
+    auto countingStream = mImpl->countingStream();
+    auto resources = mImpl->resources();
+    auto pool = mImpl->pool();
+    stream->setHandleMapping(resources->unwrapMapping());
+    VkCommandBuffer local_commandBuffer;
+    VkCommandBufferResetFlags local_flags;
+    local_commandBuffer = commandBuffer;
+    local_flags = flags;
+    countingStream->rewind();
+    {
+        uint64_t cgen_var_1512;
+        countingStream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1512, 1);
+        countingStream->write((uint64_t*)&cgen_var_1512, 1 * 8);
+        countingStream->write((VkCommandBufferResetFlags*)&local_flags, sizeof(VkCommandBufferResetFlags));
+    }
+    uint32_t packetSize_vkResetCommandBufferAsyncGOOGLE = 4 + 4 + (uint32_t)countingStream->bytesWritten();
+    countingStream->rewind();
+    uint32_t opcode_vkResetCommandBufferAsyncGOOGLE = OP_vkResetCommandBufferAsyncGOOGLE;
+    stream->write(&opcode_vkResetCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    stream->write(&packetSize_vkResetCommandBufferAsyncGOOGLE, sizeof(uint32_t));
+    uint64_t cgen_var_1513;
+    stream->handleMapping()->mapHandles_VkCommandBuffer_u64(&local_commandBuffer, &cgen_var_1513, 1);
+    stream->write((uint64_t*)&cgen_var_1513, 1 * 8);
+    stream->write((VkCommandBufferResetFlags*)&local_flags, sizeof(VkCommandBufferResetFlags));
+    AEMU_SCOPED_TRACE("vkResetCommandBufferAsyncGOOGLE readParams");
+    AEMU_SCOPED_TRACE("vkResetCommandBufferAsyncGOOGLE returnUnmarshal");
+    mImpl->log("finish vkResetCommandBufferAsyncGOOGLE");;
 }
 
 #endif

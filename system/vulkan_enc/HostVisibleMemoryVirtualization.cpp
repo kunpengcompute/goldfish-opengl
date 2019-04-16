@@ -188,6 +188,28 @@ bool isHostVisibleMemoryTypeIndexForGuest(
     return props.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 }
 
+bool isDeviceLocalMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index) {
+
+    const auto& props =
+        info->virtualizationSupported ?
+        info->guestMemoryProperties :
+        info->hostMemoryProperties;
+
+    return props.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+}
+
+bool isNoFlagsMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index) {
+    const auto& props =
+        info->virtualizationSupported ?
+        info->guestMemoryProperties :
+        info->hostMemoryProperties;
+    return props.memoryTypes[index].propertyFlags == 0;
+}
+
 VkResult finishHostMemAllocInit(
     VkEncoder*,
     VkDevice device,
@@ -250,7 +272,7 @@ void subAllocHostMemory(
              alloc->nonCoherentAtomSize - 1) /
             alloc->nonCoherentAtomSize);
 
-    ALOGD("%s: alloc size %u mapped size %u ncaSize %u\n", __func__,
+    ALOGV("%s: alloc size %u mapped size %u ncaSize %u\n", __func__,
             (unsigned int)pAllocateInfo->allocationSize,
             (unsigned int)mappedSize,
             (unsigned int)alloc->nonCoherentAtomSize);
@@ -272,6 +294,13 @@ void subFreeHostMemory(SubAlloc* toFree) {
     delete_goldfish_VkDeviceMemory(toFree->subMemory);
     toFree->subAlloc->free(toFree->mappedPtr);
     memset(toFree, 0x0, sizeof(SubAlloc));
+}
+
+bool canSubAlloc(android::base::SubAllocator* subAlloc, VkDeviceSize size) {
+    auto ptr = subAlloc->alloc(size);
+    if (!ptr) return false;
+    subAlloc->free(ptr);
+    return true;
 }
 
 } // namespace goldfish_vk

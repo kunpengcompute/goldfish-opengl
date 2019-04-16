@@ -6346,6 +6346,44 @@ void deepcopy_VkCheckpointDataNV(
 #endif
 #ifdef VK_GOOGLE_address_space
 #endif
+#ifdef VK_GOOGLE_color_buffer
+void deepcopy_VkImportColorBufferGOOGLE(
+    Pool* pool,
+    const VkImportColorBufferGOOGLE* from,
+    VkImportColorBufferGOOGLE* to)
+{
+    (void)pool;
+    *to = *from;
+    size_t pNext_size = goldfish_vk_extension_struct_size(from->pNext);
+    to->pNext = nullptr;
+    if (pNext_size)
+    {
+        to->pNext = (void*)pool->alloc(pNext_size);
+        deepcopy_extension_struct(pool, from->pNext, (void*)(to->pNext));
+    }
+}
+
+void deepcopy_VkImportPhysicalAddressGOOGLE(
+    Pool* pool,
+    const VkImportPhysicalAddressGOOGLE* from,
+    VkImportPhysicalAddressGOOGLE* to)
+{
+    (void)pool;
+    *to = *from;
+    size_t pNext_size = goldfish_vk_extension_struct_size(from->pNext);
+    to->pNext = nullptr;
+    if (pNext_size)
+    {
+        to->pNext = (void*)pool->alloc(pNext_size);
+        deepcopy_extension_struct(pool, from->pNext, (void*)(to->pNext));
+    }
+}
+
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+#endif
 void deepcopy_extension_struct(
     Pool* pool,
     const void* structExtension,
@@ -6988,6 +7026,18 @@ void deepcopy_extension_struct(
         case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV:
         {
             deepcopy_VkQueueFamilyCheckpointPropertiesNV(pool, reinterpret_cast<const VkQueueFamilyCheckpointPropertiesNV*>(structExtension), reinterpret_cast<VkQueueFamilyCheckpointPropertiesNV*>(structExtension_out));
+            break;
+        }
+#endif
+#ifdef VK_GOOGLE_color_buffer
+        case VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE:
+        {
+            deepcopy_VkImportColorBufferGOOGLE(pool, reinterpret_cast<const VkImportColorBufferGOOGLE*>(structExtension), reinterpret_cast<VkImportColorBufferGOOGLE*>(structExtension_out));
+            break;
+        }
+        case VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE:
+        {
+            deepcopy_VkImportPhysicalAddressGOOGLE(pool, reinterpret_cast<const VkImportPhysicalAddressGOOGLE*>(structExtension), reinterpret_cast<VkImportPhysicalAddressGOOGLE*>(structExtension_out));
             break;
         }
 #endif

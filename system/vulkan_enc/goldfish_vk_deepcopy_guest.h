@@ -2010,5 +2010,21 @@ void deepcopy_VkCheckpointDataNV(
 #endif
 #ifdef VK_GOOGLE_address_space
 #endif
+#ifdef VK_GOOGLE_color_buffer
+void deepcopy_VkImportColorBufferGOOGLE(
+    Pool* pool,
+    const VkImportColorBufferGOOGLE* from,
+    VkImportColorBufferGOOGLE* to);
+
+void deepcopy_VkImportPhysicalAddressGOOGLE(
+    Pool* pool,
+    const VkImportPhysicalAddressGOOGLE* from,
+    VkImportPhysicalAddressGOOGLE* to);
+
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+#endif
 
 } // namespace goldfish_vk

@@ -20,7 +20,11 @@
 #include "eglDisplay.h"
 #include "eglSync.h"
 #include "egl_ftable.h"
+#if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
+#else
+#include <log/log.h>
+#endif
 #include <cutils/properties.h>
 #include "goldfish_sync.h"
 #include "GLClientState.h"
@@ -1994,8 +1998,13 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
             case HAL_PIXEL_FORMAT_RGB_565:
             case HAL_PIXEL_FORMAT_YV12:
             case HAL_PIXEL_FORMAT_BGRA_8888:
+#if PLATFORM_SDK_VERSION >= 26
             case HAL_PIXEL_FORMAT_RGBA_FP16:
             case HAL_PIXEL_FORMAT_RGBA_1010102:
+#endif
+#if PLATFORM_SDK_VERSION >= 28
+            case HAL_PIXEL_FORMAT_YCBCR_420_888:
+#endif
                 break;
             default:
                 setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);

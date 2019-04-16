@@ -36,7 +36,6 @@
 // required extensions, but the approach will be to
 // implement them completely on the guest side.
 #undef VK_KHR_android_surface
-#undef VK_ANDROID_external_memory_android_hardware_buffer
 
 
 namespace goldfish_vk {
@@ -47,6 +46,7 @@ static VkResult entry_vkCreateInstance(
     const VkAllocationCallbacks* pAllocator,
     VkInstance* pInstance)
 {
+    AEMU_SCOPED_TRACE("vkCreateInstance");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateInstance_VkResult_return = (VkResult)0;
     vkCreateInstance_VkResult_return = vkEnc->vkCreateInstance(pCreateInfo, pAllocator, pInstance);
@@ -56,6 +56,7 @@ static void entry_vkDestroyInstance(
     VkInstance instance,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyInstance");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyInstance(instance, pAllocator);
 }
@@ -64,15 +65,18 @@ static VkResult entry_vkEnumeratePhysicalDevices(
     uint32_t* pPhysicalDeviceCount,
     VkPhysicalDevice* pPhysicalDevices)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDevices");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumeratePhysicalDevices_VkResult_return = (VkResult)0;
-    vkEnumeratePhysicalDevices_VkResult_return = vkEnc->vkEnumeratePhysicalDevices(instance, pPhysicalDeviceCount, pPhysicalDevices);
+    auto resources = ResourceTracker::get();
+    vkEnumeratePhysicalDevices_VkResult_return = resources->on_vkEnumeratePhysicalDevices(vkEnc, VK_SUCCESS, instance, pPhysicalDeviceCount, pPhysicalDevices);
     return vkEnumeratePhysicalDevices_VkResult_return;
 }
 static void entry_vkGetPhysicalDeviceFeatures(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures);
 }
@@ -81,6 +85,7 @@ static void entry_vkGetPhysicalDeviceFormatProperties(
     VkFormat format,
     VkFormatProperties* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFormatProperties(physicalDevice, format, pFormatProperties);
 }
@@ -93,6 +98,7 @@ static VkResult entry_vkGetPhysicalDeviceImageFormatProperties(
     VkImageCreateFlags flags,
     VkImageFormatProperties* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceImageFormatProperties_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceImageFormatProperties_VkResult_return = vkEnc->vkGetPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, pImageFormatProperties);
@@ -102,6 +108,7 @@ static void entry_vkGetPhysicalDeviceProperties(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceProperties(physicalDevice, pProperties);
 }
@@ -110,6 +117,7 @@ static void entry_vkGetPhysicalDeviceQueueFamilyProperties(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }
@@ -117,6 +125,7 @@ static void entry_vkGetPhysicalDeviceMemoryProperties(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
 }
@@ -124,6 +133,7 @@ static PFN_vkVoidFunction entry_vkGetInstanceProcAddr(
     VkInstance instance,
     const char* pName)
 {
+    AEMU_SCOPED_TRACE("vkGetInstanceProcAddr");
     auto vkEnc = HostConnection::get()->vkEncoder();
     PFN_vkVoidFunction vkGetInstanceProcAddr_PFN_vkVoidFunction_return = (PFN_vkVoidFunction)0;
     vkGetInstanceProcAddr_PFN_vkVoidFunction_return = vkEnc->vkGetInstanceProcAddr(instance, pName);
@@ -133,6 +143,7 @@ static PFN_vkVoidFunction entry_vkGetDeviceProcAddr(
     VkDevice device,
     const char* pName)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceProcAddr");
     auto vkEnc = HostConnection::get()->vkEncoder();
     PFN_vkVoidFunction vkGetDeviceProcAddr_PFN_vkVoidFunction_return = (PFN_vkVoidFunction)0;
     vkGetDeviceProcAddr_PFN_vkVoidFunction_return = vkEnc->vkGetDeviceProcAddr(device, pName);
@@ -144,6 +155,7 @@ static VkResult entry_vkCreateDevice(
     const VkAllocationCallbacks* pAllocator,
     VkDevice* pDevice)
 {
+    AEMU_SCOPED_TRACE("vkCreateDevice");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDevice_VkResult_return = (VkResult)0;
     vkCreateDevice_VkResult_return = vkEnc->vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
@@ -153,6 +165,7 @@ static void entry_vkDestroyDevice(
     VkDevice device,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDevice");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDevice(device, pAllocator);
 }
@@ -161,6 +174,7 @@ static VkResult entry_vkEnumerateInstanceExtensionProperties(
     uint32_t* pPropertyCount,
     VkExtensionProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceExtensionProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumerateInstanceExtensionProperties_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
@@ -173,6 +187,7 @@ static VkResult entry_vkEnumerateDeviceExtensionProperties(
     uint32_t* pPropertyCount,
     VkExtensionProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceExtensionProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumerateDeviceExtensionProperties_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
@@ -183,6 +198,7 @@ static VkResult entry_vkEnumerateInstanceLayerProperties(
     uint32_t* pPropertyCount,
     VkLayerProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceLayerProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumerateInstanceLayerProperties_VkResult_return = (VkResult)0;
     vkEnumerateInstanceLayerProperties_VkResult_return = vkEnc->vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
@@ -193,6 +209,7 @@ static VkResult entry_vkEnumerateDeviceLayerProperties(
     uint32_t* pPropertyCount,
     VkLayerProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateDeviceLayerProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumerateDeviceLayerProperties_VkResult_return = (VkResult)0;
     vkEnumerateDeviceLayerProperties_VkResult_return = vkEnc->vkEnumerateDeviceLayerProperties(physicalDevice, pPropertyCount, pProperties);
@@ -204,6 +221,7 @@ static void entry_vkGetDeviceQueue(
     uint32_t queueIndex,
     VkQueue* pQueue)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);
 }
@@ -213,14 +231,17 @@ static VkResult entry_vkQueueSubmit(
     const VkSubmitInfo* pSubmits,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkQueueSubmit");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkQueueSubmit_VkResult_return = (VkResult)0;
-    vkQueueSubmit_VkResult_return = vkEnc->vkQueueSubmit(queue, submitCount, pSubmits, fence);
+    auto resources = ResourceTracker::get();
+    vkQueueSubmit_VkResult_return = resources->on_vkQueueSubmit(vkEnc, VK_SUCCESS, queue, submitCount, pSubmits, fence);
     return vkQueueSubmit_VkResult_return;
 }
 static VkResult entry_vkQueueWaitIdle(
     VkQueue queue)
 {
+    AEMU_SCOPED_TRACE("vkQueueWaitIdle");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkQueueWaitIdle_VkResult_return = (VkResult)0;
     vkQueueWaitIdle_VkResult_return = vkEnc->vkQueueWaitIdle(queue);
@@ -229,6 +250,7 @@ static VkResult entry_vkQueueWaitIdle(
 static VkResult entry_vkDeviceWaitIdle(
     VkDevice device)
 {
+    AEMU_SCOPED_TRACE("vkDeviceWaitIdle");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkDeviceWaitIdle_VkResult_return = (VkResult)0;
     vkDeviceWaitIdle_VkResult_return = vkEnc->vkDeviceWaitIdle(device);
@@ -240,6 +262,7 @@ static VkResult entry_vkAllocateMemory(
     const VkAllocationCallbacks* pAllocator,
     VkDeviceMemory* pMemory)
 {
+    AEMU_SCOPED_TRACE("vkAllocateMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAllocateMemory_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
@@ -251,6 +274,7 @@ static void entry_vkFreeMemory(
     VkDeviceMemory memory,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkFreeMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     auto resources = ResourceTracker::get();
     resources->on_vkFreeMemory(vkEnc, device, memory, pAllocator);
@@ -263,6 +287,7 @@ static VkResult entry_vkMapMemory(
     VkMemoryMapFlags flags,
     void** ppData)
 {
+    AEMU_SCOPED_TRACE("vkMapMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkMapMemory_VkResult_return = (VkResult)0;
     vkMapMemory_VkResult_return = vkEnc->vkMapMemory(device, memory, offset, size, flags, ppData);
@@ -272,6 +297,7 @@ static void entry_vkUnmapMemory(
     VkDevice device,
     VkDeviceMemory memory)
 {
+    AEMU_SCOPED_TRACE("vkUnmapMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkUnmapMemory(device, memory);
 }
@@ -280,6 +306,7 @@ static VkResult entry_vkFlushMappedMemoryRanges(
     uint32_t memoryRangeCount,
     const VkMappedMemoryRange* pMemoryRanges)
 {
+    AEMU_SCOPED_TRACE("vkFlushMappedMemoryRanges");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkFlushMappedMemoryRanges_VkResult_return = (VkResult)0;
     vkFlushMappedMemoryRanges_VkResult_return = vkEnc->vkFlushMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
@@ -290,6 +317,7 @@ static VkResult entry_vkInvalidateMappedMemoryRanges(
     uint32_t memoryRangeCount,
     const VkMappedMemoryRange* pMemoryRanges)
 {
+    AEMU_SCOPED_TRACE("vkInvalidateMappedMemoryRanges");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkInvalidateMappedMemoryRanges_VkResult_return = (VkResult)0;
     vkInvalidateMappedMemoryRanges_VkResult_return = vkEnc->vkInvalidateMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
@@ -300,6 +328,7 @@ static void entry_vkGetDeviceMemoryCommitment(
     VkDeviceMemory memory,
     VkDeviceSize* pCommittedMemoryInBytes)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceMemoryCommitment");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
 }
@@ -309,9 +338,11 @@ static VkResult entry_vkBindBufferMemory(
     VkDeviceMemory memory,
     VkDeviceSize memoryOffset)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory_VkResult_return = (VkResult)0;
-    vkBindBufferMemory_VkResult_return = vkEnc->vkBindBufferMemory(device, buffer, memory, memoryOffset);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory_VkResult_return = resources->on_vkBindBufferMemory(vkEnc, VK_SUCCESS, device, buffer, memory, memoryOffset);
     return vkBindBufferMemory_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory(
@@ -320,9 +351,11 @@ static VkResult entry_vkBindImageMemory(
     VkDeviceMemory memory,
     VkDeviceSize memoryOffset)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory_VkResult_return = (VkResult)0;
-    vkBindImageMemory_VkResult_return = vkEnc->vkBindImageMemory(device, image, memory, memoryOffset);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory_VkResult_return = resources->on_vkBindImageMemory(vkEnc, VK_SUCCESS, device, image, memory, memoryOffset);
     return vkBindImageMemory_VkResult_return;
 }
 static void entry_vkGetBufferMemoryRequirements(
@@ -330,16 +363,20 @@ static void entry_vkGetBufferMemoryRequirements(
     VkBuffer buffer,
     VkMemoryRequirements* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements(vkEnc, device, buffer, pMemoryRequirements);
 }
 static void entry_vkGetImageMemoryRequirements(
     VkDevice device,
     VkImage image,
     VkMemoryRequirements* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements(device, image, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements(vkEnc, device, image, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements(
     VkDevice device,
@@ -347,6 +384,7 @@ static void entry_vkGetImageSparseMemoryRequirements(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
@@ -360,6 +398,7 @@ static void entry_vkGetPhysicalDeviceSparseImageFormatProperties(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, pPropertyCount, pProperties);
 }
@@ -369,6 +408,7 @@ static VkResult entry_vkQueueBindSparse(
     const VkBindSparseInfo* pBindInfo,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkQueueBindSparse");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkQueueBindSparse_VkResult_return = (VkResult)0;
     vkQueueBindSparse_VkResult_return = vkEnc->vkQueueBindSparse(queue, bindInfoCount, pBindInfo, fence);
@@ -380,6 +420,7 @@ static VkResult entry_vkCreateFence(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkCreateFence");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateFence_VkResult_return = (VkResult)0;
     vkCreateFence_VkResult_return = vkEnc->vkCreateFence(device, pCreateInfo, pAllocator, pFence);
@@ -390,6 +431,7 @@ static void entry_vkDestroyFence(
     VkFence fence,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyFence");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyFence(device, fence, pAllocator);
 }
@@ -398,6 +440,7 @@ static VkResult entry_vkResetFences(
     uint32_t fenceCount,
     const VkFence* pFences)
 {
+    AEMU_SCOPED_TRACE("vkResetFences");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkResetFences_VkResult_return = (VkResult)0;
     vkResetFences_VkResult_return = vkEnc->vkResetFences(device, fenceCount, pFences);
@@ -407,6 +450,7 @@ static VkResult entry_vkGetFenceStatus(
     VkDevice device,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceStatus");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetFenceStatus_VkResult_return = (VkResult)0;
     vkGetFenceStatus_VkResult_return = vkEnc->vkGetFenceStatus(device, fence);
@@ -419,6 +463,7 @@ static VkResult entry_vkWaitForFences(
     VkBool32 waitAll,
     uint64_t timeout)
 {
+    AEMU_SCOPED_TRACE("vkWaitForFences");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkWaitForFences_VkResult_return = (VkResult)0;
     vkWaitForFences_VkResult_return = vkEnc->vkWaitForFences(device, fenceCount, pFences, waitAll, timeout);
@@ -430,9 +475,11 @@ static VkResult entry_vkCreateSemaphore(
     const VkAllocationCallbacks* pAllocator,
     VkSemaphore* pSemaphore)
 {
+    AEMU_SCOPED_TRACE("vkCreateSemaphore");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSemaphore_VkResult_return = (VkResult)0;
-    vkCreateSemaphore_VkResult_return = vkEnc->vkCreateSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
+    auto resources = ResourceTracker::get();
+    vkCreateSemaphore_VkResult_return = resources->on_vkCreateSemaphore(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pSemaphore);
     return vkCreateSemaphore_VkResult_return;
 }
 static void entry_vkDestroySemaphore(
@@ -440,8 +487,10 @@ static void entry_vkDestroySemaphore(
     VkSemaphore semaphore,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySemaphore");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroySemaphore(device, semaphore, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroySemaphore(vkEnc, device, semaphore, pAllocator);
 }
 static VkResult entry_vkCreateEvent(
     VkDevice device,
@@ -449,6 +498,7 @@ static VkResult entry_vkCreateEvent(
     const VkAllocationCallbacks* pAllocator,
     VkEvent* pEvent)
 {
+    AEMU_SCOPED_TRACE("vkCreateEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateEvent_VkResult_return = (VkResult)0;
     vkCreateEvent_VkResult_return = vkEnc->vkCreateEvent(device, pCreateInfo, pAllocator, pEvent);
@@ -459,6 +509,7 @@ static void entry_vkDestroyEvent(
     VkEvent event,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyEvent(device, event, pAllocator);
 }
@@ -466,6 +517,7 @@ static VkResult entry_vkGetEventStatus(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkGetEventStatus");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetEventStatus_VkResult_return = (VkResult)0;
     vkGetEventStatus_VkResult_return = vkEnc->vkGetEventStatus(device, event);
@@ -475,6 +527,7 @@ static VkResult entry_vkSetEvent(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkSetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkSetEvent_VkResult_return = (VkResult)0;
     vkSetEvent_VkResult_return = vkEnc->vkSetEvent(device, event);
@@ -484,6 +537,7 @@ static VkResult entry_vkResetEvent(
     VkDevice device,
     VkEvent event)
 {
+    AEMU_SCOPED_TRACE("vkResetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkResetEvent_VkResult_return = (VkResult)0;
     vkResetEvent_VkResult_return = vkEnc->vkResetEvent(device, event);
@@ -495,6 +549,7 @@ static VkResult entry_vkCreateQueryPool(
     const VkAllocationCallbacks* pAllocator,
     VkQueryPool* pQueryPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateQueryPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateQueryPool_VkResult_return = (VkResult)0;
     vkCreateQueryPool_VkResult_return = vkEnc->vkCreateQueryPool(device, pCreateInfo, pAllocator, pQueryPool);
@@ -505,6 +560,7 @@ static void entry_vkDestroyQueryPool(
     VkQueryPool queryPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyQueryPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyQueryPool(device, queryPool, pAllocator);
 }
@@ -518,6 +574,7 @@ static VkResult entry_vkGetQueryPoolResults(
     VkDeviceSize stride,
     VkQueryResultFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkGetQueryPoolResults");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetQueryPoolResults_VkResult_return = (VkResult)0;
     vkGetQueryPoolResults_VkResult_return = vkEnc->vkGetQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
@@ -529,9 +586,11 @@ static VkResult entry_vkCreateBuffer(
     const VkAllocationCallbacks* pAllocator,
     VkBuffer* pBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCreateBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateBuffer_VkResult_return = (VkResult)0;
-    vkCreateBuffer_VkResult_return = vkEnc->vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+    auto resources = ResourceTracker::get();
+    vkCreateBuffer_VkResult_return = resources->on_vkCreateBuffer(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pBuffer);
     return vkCreateBuffer_VkResult_return;
 }
 static void entry_vkDestroyBuffer(
@@ -539,8 +598,10 @@ static void entry_vkDestroyBuffer(
     VkBuffer buffer,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroyBuffer(device, buffer, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroyBuffer(vkEnc, device, buffer, pAllocator);
 }
 static VkResult entry_vkCreateBufferView(
     VkDevice device,
@@ -548,6 +609,7 @@ static VkResult entry_vkCreateBufferView(
     const VkAllocationCallbacks* pAllocator,
     VkBufferView* pView)
 {
+    AEMU_SCOPED_TRACE("vkCreateBufferView");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateBufferView_VkResult_return = (VkResult)0;
     vkCreateBufferView_VkResult_return = vkEnc->vkCreateBufferView(device, pCreateInfo, pAllocator, pView);
@@ -558,6 +620,7 @@ static void entry_vkDestroyBufferView(
     VkBufferView bufferView,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyBufferView");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyBufferView(device, bufferView, pAllocator);
 }
@@ -567,9 +630,11 @@ static VkResult entry_vkCreateImage(
     const VkAllocationCallbacks* pAllocator,
     VkImage* pImage)
 {
+    AEMU_SCOPED_TRACE("vkCreateImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateImage_VkResult_return = (VkResult)0;
-    vkCreateImage_VkResult_return = vkEnc->vkCreateImage(device, pCreateInfo, pAllocator, pImage);
+    auto resources = ResourceTracker::get();
+    vkCreateImage_VkResult_return = resources->on_vkCreateImage(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pImage);
     return vkCreateImage_VkResult_return;
 }
 static void entry_vkDestroyImage(
@@ -577,8 +642,10 @@ static void entry_vkDestroyImage(
     VkImage image,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroyImage(device, image, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroyImage(vkEnc, device, image, pAllocator);
 }
 static void entry_vkGetImageSubresourceLayout(
     VkDevice device,
@@ -586,6 +653,7 @@ static void entry_vkGetImageSubresourceLayout(
     const VkImageSubresource* pSubresource,
     VkSubresourceLayout* pLayout)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSubresourceLayout");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetImageSubresourceLayout(device, image, pSubresource, pLayout);
 }
@@ -595,6 +663,7 @@ static VkResult entry_vkCreateImageView(
     const VkAllocationCallbacks* pAllocator,
     VkImageView* pView)
 {
+    AEMU_SCOPED_TRACE("vkCreateImageView");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateImageView_VkResult_return = (VkResult)0;
     vkCreateImageView_VkResult_return = vkEnc->vkCreateImageView(device, pCreateInfo, pAllocator, pView);
@@ -605,6 +674,7 @@ static void entry_vkDestroyImageView(
     VkImageView imageView,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyImageView");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyImageView(device, imageView, pAllocator);
 }
@@ -614,6 +684,7 @@ static VkResult entry_vkCreateShaderModule(
     const VkAllocationCallbacks* pAllocator,
     VkShaderModule* pShaderModule)
 {
+    AEMU_SCOPED_TRACE("vkCreateShaderModule");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateShaderModule_VkResult_return = (VkResult)0;
     vkCreateShaderModule_VkResult_return = vkEnc->vkCreateShaderModule(device, pCreateInfo, pAllocator, pShaderModule);
@@ -624,6 +695,7 @@ static void entry_vkDestroyShaderModule(
     VkShaderModule shaderModule,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyShaderModule");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyShaderModule(device, shaderModule, pAllocator);
 }
@@ -633,6 +705,7 @@ static VkResult entry_vkCreatePipelineCache(
     const VkAllocationCallbacks* pAllocator,
     VkPipelineCache* pPipelineCache)
 {
+    AEMU_SCOPED_TRACE("vkCreatePipelineCache");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreatePipelineCache_VkResult_return = (VkResult)0;
     vkCreatePipelineCache_VkResult_return = vkEnc->vkCreatePipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
@@ -643,6 +716,7 @@ static void entry_vkDestroyPipelineCache(
     VkPipelineCache pipelineCache,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipelineCache");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyPipelineCache(device, pipelineCache, pAllocator);
 }
@@ -652,6 +726,7 @@ static VkResult entry_vkGetPipelineCacheData(
     size_t* pDataSize,
     void* pData)
 {
+    AEMU_SCOPED_TRACE("vkGetPipelineCacheData");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPipelineCacheData_VkResult_return = (VkResult)0;
     vkGetPipelineCacheData_VkResult_return = vkEnc->vkGetPipelineCacheData(device, pipelineCache, pDataSize, pData);
@@ -663,6 +738,7 @@ static VkResult entry_vkMergePipelineCaches(
     uint32_t srcCacheCount,
     const VkPipelineCache* pSrcCaches)
 {
+    AEMU_SCOPED_TRACE("vkMergePipelineCaches");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkMergePipelineCaches_VkResult_return = (VkResult)0;
     vkMergePipelineCaches_VkResult_return = vkEnc->vkMergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
@@ -676,6 +752,7 @@ static VkResult entry_vkCreateGraphicsPipelines(
     const VkAllocationCallbacks* pAllocator,
     VkPipeline* pPipelines)
 {
+    AEMU_SCOPED_TRACE("vkCreateGraphicsPipelines");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateGraphicsPipelines_VkResult_return = (VkResult)0;
     vkCreateGraphicsPipelines_VkResult_return = vkEnc->vkCreateGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
@@ -689,6 +766,7 @@ static VkResult entry_vkCreateComputePipelines(
     const VkAllocationCallbacks* pAllocator,
     VkPipeline* pPipelines)
 {
+    AEMU_SCOPED_TRACE("vkCreateComputePipelines");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateComputePipelines_VkResult_return = (VkResult)0;
     vkCreateComputePipelines_VkResult_return = vkEnc->vkCreateComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
@@ -699,6 +777,7 @@ static void entry_vkDestroyPipeline(
     VkPipeline pipeline,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipeline");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyPipeline(device, pipeline, pAllocator);
 }
@@ -708,6 +787,7 @@ static VkResult entry_vkCreatePipelineLayout(
     const VkAllocationCallbacks* pAllocator,
     VkPipelineLayout* pPipelineLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreatePipelineLayout");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreatePipelineLayout_VkResult_return = (VkResult)0;
     vkCreatePipelineLayout_VkResult_return = vkEnc->vkCreatePipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout);
@@ -718,6 +798,7 @@ static void entry_vkDestroyPipelineLayout(
     VkPipelineLayout pipelineLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyPipelineLayout");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
 }
@@ -727,6 +808,7 @@ static VkResult entry_vkCreateSampler(
     const VkAllocationCallbacks* pAllocator,
     VkSampler* pSampler)
 {
+    AEMU_SCOPED_TRACE("vkCreateSampler");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSampler_VkResult_return = (VkResult)0;
     vkCreateSampler_VkResult_return = vkEnc->vkCreateSampler(device, pCreateInfo, pAllocator, pSampler);
@@ -737,6 +819,7 @@ static void entry_vkDestroySampler(
     VkSampler sampler,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySampler");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroySampler(device, sampler, pAllocator);
 }
@@ -746,6 +829,7 @@ static VkResult entry_vkCreateDescriptorSetLayout(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorSetLayout* pSetLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorSetLayout");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDescriptorSetLayout_VkResult_return = (VkResult)0;
     vkCreateDescriptorSetLayout_VkResult_return = vkEnc->vkCreateDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
@@ -756,6 +840,7 @@ static void entry_vkDestroyDescriptorSetLayout(
     VkDescriptorSetLayout descriptorSetLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorSetLayout");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 }
@@ -765,6 +850,7 @@ static VkResult entry_vkCreateDescriptorPool(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorPool* pDescriptorPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDescriptorPool_VkResult_return = (VkResult)0;
     vkCreateDescriptorPool_VkResult_return = vkEnc->vkCreateDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
@@ -775,6 +861,7 @@ static void entry_vkDestroyDescriptorPool(
     VkDescriptorPool descriptorPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
 }
@@ -783,6 +870,7 @@ static VkResult entry_vkResetDescriptorPool(
     VkDescriptorPool descriptorPool,
     VkDescriptorPoolResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetDescriptorPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkResetDescriptorPool_VkResult_return = (VkResult)0;
     vkResetDescriptorPool_VkResult_return = vkEnc->vkResetDescriptorPool(device, descriptorPool, flags);
@@ -793,6 +881,7 @@ static VkResult entry_vkAllocateDescriptorSets(
     const VkDescriptorSetAllocateInfo* pAllocateInfo,
     VkDescriptorSet* pDescriptorSets)
 {
+    AEMU_SCOPED_TRACE("vkAllocateDescriptorSets");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAllocateDescriptorSets_VkResult_return = (VkResult)0;
     vkAllocateDescriptorSets_VkResult_return = vkEnc->vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
@@ -804,6 +893,7 @@ static VkResult entry_vkFreeDescriptorSets(
     uint32_t descriptorSetCount,
     const VkDescriptorSet* pDescriptorSets)
 {
+    AEMU_SCOPED_TRACE("vkFreeDescriptorSets");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkFreeDescriptorSets_VkResult_return = (VkResult)0;
     vkFreeDescriptorSets_VkResult_return = vkEnc->vkFreeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
@@ -816,6 +906,7 @@ static void entry_vkUpdateDescriptorSets(
     uint32_t descriptorCopyCount,
     const VkCopyDescriptorSet* pDescriptorCopies)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSets");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkUpdateDescriptorSets(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
 }
@@ -825,6 +916,7 @@ static VkResult entry_vkCreateFramebuffer(
     const VkAllocationCallbacks* pAllocator,
     VkFramebuffer* pFramebuffer)
 {
+    AEMU_SCOPED_TRACE("vkCreateFramebuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateFramebuffer_VkResult_return = (VkResult)0;
     vkCreateFramebuffer_VkResult_return = vkEnc->vkCreateFramebuffer(device, pCreateInfo, pAllocator, pFramebuffer);
@@ -835,6 +927,7 @@ static void entry_vkDestroyFramebuffer(
     VkFramebuffer framebuffer,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyFramebuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyFramebuffer(device, framebuffer, pAllocator);
 }
@@ -844,6 +937,7 @@ static VkResult entry_vkCreateRenderPass(
     const VkAllocationCallbacks* pAllocator,
     VkRenderPass* pRenderPass)
 {
+    AEMU_SCOPED_TRACE("vkCreateRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateRenderPass_VkResult_return = (VkResult)0;
     vkCreateRenderPass_VkResult_return = vkEnc->vkCreateRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
@@ -854,6 +948,7 @@ static void entry_vkDestroyRenderPass(
     VkRenderPass renderPass,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyRenderPass(device, renderPass, pAllocator);
 }
@@ -862,6 +957,7 @@ static void entry_vkGetRenderAreaGranularity(
     VkRenderPass renderPass,
     VkExtent2D* pGranularity)
 {
+    AEMU_SCOPED_TRACE("vkGetRenderAreaGranularity");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetRenderAreaGranularity(device, renderPass, pGranularity);
 }
@@ -871,6 +967,7 @@ static VkResult entry_vkCreateCommandPool(
     const VkAllocationCallbacks* pAllocator,
     VkCommandPool* pCommandPool)
 {
+    AEMU_SCOPED_TRACE("vkCreateCommandPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateCommandPool_VkResult_return = (VkResult)0;
     vkCreateCommandPool_VkResult_return = vkEnc->vkCreateCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
@@ -881,6 +978,7 @@ static void entry_vkDestroyCommandPool(
     VkCommandPool commandPool,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyCommandPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyCommandPool(device, commandPool, pAllocator);
 }
@@ -889,6 +987,7 @@ static VkResult entry_vkResetCommandPool(
     VkCommandPool commandPool,
     VkCommandPoolResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetCommandPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkResetCommandPool_VkResult_return = (VkResult)0;
     vkResetCommandPool_VkResult_return = vkEnc->vkResetCommandPool(device, commandPool, flags);
@@ -899,6 +998,7 @@ static VkResult entry_vkAllocateCommandBuffers(
     const VkCommandBufferAllocateInfo* pAllocateInfo,
     VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkAllocateCommandBuffers");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAllocateCommandBuffers_VkResult_return = (VkResult)0;
     vkAllocateCommandBuffers_VkResult_return = vkEnc->vkAllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
@@ -910,6 +1010,7 @@ static void entry_vkFreeCommandBuffers(
     uint32_t commandBufferCount,
     const VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkFreeCommandBuffers");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkFreeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
 }
@@ -917,26 +1018,32 @@ static VkResult entry_vkBeginCommandBuffer(
     VkCommandBuffer commandBuffer,
     const VkCommandBufferBeginInfo* pBeginInfo)
 {
+    AEMU_SCOPED_TRACE("vkBeginCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBeginCommandBuffer_VkResult_return = (VkResult)0;
-    vkBeginCommandBuffer_VkResult_return = vkEnc->vkBeginCommandBuffer(commandBuffer, pBeginInfo);
+    auto resources = ResourceTracker::get();
+    vkBeginCommandBuffer_VkResult_return = resources->on_vkBeginCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer, pBeginInfo);
     return vkBeginCommandBuffer_VkResult_return;
 }
 static VkResult entry_vkEndCommandBuffer(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkEndCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEndCommandBuffer_VkResult_return = (VkResult)0;
-    vkEndCommandBuffer_VkResult_return = vkEnc->vkEndCommandBuffer(commandBuffer);
+    auto resources = ResourceTracker::get();
+    vkEndCommandBuffer_VkResult_return = resources->on_vkEndCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer);
     return vkEndCommandBuffer_VkResult_return;
 }
 static VkResult entry_vkResetCommandBuffer(
     VkCommandBuffer commandBuffer,
     VkCommandBufferResetFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkResetCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkResetCommandBuffer_VkResult_return = (VkResult)0;
-    vkResetCommandBuffer_VkResult_return = vkEnc->vkResetCommandBuffer(commandBuffer, flags);
+    auto resources = ResourceTracker::get();
+    vkResetCommandBuffer_VkResult_return = resources->on_vkResetCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer, flags);
     return vkResetCommandBuffer_VkResult_return;
 }
 static void entry_vkCmdBindPipeline(
@@ -944,6 +1051,7 @@ static void entry_vkCmdBindPipeline(
     VkPipelineBindPoint pipelineBindPoint,
     VkPipeline pipeline)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindPipeline");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
@@ -953,6 +1061,7 @@ static void entry_vkCmdSetViewport(
     uint32_t viewportCount,
     const VkViewport* pViewports)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetViewport");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
 }
@@ -962,6 +1071,7 @@ static void entry_vkCmdSetScissor(
     uint32_t scissorCount,
     const VkRect2D* pScissors)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetScissor");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
 }
@@ -969,6 +1079,7 @@ static void entry_vkCmdSetLineWidth(
     VkCommandBuffer commandBuffer,
     float lineWidth)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetLineWidth");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetLineWidth(commandBuffer, lineWidth);
 }
@@ -978,6 +1089,7 @@ static void entry_vkCmdSetDepthBias(
     float depthBiasClamp,
     float depthBiasSlopeFactor)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBias");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
@@ -985,6 +1097,7 @@ static void entry_vkCmdSetBlendConstants(
     VkCommandBuffer commandBuffer,
     const float blendConstants)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetBlendConstants");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetBlendConstants(commandBuffer, blendConstants);
 }
@@ -993,6 +1106,7 @@ static void entry_vkCmdSetDepthBounds(
     float minDepthBounds,
     float maxDepthBounds)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDepthBounds");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
 }
@@ -1001,6 +1115,7 @@ static void entry_vkCmdSetStencilCompareMask(
     VkStencilFaceFlags faceMask,
     uint32_t compareMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilCompareMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
 }
@@ -1009,6 +1124,7 @@ static void entry_vkCmdSetStencilWriteMask(
     VkStencilFaceFlags faceMask,
     uint32_t writeMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilWriteMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
 }
@@ -1017,6 +1133,7 @@ static void entry_vkCmdSetStencilReference(
     VkStencilFaceFlags faceMask,
     uint32_t reference)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetStencilReference");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetStencilReference(commandBuffer, faceMask, reference);
 }
@@ -1030,6 +1147,7 @@ static void entry_vkCmdBindDescriptorSets(
     uint32_t dynamicOffsetCount,
     const uint32_t* pDynamicOffsets)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindDescriptorSets");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
 }
@@ -1039,6 +1157,7 @@ static void entry_vkCmdBindIndexBuffer(
     VkDeviceSize offset,
     VkIndexType indexType)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindIndexBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
 }
@@ -1049,6 +1168,7 @@ static void entry_vkCmdBindVertexBuffers(
     const VkBuffer* pBuffers,
     const VkDeviceSize* pOffsets)
 {
+    AEMU_SCOPED_TRACE("vkCmdBindVertexBuffers");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
 }
@@ -1059,6 +1179,7 @@ static void entry_vkCmdDraw(
     uint32_t firstVertex,
     uint32_t firstInstance)
 {
+    AEMU_SCOPED_TRACE("vkCmdDraw");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
@@ -1070,6 +1191,7 @@ static void entry_vkCmdDrawIndexed(
     int32_t vertexOffset,
     uint32_t firstInstance)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexed");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
@@ -1080,6 +1202,7 @@ static void entry_vkCmdDrawIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
@@ -1090,6 +1213,7 @@ static void entry_vkCmdDrawIndexedIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
@@ -1099,6 +1223,7 @@ static void entry_vkCmdDispatch(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatch");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
@@ -1107,6 +1232,7 @@ static void entry_vkCmdDispatchIndirect(
     VkBuffer buffer,
     VkDeviceSize offset)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDispatchIndirect(commandBuffer, buffer, offset);
 }
@@ -1117,6 +1243,7 @@ static void entry_vkCmdCopyBuffer(
     uint32_t regionCount,
     const VkBufferCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
 }
@@ -1129,6 +1256,7 @@ static void entry_vkCmdCopyImage(
     uint32_t regionCount,
     const VkImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
@@ -1142,6 +1270,7 @@ static void entry_vkCmdBlitImage(
     const VkImageBlit* pRegions,
     VkFilter filter)
 {
+    AEMU_SCOPED_TRACE("vkCmdBlitImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
 }
@@ -1153,6 +1282,7 @@ static void entry_vkCmdCopyBufferToImage(
     uint32_t regionCount,
     const VkBufferImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyBufferToImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
 }
@@ -1164,6 +1294,7 @@ static void entry_vkCmdCopyImageToBuffer(
     uint32_t regionCount,
     const VkBufferImageCopy* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyImageToBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
 }
@@ -1174,6 +1305,7 @@ static void entry_vkCmdUpdateBuffer(
     VkDeviceSize dataSize,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkCmdUpdateBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
 }
@@ -1184,6 +1316,7 @@ static void entry_vkCmdFillBuffer(
     VkDeviceSize size,
     uint32_t data)
 {
+    AEMU_SCOPED_TRACE("vkCmdFillBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
 }
@@ -1195,6 +1328,7 @@ static void entry_vkCmdClearColorImage(
     uint32_t rangeCount,
     const VkImageSubresourceRange* pRanges)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearColorImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
 }
@@ -1206,6 +1340,7 @@ static void entry_vkCmdClearDepthStencilImage(
     uint32_t rangeCount,
     const VkImageSubresourceRange* pRanges)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearDepthStencilImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
@@ -1216,6 +1351,7 @@ static void entry_vkCmdClearAttachments(
     uint32_t rectCount,
     const VkClearRect* pRects)
 {
+    AEMU_SCOPED_TRACE("vkCmdClearAttachments");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdClearAttachments(commandBuffer, attachmentCount, pAttachments, rectCount, pRects);
 }
@@ -1228,6 +1364,7 @@ static void entry_vkCmdResolveImage(
     uint32_t regionCount,
     const VkImageResolve* pRegions)
 {
+    AEMU_SCOPED_TRACE("vkCmdResolveImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
@@ -1236,6 +1373,7 @@ static void entry_vkCmdSetEvent(
     VkEvent event,
     VkPipelineStageFlags stageMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetEvent(commandBuffer, event, stageMask);
 }
@@ -1244,6 +1382,7 @@ static void entry_vkCmdResetEvent(
     VkEvent event,
     VkPipelineStageFlags stageMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdResetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdResetEvent(commandBuffer, event, stageMask);
 }
@@ -1260,6 +1399,7 @@ static void entry_vkCmdWaitEvents(
     uint32_t imageMemoryBarrierCount,
     const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
+    AEMU_SCOPED_TRACE("vkCmdWaitEvents");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdWaitEvents(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
@@ -1275,6 +1415,7 @@ static void entry_vkCmdPipelineBarrier(
     uint32_t imageMemoryBarrierCount,
     const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
+    AEMU_SCOPED_TRACE("vkCmdPipelineBarrier");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
@@ -1284,6 +1425,7 @@ static void entry_vkCmdBeginQuery(
     uint32_t query,
     VkQueryControlFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginQuery");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBeginQuery(commandBuffer, queryPool, query, flags);
 }
@@ -1292,6 +1434,7 @@ static void entry_vkCmdEndQuery(
     VkQueryPool queryPool,
     uint32_t query)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndQuery");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdEndQuery(commandBuffer, queryPool, query);
 }
@@ -1301,6 +1444,7 @@ static void entry_vkCmdResetQueryPool(
     uint32_t firstQuery,
     uint32_t queryCount)
 {
+    AEMU_SCOPED_TRACE("vkCmdResetQueryPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
 }
@@ -1310,6 +1454,7 @@ static void entry_vkCmdWriteTimestamp(
     VkQueryPool queryPool,
     uint32_t query)
 {
+    AEMU_SCOPED_TRACE("vkCmdWriteTimestamp");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
 }
@@ -1323,6 +1468,7 @@ static void entry_vkCmdCopyQueryPoolResults(
     VkDeviceSize stride,
     VkQueryResultFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkCmdCopyQueryPoolResults");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags);
 }
@@ -1334,6 +1480,7 @@ static void entry_vkCmdPushConstants(
     uint32_t size,
     const void* pValues)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushConstants");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
 }
@@ -1342,6 +1489,7 @@ static void entry_vkCmdBeginRenderPass(
     const VkRenderPassBeginInfo* pRenderPassBegin,
     VkSubpassContents contents)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
 }
@@ -1349,12 +1497,14 @@ static void entry_vkCmdNextSubpass(
     VkCommandBuffer commandBuffer,
     VkSubpassContents contents)
 {
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdNextSubpass(commandBuffer, contents);
 }
 static void entry_vkCmdEndRenderPass(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdEndRenderPass(commandBuffer);
 }
@@ -1363,6 +1513,7 @@ static void entry_vkCmdExecuteCommands(
     uint32_t commandBufferCount,
     const VkCommandBuffer* pCommandBuffers)
 {
+    AEMU_SCOPED_TRACE("vkCmdExecuteCommands");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
@@ -1371,6 +1522,7 @@ static void entry_vkCmdExecuteCommands(
 static VkResult entry_vkEnumerateInstanceVersion(
     uint32_t* pApiVersion)
 {
+    AEMU_SCOPED_TRACE("vkEnumerateInstanceVersion");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumerateInstanceVersion_VkResult_return = (VkResult)0;
     vkEnumerateInstanceVersion_VkResult_return = vkEnc->vkEnumerateInstanceVersion(pApiVersion);
@@ -1381,9 +1533,11 @@ static VkResult entry_vkBindBufferMemory2(
     uint32_t bindInfoCount,
     const VkBindBufferMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory2_VkResult_return = (VkResult)0;
-    vkBindBufferMemory2_VkResult_return = vkEnc->vkBindBufferMemory2(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory2_VkResult_return = resources->on_vkBindBufferMemory2(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindBufferMemory2_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory2(
@@ -1391,9 +1545,11 @@ static VkResult entry_vkBindImageMemory2(
     uint32_t bindInfoCount,
     const VkBindImageMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory2_VkResult_return = (VkResult)0;
-    vkBindImageMemory2_VkResult_return = vkEnc->vkBindImageMemory2(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory2_VkResult_return = resources->on_vkBindImageMemory2(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindImageMemory2_VkResult_return;
 }
 static void entry_vkGetDeviceGroupPeerMemoryFeatures(
@@ -1403,6 +1559,7 @@ static void entry_vkGetDeviceGroupPeerMemoryFeatures(
     uint32_t remoteDeviceIndex,
     VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeatures");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDeviceGroupPeerMemoryFeatures(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
 }
@@ -1410,6 +1567,7 @@ static void entry_vkCmdSetDeviceMask(
     VkCommandBuffer commandBuffer,
     uint32_t deviceMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetDeviceMask(commandBuffer, deviceMask);
 }
@@ -1422,6 +1580,7 @@ static void entry_vkCmdDispatchBase(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchBase");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDispatchBase(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
@@ -1430,6 +1589,7 @@ static VkResult entry_vkEnumeratePhysicalDeviceGroups(
     uint32_t* pPhysicalDeviceGroupCount,
     VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroups");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumeratePhysicalDeviceGroups_VkResult_return = (VkResult)0;
     vkEnumeratePhysicalDeviceGroups_VkResult_return = vkEnc->vkEnumeratePhysicalDeviceGroups(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
@@ -1440,16 +1600,20 @@ static void entry_vkGetImageMemoryRequirements2(
     const VkImageMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements2(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetBufferMemoryRequirements2(
     VkDevice device,
     const VkBufferMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements2(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements2(
     VkDevice device,
@@ -1457,6 +1621,7 @@ static void entry_vkGetImageSparseMemoryRequirements2(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetImageSparseMemoryRequirements2(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
@@ -1464,6 +1629,7 @@ static void entry_vkGetPhysicalDeviceFeatures2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures2* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFeatures2(physicalDevice, pFeatures);
 }
@@ -1471,6 +1637,7 @@ static void entry_vkGetPhysicalDeviceProperties2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceProperties2(physicalDevice, pProperties);
 }
@@ -1479,6 +1646,7 @@ static void entry_vkGetPhysicalDeviceFormatProperties2(
     VkFormat format,
     VkFormatProperties2* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, pFormatProperties);
 }
@@ -1487,9 +1655,11 @@ static VkResult entry_vkGetPhysicalDeviceImageFormatProperties2(
     const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
     VkImageFormatProperties2* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceImageFormatProperties2_VkResult_return = (VkResult)0;
-    vkGetPhysicalDeviceImageFormatProperties2_VkResult_return = vkEnc->vkGetPhysicalDeviceImageFormatProperties2(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+    auto resources = ResourceTracker::get();
+    vkGetPhysicalDeviceImageFormatProperties2_VkResult_return = resources->on_vkGetPhysicalDeviceImageFormatProperties2(vkEnc, VK_SUCCESS, physicalDevice, pImageFormatInfo, pImageFormatProperties);
     return vkGetPhysicalDeviceImageFormatProperties2_VkResult_return;
 }
 static void entry_vkGetPhysicalDeviceQueueFamilyProperties2(
@@ -1497,6 +1667,7 @@ static void entry_vkGetPhysicalDeviceQueueFamilyProperties2(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties2* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }
@@ -1504,6 +1675,7 @@ static void entry_vkGetPhysicalDeviceMemoryProperties2(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
 }
@@ -1513,6 +1685,7 @@ static void entry_vkGetPhysicalDeviceSparseImageFormatProperties2(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceSparseImageFormatProperties2(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
 }
@@ -1521,6 +1694,7 @@ static void entry_vkTrimCommandPool(
     VkCommandPool commandPool,
     VkCommandPoolTrimFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkTrimCommandPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkTrimCommandPool(device, commandPool, flags);
 }
@@ -1529,6 +1703,7 @@ static void entry_vkGetDeviceQueue2(
     const VkDeviceQueueInfo2* pQueueInfo,
     VkQueue* pQueue)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceQueue2");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDeviceQueue2(device, pQueueInfo, pQueue);
 }
@@ -1538,9 +1713,11 @@ static VkResult entry_vkCreateSamplerYcbcrConversion(
     const VkAllocationCallbacks* pAllocator,
     VkSamplerYcbcrConversion* pYcbcrConversion)
 {
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversion");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSamplerYcbcrConversion_VkResult_return = (VkResult)0;
-    vkCreateSamplerYcbcrConversion_VkResult_return = vkEnc->vkCreateSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
+    auto resources = ResourceTracker::get();
+    vkCreateSamplerYcbcrConversion_VkResult_return = resources->on_vkCreateSamplerYcbcrConversion(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pYcbcrConversion);
     return vkCreateSamplerYcbcrConversion_VkResult_return;
 }
 static void entry_vkDestroySamplerYcbcrConversion(
@@ -1548,6 +1725,7 @@ static void entry_vkDestroySamplerYcbcrConversion(
     VkSamplerYcbcrConversion ycbcrConversion,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversion");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
 }
@@ -1557,6 +1735,7 @@ static VkResult entry_vkCreateDescriptorUpdateTemplate(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplate");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDescriptorUpdateTemplate_VkResult_return = (VkResult)0;
     vkCreateDescriptorUpdateTemplate_VkResult_return = vkEnc->vkCreateDescriptorUpdateTemplate(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
@@ -1567,6 +1746,7 @@ static void entry_vkDestroyDescriptorUpdateTemplate(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplate");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDescriptorUpdateTemplate(device, descriptorUpdateTemplate, pAllocator);
 }
@@ -1576,14 +1756,17 @@ static void entry_vkUpdateDescriptorSetWithTemplate(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplate");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkUpdateDescriptorSetWithTemplate(device, descriptorSet, descriptorUpdateTemplate, pData);
+    auto resources = ResourceTracker::get();
+    resources->on_vkUpdateDescriptorSetWithTemplate(vkEnc, device, descriptorSet, descriptorUpdateTemplate, pData);
 }
 static void entry_vkGetPhysicalDeviceExternalBufferProperties(
     VkPhysicalDevice physicalDevice,
     const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo,
     VkExternalBufferProperties* pExternalBufferProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalBufferProperties(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
 }
@@ -1592,6 +1775,7 @@ static void entry_vkGetPhysicalDeviceExternalFenceProperties(
     const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
     VkExternalFenceProperties* pExternalFenceProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFenceProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalFenceProperties(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
 }
@@ -1600,6 +1784,7 @@ static void entry_vkGetPhysicalDeviceExternalSemaphoreProperties(
     const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
     VkExternalSemaphoreProperties* pExternalSemaphoreProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphoreProperties");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalSemaphoreProperties(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
 }
@@ -1608,6 +1793,7 @@ static void entry_vkGetDescriptorSetLayoutSupport(
     const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
     VkDescriptorSetLayoutSupport* pSupport)
 {
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupport");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
 }
@@ -1618,6 +1804,7 @@ static void entry_vkDestroySurfaceKHR(
     VkSurfaceKHR surface,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroySurfaceKHR(instance, surface, pAllocator);
 }
@@ -1627,6 +1814,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceSupportKHR(
     VkSurfaceKHR surface,
     VkBool32* pSupported)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceSupportKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceSupportKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, pSupported);
@@ -1637,6 +1825,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
     VkSurfaceKHR surface,
     VkSurfaceCapabilitiesKHR* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceCapabilitiesKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, pSurfaceCapabilities);
@@ -1648,6 +1837,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceFormatsKHR(
     uint32_t* pSurfaceFormatCount,
     VkSurfaceFormatKHR* pSurfaceFormats)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormatsKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceFormatsKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceFormatsKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats);
@@ -1659,6 +1849,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfacePresentModesKHR(
     uint32_t* pPresentModeCount,
     VkPresentModeKHR* pPresentModes)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfacePresentModesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfacePresentModesKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfacePresentModesKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, pPresentModeCount, pPresentModes);
@@ -1672,6 +1863,7 @@ static VkResult entry_vkCreateSwapchainKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSwapchainKHR* pSwapchain)
 {
+    AEMU_SCOPED_TRACE("vkCreateSwapchainKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSwapchainKHR_VkResult_return = (VkResult)0;
     vkCreateSwapchainKHR_VkResult_return = vkEnc->vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
@@ -1682,6 +1874,7 @@ static void entry_vkDestroySwapchainKHR(
     VkSwapchainKHR swapchain,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySwapchainKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroySwapchainKHR(device, swapchain, pAllocator);
 }
@@ -1691,6 +1884,7 @@ static VkResult entry_vkGetSwapchainImagesKHR(
     uint32_t* pSwapchainImageCount,
     VkImage* pSwapchainImages)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainImagesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSwapchainImagesKHR_VkResult_return = (VkResult)0;
     vkGetSwapchainImagesKHR_VkResult_return = vkEnc->vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
@@ -1704,6 +1898,7 @@ static VkResult entry_vkAcquireNextImageKHR(
     VkFence fence,
     uint32_t* pImageIndex)
 {
+    AEMU_SCOPED_TRACE("vkAcquireNextImageKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAcquireNextImageKHR_VkResult_return = (VkResult)0;
     vkAcquireNextImageKHR_VkResult_return = vkEnc->vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
@@ -1713,6 +1908,7 @@ static VkResult entry_vkQueuePresentKHR(
     VkQueue queue,
     const VkPresentInfoKHR* pPresentInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueuePresentKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkQueuePresentKHR_VkResult_return = (VkResult)0;
     vkQueuePresentKHR_VkResult_return = vkEnc->vkQueuePresentKHR(queue, pPresentInfo);
@@ -1722,6 +1918,7 @@ static VkResult entry_vkGetDeviceGroupPresentCapabilitiesKHR(
     VkDevice device,
     VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPresentCapabilitiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDeviceGroupPresentCapabilitiesKHR_VkResult_return = (VkResult)0;
     vkGetDeviceGroupPresentCapabilitiesKHR_VkResult_return = vkEnc->vkGetDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
@@ -1732,6 +1929,7 @@ static VkResult entry_vkGetDeviceGroupSurfacePresentModesKHR(
     VkSurfaceKHR surface,
     VkDeviceGroupPresentModeFlagsKHR* pModes)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupSurfacePresentModesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDeviceGroupSurfacePresentModesKHR_VkResult_return = (VkResult)0;
     vkGetDeviceGroupSurfacePresentModesKHR_VkResult_return = vkEnc->vkGetDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
@@ -1743,6 +1941,7 @@ static VkResult entry_vkGetPhysicalDevicePresentRectanglesKHR(
     uint32_t* pRectCount,
     VkRect2D* pRects)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDevicePresentRectanglesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDevicePresentRectanglesKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDevicePresentRectanglesKHR_VkResult_return = vkEnc->vkGetPhysicalDevicePresentRectanglesKHR(physicalDevice, surface, pRectCount, pRects);
@@ -1753,6 +1952,7 @@ static VkResult entry_vkAcquireNextImage2KHR(
     const VkAcquireNextImageInfoKHR* pAcquireInfo,
     uint32_t* pImageIndex)
 {
+    AEMU_SCOPED_TRACE("vkAcquireNextImage2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAcquireNextImage2KHR_VkResult_return = (VkResult)0;
     vkAcquireNextImage2KHR_VkResult_return = vkEnc->vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
@@ -1765,6 +1965,7 @@ static VkResult entry_vkGetPhysicalDeviceDisplayPropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayPropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceDisplayPropertiesKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceDisplayPropertiesKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, pPropertyCount, pProperties);
@@ -1775,6 +1976,7 @@ static VkResult entry_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayPlanePropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceDisplayPlanePropertiesKHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceDisplayPlanePropertiesKHR_VkResult_return = vkEnc->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, pPropertyCount, pProperties);
@@ -1786,6 +1988,7 @@ static VkResult entry_vkGetDisplayPlaneSupportedDisplaysKHR(
     uint32_t* pDisplayCount,
     VkDisplayKHR* pDisplays)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneSupportedDisplaysKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDisplayPlaneSupportedDisplaysKHR_VkResult_return = (VkResult)0;
     vkGetDisplayPlaneSupportedDisplaysKHR_VkResult_return = vkEnc->vkGetDisplayPlaneSupportedDisplaysKHR(physicalDevice, planeIndex, pDisplayCount, pDisplays);
@@ -1797,6 +2000,7 @@ static VkResult entry_vkGetDisplayModePropertiesKHR(
     uint32_t* pPropertyCount,
     VkDisplayModePropertiesKHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayModePropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDisplayModePropertiesKHR_VkResult_return = (VkResult)0;
     vkGetDisplayModePropertiesKHR_VkResult_return = vkEnc->vkGetDisplayModePropertiesKHR(physicalDevice, display, pPropertyCount, pProperties);
@@ -1809,6 +2013,7 @@ static VkResult entry_vkCreateDisplayModeKHR(
     const VkAllocationCallbacks* pAllocator,
     VkDisplayModeKHR* pMode)
 {
+    AEMU_SCOPED_TRACE("vkCreateDisplayModeKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDisplayModeKHR_VkResult_return = (VkResult)0;
     vkCreateDisplayModeKHR_VkResult_return = vkEnc->vkCreateDisplayModeKHR(physicalDevice, display, pCreateInfo, pAllocator, pMode);
@@ -1820,6 +2025,7 @@ static VkResult entry_vkGetDisplayPlaneCapabilitiesKHR(
     uint32_t planeIndex,
     VkDisplayPlaneCapabilitiesKHR* pCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilitiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDisplayPlaneCapabilitiesKHR_VkResult_return = (VkResult)0;
     vkGetDisplayPlaneCapabilitiesKHR_VkResult_return = vkEnc->vkGetDisplayPlaneCapabilitiesKHR(physicalDevice, mode, planeIndex, pCapabilities);
@@ -1831,6 +2037,7 @@ static VkResult entry_vkCreateDisplayPlaneSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateDisplayPlaneSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDisplayPlaneSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateDisplayPlaneSurfaceKHR_VkResult_return = vkEnc->vkCreateDisplayPlaneSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1845,6 +2052,7 @@ static VkResult entry_vkCreateSharedSwapchainsKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSwapchainKHR* pSwapchains)
 {
+    AEMU_SCOPED_TRACE("vkCreateSharedSwapchainsKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSharedSwapchainsKHR_VkResult_return = (VkResult)0;
     vkCreateSharedSwapchainsKHR_VkResult_return = vkEnc->vkCreateSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
@@ -1858,6 +2066,7 @@ static VkResult entry_vkCreateXlibSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateXlibSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateXlibSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateXlibSurfaceKHR_VkResult_return = vkEnc->vkCreateXlibSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1869,6 +2078,7 @@ static VkBool32 entry_vkGetPhysicalDeviceXlibPresentationSupportKHR(
     Display* dpy,
     VisualID visualID)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXlibPresentationSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkBool32 vkGetPhysicalDeviceXlibPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     vkGetPhysicalDeviceXlibPresentationSupportKHR_VkBool32_return = vkEnc->vkGetPhysicalDeviceXlibPresentationSupportKHR(physicalDevice, queueFamilyIndex, dpy, visualID);
@@ -1882,6 +2092,7 @@ static VkResult entry_vkCreateXcbSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateXcbSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateXcbSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateXcbSurfaceKHR_VkResult_return = vkEnc->vkCreateXcbSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1893,6 +2104,7 @@ static VkBool32 entry_vkGetPhysicalDeviceXcbPresentationSupportKHR(
     xcb_connection_t* connection,
     xcb_visualid_t visual_id)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceXcbPresentationSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkBool32 vkGetPhysicalDeviceXcbPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     vkGetPhysicalDeviceXcbPresentationSupportKHR_VkBool32_return = vkEnc->vkGetPhysicalDeviceXcbPresentationSupportKHR(physicalDevice, queueFamilyIndex, connection, visual_id);
@@ -1906,6 +2118,7 @@ static VkResult entry_vkCreateWaylandSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateWaylandSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateWaylandSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateWaylandSurfaceKHR_VkResult_return = vkEnc->vkCreateWaylandSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1916,6 +2129,7 @@ static VkBool32 entry_vkGetPhysicalDeviceWaylandPresentationSupportKHR(
     uint32_t queueFamilyIndex,
     wl_display* display)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWaylandPresentationSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkBool32 vkGetPhysicalDeviceWaylandPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     vkGetPhysicalDeviceWaylandPresentationSupportKHR_VkBool32_return = vkEnc->vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, queueFamilyIndex, display);
@@ -1929,6 +2143,7 @@ static VkResult entry_vkCreateMirSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateMirSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateMirSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateMirSurfaceKHR_VkResult_return = vkEnc->vkCreateMirSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1939,6 +2154,7 @@ static VkBool32 entry_vkGetPhysicalDeviceMirPresentationSupportKHR(
     uint32_t queueFamilyIndex,
     MirConnection* connection)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMirPresentationSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkBool32 vkGetPhysicalDeviceMirPresentationSupportKHR_VkBool32_return = (VkBool32)0;
     vkGetPhysicalDeviceMirPresentationSupportKHR_VkBool32_return = vkEnc->vkGetPhysicalDeviceMirPresentationSupportKHR(physicalDevice, queueFamilyIndex, connection);
@@ -1952,6 +2168,7 @@ static VkResult entry_vkCreateAndroidSurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateAndroidSurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateAndroidSurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateAndroidSurfaceKHR_VkResult_return = vkEnc->vkCreateAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1965,6 +2182,7 @@ static VkResult entry_vkCreateWin32SurfaceKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateWin32SurfaceKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateWin32SurfaceKHR_VkResult_return = (VkResult)0;
     vkCreateWin32SurfaceKHR_VkResult_return = vkEnc->vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
@@ -1974,6 +2192,7 @@ static VkBool32 entry_vkGetPhysicalDeviceWin32PresentationSupportKHR(
     VkPhysicalDevice physicalDevice,
     uint32_t queueFamilyIndex)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceWin32PresentationSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkBool32 vkGetPhysicalDeviceWin32PresentationSupportKHR_VkBool32_return = (VkBool32)0;
     vkGetPhysicalDeviceWin32PresentationSupportKHR_VkBool32_return = vkEnc->vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
@@ -1989,6 +2208,7 @@ static void entry_vkGetPhysicalDeviceFeatures2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceFeatures2* pFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFeatures2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFeatures2KHR(physicalDevice, pFeatures);
 }
@@ -1996,6 +2216,7 @@ static void entry_vkGetPhysicalDeviceProperties2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceProperties2KHR(physicalDevice, pProperties);
 }
@@ -2004,6 +2225,7 @@ static void entry_vkGetPhysicalDeviceFormatProperties2KHR(
     VkFormat format,
     VkFormatProperties2* pFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceFormatProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceFormatProperties2KHR(physicalDevice, format, pFormatProperties);
 }
@@ -2012,9 +2234,11 @@ static VkResult entry_vkGetPhysicalDeviceImageFormatProperties2KHR(
     const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
     VkImageFormatProperties2* pImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceImageFormatProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return = (VkResult)0;
-    vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return = vkEnc->vkGetPhysicalDeviceImageFormatProperties2KHR(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+    auto resources = ResourceTracker::get();
+    vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return = resources->on_vkGetPhysicalDeviceImageFormatProperties2KHR(vkEnc, VK_SUCCESS, physicalDevice, pImageFormatInfo, pImageFormatProperties);
     return vkGetPhysicalDeviceImageFormatProperties2KHR_VkResult_return;
 }
 static void entry_vkGetPhysicalDeviceQueueFamilyProperties2KHR(
@@ -2022,6 +2246,7 @@ static void entry_vkGetPhysicalDeviceQueueFamilyProperties2KHR(
     uint32_t* pQueueFamilyPropertyCount,
     VkQueueFamilyProperties2* pQueueFamilyProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceQueueFamilyProperties2KHR(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }
@@ -2029,6 +2254,7 @@ static void entry_vkGetPhysicalDeviceMemoryProperties2KHR(
     VkPhysicalDevice physicalDevice,
     VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMemoryProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceMemoryProperties2KHR(physicalDevice, pMemoryProperties);
 }
@@ -2038,6 +2264,7 @@ static void entry_vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
     uint32_t* pPropertyCount,
     VkSparseImageFormatProperties2* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSparseImageFormatProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceSparseImageFormatProperties2KHR(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
 }
@@ -2050,6 +2277,7 @@ static void entry_vkGetDeviceGroupPeerMemoryFeaturesKHR(
     uint32_t remoteDeviceIndex,
     VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 {
+    AEMU_SCOPED_TRACE("vkGetDeviceGroupPeerMemoryFeaturesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDeviceGroupPeerMemoryFeaturesKHR(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
 }
@@ -2057,6 +2285,7 @@ static void entry_vkCmdSetDeviceMaskKHR(
     VkCommandBuffer commandBuffer,
     uint32_t deviceMask)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDeviceMaskKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetDeviceMaskKHR(commandBuffer, deviceMask);
 }
@@ -2069,6 +2298,7 @@ static void entry_vkCmdDispatchBaseKHR(
     uint32_t groupCountY,
     uint32_t groupCountZ)
 {
+    AEMU_SCOPED_TRACE("vkCmdDispatchBaseKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDispatchBaseKHR(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
@@ -2081,6 +2311,7 @@ static void entry_vkTrimCommandPoolKHR(
     VkCommandPool commandPool,
     VkCommandPoolTrimFlags flags)
 {
+    AEMU_SCOPED_TRACE("vkTrimCommandPoolKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkTrimCommandPoolKHR(device, commandPool, flags);
 }
@@ -2091,6 +2322,7 @@ static VkResult entry_vkEnumeratePhysicalDeviceGroupsKHR(
     uint32_t* pPhysicalDeviceGroupCount,
     VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 {
+    AEMU_SCOPED_TRACE("vkEnumeratePhysicalDeviceGroupsKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkEnumeratePhysicalDeviceGroupsKHR_VkResult_return = (VkResult)0;
     vkEnumeratePhysicalDeviceGroupsKHR_VkResult_return = vkEnc->vkEnumeratePhysicalDeviceGroupsKHR(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
@@ -2103,6 +2335,7 @@ static void entry_vkGetPhysicalDeviceExternalBufferPropertiesKHR(
     const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo,
     VkExternalBufferProperties* pExternalBufferProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalBufferPropertiesKHR(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
 }
@@ -2115,6 +2348,7 @@ static VkResult entry_vkGetMemoryWin32HandleKHR(
     const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryWin32HandleKHR_VkResult_return = (VkResult)0;
     vkGetMemoryWin32HandleKHR_VkResult_return = vkEnc->vkGetMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
@@ -2126,6 +2360,7 @@ static VkResult entry_vkGetMemoryWin32HandlePropertiesKHR(
     HANDLE handle,
     VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandlePropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryWin32HandlePropertiesKHR_VkResult_return = (VkResult)0;
     vkGetMemoryWin32HandlePropertiesKHR_VkResult_return = vkEnc->vkGetMemoryWin32HandlePropertiesKHR(device, handleType, handle, pMemoryWin32HandleProperties);
@@ -2138,6 +2373,7 @@ static VkResult entry_vkGetMemoryFdKHR(
     const VkMemoryGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryFdKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryFdKHR_VkResult_return = (VkResult)0;
     vkGetMemoryFdKHR_VkResult_return = vkEnc->vkGetMemoryFdKHR(device, pGetFdInfo, pFd);
@@ -2149,6 +2385,7 @@ static VkResult entry_vkGetMemoryFdPropertiesKHR(
     int fd,
     VkMemoryFdPropertiesKHR* pMemoryFdProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryFdPropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryFdPropertiesKHR_VkResult_return = (VkResult)0;
     vkGetMemoryFdPropertiesKHR_VkResult_return = vkEnc->vkGetMemoryFdPropertiesKHR(device, handleType, fd, pMemoryFdProperties);
@@ -2163,6 +2400,7 @@ static void entry_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
     const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
     VkExternalSemaphoreProperties* pExternalSemaphoreProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
 }
@@ -2174,6 +2412,7 @@ static VkResult entry_vkImportSemaphoreWin32HandleKHR(
     VkDevice device,
     const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportSemaphoreWin32HandleKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkImportSemaphoreWin32HandleKHR_VkResult_return = (VkResult)0;
     vkImportSemaphoreWin32HandleKHR_VkResult_return = vkEnc->vkImportSemaphoreWin32HandleKHR(device, pImportSemaphoreWin32HandleInfo);
@@ -2184,6 +2423,7 @@ static VkResult entry_vkGetSemaphoreWin32HandleKHR(
     const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetSemaphoreWin32HandleKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSemaphoreWin32HandleKHR_VkResult_return = (VkResult)0;
     vkGetSemaphoreWin32HandleKHR_VkResult_return = vkEnc->vkGetSemaphoreWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
@@ -2195,9 +2435,11 @@ static VkResult entry_vkImportSemaphoreFdKHR(
     VkDevice device,
     const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportSemaphoreFdKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkImportSemaphoreFdKHR_VkResult_return = (VkResult)0;
-    vkImportSemaphoreFdKHR_VkResult_return = vkEnc->vkImportSemaphoreFdKHR(device, pImportSemaphoreFdInfo);
+    auto resources = ResourceTracker::get();
+    vkImportSemaphoreFdKHR_VkResult_return = resources->on_vkImportSemaphoreFdKHR(vkEnc, VK_SUCCESS, device, pImportSemaphoreFdInfo);
     return vkImportSemaphoreFdKHR_VkResult_return;
 }
 static VkResult entry_vkGetSemaphoreFdKHR(
@@ -2205,9 +2447,11 @@ static VkResult entry_vkGetSemaphoreFdKHR(
     const VkSemaphoreGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetSemaphoreFdKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSemaphoreFdKHR_VkResult_return = (VkResult)0;
-    vkGetSemaphoreFdKHR_VkResult_return = vkEnc->vkGetSemaphoreFdKHR(device, pGetFdInfo, pFd);
+    auto resources = ResourceTracker::get();
+    vkGetSemaphoreFdKHR_VkResult_return = resources->on_vkGetSemaphoreFdKHR(vkEnc, VK_SUCCESS, device, pGetFdInfo, pFd);
     return vkGetSemaphoreFdKHR_VkResult_return;
 }
 #endif
@@ -2220,6 +2464,7 @@ static void entry_vkCmdPushDescriptorSetKHR(
     uint32_t descriptorWriteCount,
     const VkWriteDescriptorSet* pDescriptorWrites)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdPushDescriptorSetKHR(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
 }
@@ -2230,6 +2475,7 @@ static void entry_vkCmdPushDescriptorSetWithTemplateKHR(
     uint32_t set,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetWithTemplateKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdPushDescriptorSetWithTemplateKHR(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
 }
@@ -2245,6 +2491,7 @@ static VkResult entry_vkCreateDescriptorUpdateTemplateKHR(
     const VkAllocationCallbacks* pAllocator,
     VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 {
+    AEMU_SCOPED_TRACE("vkCreateDescriptorUpdateTemplateKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDescriptorUpdateTemplateKHR_VkResult_return = (VkResult)0;
     vkCreateDescriptorUpdateTemplateKHR_VkResult_return = vkEnc->vkCreateDescriptorUpdateTemplateKHR(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
@@ -2255,6 +2502,7 @@ static void entry_vkDestroyDescriptorUpdateTemplateKHR(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDescriptorUpdateTemplateKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDescriptorUpdateTemplateKHR(device, descriptorUpdateTemplate, pAllocator);
 }
@@ -2264,6 +2512,7 @@ static void entry_vkUpdateDescriptorSetWithTemplateKHR(
     VkDescriptorUpdateTemplate descriptorUpdateTemplate,
     const void* pData)
 {
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkUpdateDescriptorSetWithTemplateKHR(device, descriptorSet, descriptorUpdateTemplate, pData);
 }
@@ -2275,6 +2524,7 @@ static VkResult entry_vkCreateRenderPass2KHR(
     const VkAllocationCallbacks* pAllocator,
     VkRenderPass* pRenderPass)
 {
+    AEMU_SCOPED_TRACE("vkCreateRenderPass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateRenderPass2KHR_VkResult_return = (VkResult)0;
     vkCreateRenderPass2KHR_VkResult_return = vkEnc->vkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, pRenderPass);
@@ -2285,6 +2535,7 @@ static void entry_vkCmdBeginRenderPass2KHR(
     const VkRenderPassBeginInfo* pRenderPassBegin,
     const VkSubpassBeginInfoKHR* pSubpassBeginInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginRenderPass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
 }
@@ -2293,6 +2544,7 @@ static void entry_vkCmdNextSubpass2KHR(
     const VkSubpassBeginInfoKHR* pSubpassBeginInfo,
     const VkSubpassEndInfoKHR* pSubpassEndInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdNextSubpass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
@@ -2300,6 +2552,7 @@ static void entry_vkCmdEndRenderPass2KHR(
     VkCommandBuffer commandBuffer,
     const VkSubpassEndInfoKHR* pSubpassEndInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndRenderPass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
 }
@@ -2309,6 +2562,7 @@ static VkResult entry_vkGetSwapchainStatusKHR(
     VkDevice device,
     VkSwapchainKHR swapchain)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainStatusKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSwapchainStatusKHR_VkResult_return = (VkResult)0;
     vkGetSwapchainStatusKHR_VkResult_return = vkEnc->vkGetSwapchainStatusKHR(device, swapchain);
@@ -2321,6 +2575,7 @@ static void entry_vkGetPhysicalDeviceExternalFencePropertiesKHR(
     const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
     VkExternalFenceProperties* pExternalFenceProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalFencePropertiesKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceExternalFencePropertiesKHR(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
 }
@@ -2332,6 +2587,7 @@ static VkResult entry_vkImportFenceWin32HandleKHR(
     VkDevice device,
     const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportFenceWin32HandleKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkImportFenceWin32HandleKHR_VkResult_return = (VkResult)0;
     vkImportFenceWin32HandleKHR_VkResult_return = vkEnc->vkImportFenceWin32HandleKHR(device, pImportFenceWin32HandleInfo);
@@ -2342,6 +2598,7 @@ static VkResult entry_vkGetFenceWin32HandleKHR(
     const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceWin32HandleKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetFenceWin32HandleKHR_VkResult_return = (VkResult)0;
     vkGetFenceWin32HandleKHR_VkResult_return = vkEnc->vkGetFenceWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
@@ -2353,6 +2610,7 @@ static VkResult entry_vkImportFenceFdKHR(
     VkDevice device,
     const VkImportFenceFdInfoKHR* pImportFenceFdInfo)
 {
+    AEMU_SCOPED_TRACE("vkImportFenceFdKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkImportFenceFdKHR_VkResult_return = (VkResult)0;
     vkImportFenceFdKHR_VkResult_return = vkEnc->vkImportFenceFdKHR(device, pImportFenceFdInfo);
@@ -2363,6 +2621,7 @@ static VkResult entry_vkGetFenceFdKHR(
     const VkFenceGetFdInfoKHR* pGetFdInfo,
     int* pFd)
 {
+    AEMU_SCOPED_TRACE("vkGetFenceFdKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetFenceFdKHR_VkResult_return = (VkResult)0;
     vkGetFenceFdKHR_VkResult_return = vkEnc->vkGetFenceFdKHR(device, pGetFdInfo, pFd);
@@ -2377,6 +2636,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceCapabilities2KHR(
     const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo,
     VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceCapabilities2KHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, pSurfaceInfo, pSurfaceCapabilities);
@@ -2388,6 +2648,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceFormats2KHR(
     uint32_t* pSurfaceFormatCount,
     VkSurfaceFormat2KHR* pSurfaceFormats)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceFormats2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceFormats2KHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceFormats2KHR_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceFormats2KHR(physicalDevice, pSurfaceInfo, pSurfaceFormatCount, pSurfaceFormats);
@@ -2402,6 +2663,7 @@ static VkResult entry_vkGetPhysicalDeviceDisplayProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceDisplayProperties2KHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceDisplayProperties2KHR_VkResult_return = vkEnc->vkGetPhysicalDeviceDisplayProperties2KHR(physicalDevice, pPropertyCount, pProperties);
@@ -2412,6 +2674,7 @@ static VkResult entry_vkGetPhysicalDeviceDisplayPlaneProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayPlaneProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceDisplayPlaneProperties2KHR_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceDisplayPlaneProperties2KHR_VkResult_return = vkEnc->vkGetPhysicalDeviceDisplayPlaneProperties2KHR(physicalDevice, pPropertyCount, pProperties);
@@ -2423,6 +2686,7 @@ static VkResult entry_vkGetDisplayModeProperties2KHR(
     uint32_t* pPropertyCount,
     VkDisplayModeProperties2KHR* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayModeProperties2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDisplayModeProperties2KHR_VkResult_return = (VkResult)0;
     vkGetDisplayModeProperties2KHR_VkResult_return = vkEnc->vkGetDisplayModeProperties2KHR(physicalDevice, display, pPropertyCount, pProperties);
@@ -2433,6 +2697,7 @@ static VkResult entry_vkGetDisplayPlaneCapabilities2KHR(
     const VkDisplayPlaneInfo2KHR* pDisplayPlaneInfo,
     VkDisplayPlaneCapabilities2KHR* pCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetDisplayPlaneCapabilities2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetDisplayPlaneCapabilities2KHR_VkResult_return = (VkResult)0;
     vkGetDisplayPlaneCapabilities2KHR_VkResult_return = vkEnc->vkGetDisplayPlaneCapabilities2KHR(physicalDevice, pDisplayPlaneInfo, pCapabilities);
@@ -2451,16 +2716,20 @@ static void entry_vkGetImageMemoryRequirements2KHR(
     const VkImageMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageMemoryRequirements2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetImageMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetImageMemoryRequirements2KHR(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetBufferMemoryRequirements2KHR(
     VkDevice device,
     const VkBufferMemoryRequirementsInfo2* pInfo,
     VkMemoryRequirements2* pMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetBufferMemoryRequirements2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkGetBufferMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);
+    auto resources = ResourceTracker::get();
+    resources->on_vkGetBufferMemoryRequirements2KHR(vkEnc, device, pInfo, pMemoryRequirements);
 }
 static void entry_vkGetImageSparseMemoryRequirements2KHR(
     VkDevice device,
@@ -2468,6 +2737,7 @@ static void entry_vkGetImageSparseMemoryRequirements2KHR(
     uint32_t* pSparseMemoryRequirementCount,
     VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 {
+    AEMU_SCOPED_TRACE("vkGetImageSparseMemoryRequirements2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetImageSparseMemoryRequirements2KHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
@@ -2481,9 +2751,11 @@ static VkResult entry_vkCreateSamplerYcbcrConversionKHR(
     const VkAllocationCallbacks* pAllocator,
     VkSamplerYcbcrConversion* pYcbcrConversion)
 {
+    AEMU_SCOPED_TRACE("vkCreateSamplerYcbcrConversionKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSamplerYcbcrConversionKHR_VkResult_return = (VkResult)0;
-    vkCreateSamplerYcbcrConversionKHR_VkResult_return = vkEnc->vkCreateSamplerYcbcrConversionKHR(device, pCreateInfo, pAllocator, pYcbcrConversion);
+    auto resources = ResourceTracker::get();
+    vkCreateSamplerYcbcrConversionKHR_VkResult_return = resources->on_vkCreateSamplerYcbcrConversionKHR(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pYcbcrConversion);
     return vkCreateSamplerYcbcrConversionKHR_VkResult_return;
 }
 static void entry_vkDestroySamplerYcbcrConversionKHR(
@@ -2491,6 +2763,7 @@ static void entry_vkDestroySamplerYcbcrConversionKHR(
     VkSamplerYcbcrConversion ycbcrConversion,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversionKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroySamplerYcbcrConversionKHR(device, ycbcrConversion, pAllocator);
 }
@@ -2501,9 +2774,11 @@ static VkResult entry_vkBindBufferMemory2KHR(
     uint32_t bindInfoCount,
     const VkBindBufferMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindBufferMemory2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindBufferMemory2KHR_VkResult_return = (VkResult)0;
-    vkBindBufferMemory2KHR_VkResult_return = vkEnc->vkBindBufferMemory2KHR(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindBufferMemory2KHR_VkResult_return = resources->on_vkBindBufferMemory2KHR(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindBufferMemory2KHR_VkResult_return;
 }
 static VkResult entry_vkBindImageMemory2KHR(
@@ -2511,9 +2786,11 @@ static VkResult entry_vkBindImageMemory2KHR(
     uint32_t bindInfoCount,
     const VkBindImageMemoryInfo* pBindInfos)
 {
+    AEMU_SCOPED_TRACE("vkBindImageMemory2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkBindImageMemory2KHR_VkResult_return = (VkResult)0;
-    vkBindImageMemory2KHR_VkResult_return = vkEnc->vkBindImageMemory2KHR(device, bindInfoCount, pBindInfos);
+    auto resources = ResourceTracker::get();
+    vkBindImageMemory2KHR_VkResult_return = resources->on_vkBindImageMemory2KHR(vkEnc, VK_SUCCESS, device, bindInfoCount, pBindInfos);
     return vkBindImageMemory2KHR_VkResult_return;
 }
 #endif
@@ -2523,6 +2800,7 @@ static void entry_vkGetDescriptorSetLayoutSupportKHR(
     const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
     VkDescriptorSetLayoutSupport* pSupport)
 {
+    AEMU_SCOPED_TRACE("vkGetDescriptorSetLayoutSupportKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetDescriptorSetLayoutSupportKHR(device, pCreateInfo, pSupport);
 }
@@ -2537,6 +2815,7 @@ static void entry_vkCmdDrawIndirectCountKHR(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
@@ -2549,6 +2828,7 @@ static void entry_vkCmdDrawIndexedIndirectCountKHR(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndexedIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
@@ -2562,6 +2842,7 @@ static VkResult entry_vkGetSwapchainGrallocUsageANDROID(
     VkImageUsageFlags imageUsage,
     int* grallocUsage)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainGrallocUsageANDROID");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSwapchainGrallocUsageANDROID_VkResult_return = (VkResult)0;
     vkGetSwapchainGrallocUsageANDROID_VkResult_return = vkEnc->vkGetSwapchainGrallocUsageANDROID(device, format, imageUsage, grallocUsage);
@@ -2574,6 +2855,7 @@ static VkResult entry_vkAcquireImageANDROID(
     VkSemaphore semaphore,
     VkFence fence)
 {
+    AEMU_SCOPED_TRACE("vkAcquireImageANDROID");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAcquireImageANDROID_VkResult_return = (VkResult)0;
     vkAcquireImageANDROID_VkResult_return = vkEnc->vkAcquireImageANDROID(device, image, nativeFenceFd, semaphore, fence);
@@ -2586,6 +2868,7 @@ static VkResult entry_vkQueueSignalReleaseImageANDROID(
     VkImage image,
     int* pNativeFenceFd)
 {
+    AEMU_SCOPED_TRACE("vkQueueSignalReleaseImageANDROID");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkQueueSignalReleaseImageANDROID_VkResult_return = (VkResult)0;
     vkQueueSignalReleaseImageANDROID_VkResult_return = vkEnc->vkQueueSignalReleaseImageANDROID(queue, waitSemaphoreCount, pWaitSemaphores, image, pNativeFenceFd);
@@ -2599,6 +2882,7 @@ static VkResult entry_vkCreateDebugReportCallbackEXT(
     const VkAllocationCallbacks* pAllocator,
     VkDebugReportCallbackEXT* pCallback)
 {
+    AEMU_SCOPED_TRACE("vkCreateDebugReportCallbackEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDebugReportCallbackEXT_VkResult_return = (VkResult)0;
     vkCreateDebugReportCallbackEXT_VkResult_return = vkEnc->vkCreateDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, pCallback);
@@ -2609,6 +2893,7 @@ static void entry_vkDestroyDebugReportCallbackEXT(
     VkDebugReportCallbackEXT callback,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDebugReportCallbackEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDebugReportCallbackEXT(instance, callback, pAllocator);
 }
@@ -2622,6 +2907,7 @@ static void entry_vkDebugReportMessageEXT(
     const char* pLayerPrefix,
     const char* pMessage)
 {
+    AEMU_SCOPED_TRACE("vkDebugReportMessageEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDebugReportMessageEXT(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
@@ -2643,6 +2929,7 @@ static VkResult entry_vkDebugMarkerSetObjectTagEXT(
     VkDevice device,
     const VkDebugMarkerObjectTagInfoEXT* pTagInfo)
 {
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectTagEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkDebugMarkerSetObjectTagEXT_VkResult_return = (VkResult)0;
     vkDebugMarkerSetObjectTagEXT_VkResult_return = vkEnc->vkDebugMarkerSetObjectTagEXT(device, pTagInfo);
@@ -2652,6 +2939,7 @@ static VkResult entry_vkDebugMarkerSetObjectNameEXT(
     VkDevice device,
     const VkDebugMarkerObjectNameInfoEXT* pNameInfo)
 {
+    AEMU_SCOPED_TRACE("vkDebugMarkerSetObjectNameEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkDebugMarkerSetObjectNameEXT_VkResult_return = (VkResult)0;
     vkDebugMarkerSetObjectNameEXT_VkResult_return = vkEnc->vkDebugMarkerSetObjectNameEXT(device, pNameInfo);
@@ -2661,12 +2949,14 @@ static void entry_vkCmdDebugMarkerBeginEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerBeginEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
 }
 static void entry_vkCmdDebugMarkerEndEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerEndEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDebugMarkerEndEXT(commandBuffer);
 }
@@ -2674,6 +2964,7 @@ static void entry_vkCmdDebugMarkerInsertEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdDebugMarkerInsertEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
 }
@@ -2692,6 +2983,7 @@ static void entry_vkCmdDrawIndirectCountAMD(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
@@ -2704,6 +2996,7 @@ static void entry_vkCmdDrawIndexedIndirectCountAMD(
     uint32_t maxDrawCount,
     uint32_t stride)
 {
+    AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
@@ -2725,6 +3018,7 @@ static VkResult entry_vkGetShaderInfoAMD(
     size_t* pInfoSize,
     void* pInfo)
 {
+    AEMU_SCOPED_TRACE("vkGetShaderInfoAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetShaderInfoAMD_VkResult_return = (VkResult)0;
     vkGetShaderInfoAMD_VkResult_return = vkEnc->vkGetShaderInfoAMD(device, pipeline, shaderStage, infoType, pInfoSize, pInfo);
@@ -2746,6 +3040,7 @@ static VkResult entry_vkGetPhysicalDeviceExternalImageFormatPropertiesNV(
     VkExternalMemoryHandleTypeFlagsNV externalHandleType,
     VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceExternalImageFormatPropertiesNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceExternalImageFormatPropertiesNV_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceExternalImageFormatPropertiesNV_VkResult_return = vkEnc->vkGetPhysicalDeviceExternalImageFormatPropertiesNV(physicalDevice, format, type, tiling, usage, flags, externalHandleType, pExternalImageFormatProperties);
@@ -2761,6 +3056,7 @@ static VkResult entry_vkGetMemoryWin32HandleNV(
     VkExternalMemoryHandleTypeFlagsNV handleType,
     HANDLE* pHandle)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryWin32HandleNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryWin32HandleNV_VkResult_return = (VkResult)0;
     vkGetMemoryWin32HandleNV_VkResult_return = vkEnc->vkGetMemoryWin32HandleNV(device, memory, handleType, pHandle);
@@ -2778,6 +3074,7 @@ static VkResult entry_vkCreateViSurfaceNN(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateViSurfaceNN");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateViSurfaceNN_VkResult_return = (VkResult)0;
     vkCreateViSurfaceNN_VkResult_return = vkEnc->vkCreateViSurfaceNN(instance, pCreateInfo, pAllocator, pSurface);
@@ -2793,12 +3090,14 @@ static void entry_vkCmdBeginConditionalRenderingEXT(
     VkCommandBuffer commandBuffer,
     const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginConditionalRenderingEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
 }
 static void entry_vkCmdEndConditionalRenderingEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndConditionalRenderingEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdEndConditionalRenderingEXT(commandBuffer);
 }
@@ -2808,6 +3107,7 @@ static void entry_vkCmdProcessCommandsNVX(
     VkCommandBuffer commandBuffer,
     const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdProcessCommandsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdProcessCommandsNVX(commandBuffer, pProcessCommandsInfo);
 }
@@ -2815,6 +3115,7 @@ static void entry_vkCmdReserveSpaceForCommandsNVX(
     VkCommandBuffer commandBuffer,
     const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdReserveSpaceForCommandsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdReserveSpaceForCommandsNVX(commandBuffer, pReserveSpaceInfo);
 }
@@ -2824,6 +3125,7 @@ static VkResult entry_vkCreateIndirectCommandsLayoutNVX(
     const VkAllocationCallbacks* pAllocator,
     VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout)
 {
+    AEMU_SCOPED_TRACE("vkCreateIndirectCommandsLayoutNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateIndirectCommandsLayoutNVX_VkResult_return = (VkResult)0;
     vkCreateIndirectCommandsLayoutNVX_VkResult_return = vkEnc->vkCreateIndirectCommandsLayoutNVX(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
@@ -2834,6 +3136,7 @@ static void entry_vkDestroyIndirectCommandsLayoutNVX(
     VkIndirectCommandsLayoutNVX indirectCommandsLayout,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyIndirectCommandsLayoutNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyIndirectCommandsLayoutNVX(device, indirectCommandsLayout, pAllocator);
 }
@@ -2843,6 +3146,7 @@ static VkResult entry_vkCreateObjectTableNVX(
     const VkAllocationCallbacks* pAllocator,
     VkObjectTableNVX* pObjectTable)
 {
+    AEMU_SCOPED_TRACE("vkCreateObjectTableNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateObjectTableNVX_VkResult_return = (VkResult)0;
     vkCreateObjectTableNVX_VkResult_return = vkEnc->vkCreateObjectTableNVX(device, pCreateInfo, pAllocator, pObjectTable);
@@ -2853,6 +3157,7 @@ static void entry_vkDestroyObjectTableNVX(
     VkObjectTableNVX objectTable,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyObjectTableNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyObjectTableNVX(device, objectTable, pAllocator);
 }
@@ -2863,6 +3168,7 @@ static VkResult entry_vkRegisterObjectsNVX(
     const VkObjectTableEntryNVX* const* ppObjectTableEntries,
     const uint32_t* pObjectIndices)
 {
+    AEMU_SCOPED_TRACE("vkRegisterObjectsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkRegisterObjectsNVX_VkResult_return = (VkResult)0;
     vkRegisterObjectsNVX_VkResult_return = vkEnc->vkRegisterObjectsNVX(device, objectTable, objectCount, ppObjectTableEntries, pObjectIndices);
@@ -2875,6 +3181,7 @@ static VkResult entry_vkUnregisterObjectsNVX(
     const VkObjectEntryTypeNVX* pObjectEntryTypes,
     const uint32_t* pObjectIndices)
 {
+    AEMU_SCOPED_TRACE("vkUnregisterObjectsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkUnregisterObjectsNVX_VkResult_return = (VkResult)0;
     vkUnregisterObjectsNVX_VkResult_return = vkEnc->vkUnregisterObjectsNVX(device, objectTable, objectCount, pObjectEntryTypes, pObjectIndices);
@@ -2885,6 +3192,7 @@ static void entry_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(
     VkDeviceGeneratedCommandsFeaturesNVX* pFeatures,
     VkDeviceGeneratedCommandsLimitsNVX* pLimits)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(physicalDevice, pFeatures, pLimits);
 }
@@ -2896,6 +3204,7 @@ static void entry_vkCmdSetViewportWScalingNV(
     uint32_t viewportCount,
     const VkViewportWScalingNV* pViewportWScalings)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetViewportWScalingNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetViewportWScalingNV(commandBuffer, firstViewport, viewportCount, pViewportWScalings);
 }
@@ -2905,6 +3214,7 @@ static VkResult entry_vkReleaseDisplayEXT(
     VkPhysicalDevice physicalDevice,
     VkDisplayKHR display)
 {
+    AEMU_SCOPED_TRACE("vkReleaseDisplayEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkReleaseDisplayEXT_VkResult_return = (VkResult)0;
     vkReleaseDisplayEXT_VkResult_return = vkEnc->vkReleaseDisplayEXT(physicalDevice, display);
@@ -2917,6 +3227,7 @@ static VkResult entry_vkAcquireXlibDisplayEXT(
     Display* dpy,
     VkDisplayKHR display)
 {
+    AEMU_SCOPED_TRACE("vkAcquireXlibDisplayEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkAcquireXlibDisplayEXT_VkResult_return = (VkResult)0;
     vkAcquireXlibDisplayEXT_VkResult_return = vkEnc->vkAcquireXlibDisplayEXT(physicalDevice, dpy, display);
@@ -2928,6 +3239,7 @@ static VkResult entry_vkGetRandROutputDisplayEXT(
     RROutput rrOutput,
     VkDisplayKHR* pDisplay)
 {
+    AEMU_SCOPED_TRACE("vkGetRandROutputDisplayEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetRandROutputDisplayEXT_VkResult_return = (VkResult)0;
     vkGetRandROutputDisplayEXT_VkResult_return = vkEnc->vkGetRandROutputDisplayEXT(physicalDevice, dpy, rrOutput, pDisplay);
@@ -2940,6 +3252,7 @@ static VkResult entry_vkGetPhysicalDeviceSurfaceCapabilities2EXT(
     VkSurfaceKHR surface,
     VkSurfaceCapabilities2EXT* pSurfaceCapabilities)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceSurfaceCapabilities2EXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPhysicalDeviceSurfaceCapabilities2EXT_VkResult_return = (VkResult)0;
     vkGetPhysicalDeviceSurfaceCapabilities2EXT_VkResult_return = vkEnc->vkGetPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice, surface, pSurfaceCapabilities);
@@ -2952,6 +3265,7 @@ static VkResult entry_vkDisplayPowerControlEXT(
     VkDisplayKHR display,
     const VkDisplayPowerInfoEXT* pDisplayPowerInfo)
 {
+    AEMU_SCOPED_TRACE("vkDisplayPowerControlEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkDisplayPowerControlEXT_VkResult_return = (VkResult)0;
     vkDisplayPowerControlEXT_VkResult_return = vkEnc->vkDisplayPowerControlEXT(device, display, pDisplayPowerInfo);
@@ -2963,6 +3277,7 @@ static VkResult entry_vkRegisterDeviceEventEXT(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkRegisterDeviceEventEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkRegisterDeviceEventEXT_VkResult_return = (VkResult)0;
     vkRegisterDeviceEventEXT_VkResult_return = vkEnc->vkRegisterDeviceEventEXT(device, pDeviceEventInfo, pAllocator, pFence);
@@ -2975,6 +3290,7 @@ static VkResult entry_vkRegisterDisplayEventEXT(
     const VkAllocationCallbacks* pAllocator,
     VkFence* pFence)
 {
+    AEMU_SCOPED_TRACE("vkRegisterDisplayEventEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkRegisterDisplayEventEXT_VkResult_return = (VkResult)0;
     vkRegisterDisplayEventEXT_VkResult_return = vkEnc->vkRegisterDisplayEventEXT(device, display, pDisplayEventInfo, pAllocator, pFence);
@@ -2986,6 +3302,7 @@ static VkResult entry_vkGetSwapchainCounterEXT(
     VkSurfaceCounterFlagBitsEXT counter,
     uint64_t* pCounterValue)
 {
+    AEMU_SCOPED_TRACE("vkGetSwapchainCounterEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetSwapchainCounterEXT_VkResult_return = (VkResult)0;
     vkGetSwapchainCounterEXT_VkResult_return = vkEnc->vkGetSwapchainCounterEXT(device, swapchain, counter, pCounterValue);
@@ -2998,6 +3315,7 @@ static VkResult entry_vkGetRefreshCycleDurationGOOGLE(
     VkSwapchainKHR swapchain,
     VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetRefreshCycleDurationGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetRefreshCycleDurationGOOGLE_VkResult_return = (VkResult)0;
     vkGetRefreshCycleDurationGOOGLE_VkResult_return = vkEnc->vkGetRefreshCycleDurationGOOGLE(device, swapchain, pDisplayTimingProperties);
@@ -3009,6 +3327,7 @@ static VkResult entry_vkGetPastPresentationTimingGOOGLE(
     uint32_t* pPresentationTimingCount,
     VkPastPresentationTimingGOOGLE* pPresentationTimings)
 {
+    AEMU_SCOPED_TRACE("vkGetPastPresentationTimingGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetPastPresentationTimingGOOGLE_VkResult_return = (VkResult)0;
     vkGetPastPresentationTimingGOOGLE_VkResult_return = vkEnc->vkGetPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
@@ -3032,6 +3351,7 @@ static void entry_vkCmdSetDiscardRectangleEXT(
     uint32_t discardRectangleCount,
     const VkRect2D* pDiscardRectangles)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetDiscardRectangleEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
@@ -3047,6 +3367,7 @@ static void entry_vkSetHdrMetadataEXT(
     const VkSwapchainKHR* pSwapchains,
     const VkHdrMetadataEXT* pMetadata)
 {
+    AEMU_SCOPED_TRACE("vkSetHdrMetadataEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkSetHdrMetadataEXT(device, swapchainCount, pSwapchains, pMetadata);
 }
@@ -3058,6 +3379,7 @@ static VkResult entry_vkCreateIOSSurfaceMVK(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateIOSSurfaceMVK");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateIOSSurfaceMVK_VkResult_return = (VkResult)0;
     vkCreateIOSSurfaceMVK_VkResult_return = vkEnc->vkCreateIOSSurfaceMVK(instance, pCreateInfo, pAllocator, pSurface);
@@ -3071,6 +3393,7 @@ static VkResult entry_vkCreateMacOSSurfaceMVK(
     const VkAllocationCallbacks* pAllocator,
     VkSurfaceKHR* pSurface)
 {
+    AEMU_SCOPED_TRACE("vkCreateMacOSSurfaceMVK");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateMacOSSurfaceMVK_VkResult_return = (VkResult)0;
     vkCreateMacOSSurfaceMVK_VkResult_return = vkEnc->vkCreateMacOSSurfaceMVK(instance, pCreateInfo, pAllocator, pSurface);
@@ -3086,6 +3409,7 @@ static VkResult entry_vkSetDebugUtilsObjectNameEXT(
     VkDevice device,
     const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
 {
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectNameEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkSetDebugUtilsObjectNameEXT_VkResult_return = (VkResult)0;
     vkSetDebugUtilsObjectNameEXT_VkResult_return = vkEnc->vkSetDebugUtilsObjectNameEXT(device, pNameInfo);
@@ -3095,6 +3419,7 @@ static VkResult entry_vkSetDebugUtilsObjectTagEXT(
     VkDevice device,
     const VkDebugUtilsObjectTagInfoEXT* pTagInfo)
 {
+    AEMU_SCOPED_TRACE("vkSetDebugUtilsObjectTagEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkSetDebugUtilsObjectTagEXT_VkResult_return = (VkResult)0;
     vkSetDebugUtilsObjectTagEXT_VkResult_return = vkEnc->vkSetDebugUtilsObjectTagEXT(device, pTagInfo);
@@ -3104,12 +3429,14 @@ static void entry_vkQueueBeginDebugUtilsLabelEXT(
     VkQueue queue,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueueBeginDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkQueueBeginDebugUtilsLabelEXT(queue, pLabelInfo);
 }
 static void entry_vkQueueEndDebugUtilsLabelEXT(
     VkQueue queue)
 {
+    AEMU_SCOPED_TRACE("vkQueueEndDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkQueueEndDebugUtilsLabelEXT(queue);
 }
@@ -3117,6 +3444,7 @@ static void entry_vkQueueInsertDebugUtilsLabelEXT(
     VkQueue queue,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkQueueInsertDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkQueueInsertDebugUtilsLabelEXT(queue, pLabelInfo);
 }
@@ -3124,12 +3452,14 @@ static void entry_vkCmdBeginDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdBeginDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
 static void entry_vkCmdEndDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer)
 {
+    AEMU_SCOPED_TRACE("vkCmdEndDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 }
@@ -3137,6 +3467,7 @@ static void entry_vkCmdInsertDebugUtilsLabelEXT(
     VkCommandBuffer commandBuffer,
     const VkDebugUtilsLabelEXT* pLabelInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdInsertDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
@@ -3146,6 +3477,7 @@ static VkResult entry_vkCreateDebugUtilsMessengerEXT(
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pMessenger)
 {
+    AEMU_SCOPED_TRACE("vkCreateDebugUtilsMessengerEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateDebugUtilsMessengerEXT_VkResult_return = (VkResult)0;
     vkCreateDebugUtilsMessengerEXT_VkResult_return = vkEnc->vkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
@@ -3156,6 +3488,7 @@ static void entry_vkDestroyDebugUtilsMessengerEXT(
     VkDebugUtilsMessengerEXT messenger,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyDebugUtilsMessengerEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyDebugUtilsMessengerEXT(instance, messenger, pAllocator);
 }
@@ -3165,6 +3498,7 @@ static void entry_vkSubmitDebugUtilsMessageEXT(
     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
 {
+    AEMU_SCOPED_TRACE("vkSubmitDebugUtilsMessageEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkSubmitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
 }
@@ -3175,9 +3509,11 @@ static VkResult entry_vkGetAndroidHardwareBufferPropertiesANDROID(
     const AHardwareBuffer* buffer,
     VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetAndroidHardwareBufferPropertiesANDROID");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return = (VkResult)0;
-    vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return = vkEnc->vkGetAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
+    auto resources = ResourceTracker::get();
+    vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return = resources->on_vkGetAndroidHardwareBufferPropertiesANDROID(vkEnc, VK_SUCCESS, device, buffer, pProperties);
     return vkGetAndroidHardwareBufferPropertiesANDROID_VkResult_return;
 }
 static VkResult entry_vkGetMemoryAndroidHardwareBufferANDROID(
@@ -3185,9 +3521,11 @@ static VkResult entry_vkGetMemoryAndroidHardwareBufferANDROID(
     const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo,
     AHardwareBuffer** pBuffer)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryAndroidHardwareBufferANDROID");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return = (VkResult)0;
-    vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return = vkEnc->vkGetMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
+    auto resources = ResourceTracker::get();
+    vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return = resources->on_vkGetMemoryAndroidHardwareBufferANDROID(vkEnc, VK_SUCCESS, device, pInfo, pBuffer);
     return vkGetMemoryAndroidHardwareBufferANDROID_VkResult_return;
 }
 #endif
@@ -3206,6 +3544,7 @@ static void entry_vkCmdSetSampleLocationsEXT(
     VkCommandBuffer commandBuffer,
     const VkSampleLocationsInfoEXT* pSampleLocationsInfo)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetSampleLocationsEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
 }
@@ -3214,6 +3553,7 @@ static void entry_vkGetPhysicalDeviceMultisamplePropertiesEXT(
     VkSampleCountFlagBits samples,
     VkMultisamplePropertiesEXT* pMultisampleProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetPhysicalDeviceMultisamplePropertiesEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetPhysicalDeviceMultisamplePropertiesEXT(physicalDevice, samples, pMultisampleProperties);
 }
@@ -3235,6 +3575,7 @@ static VkResult entry_vkCreateValidationCacheEXT(
     const VkAllocationCallbacks* pAllocator,
     VkValidationCacheEXT* pValidationCache)
 {
+    AEMU_SCOPED_TRACE("vkCreateValidationCacheEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateValidationCacheEXT_VkResult_return = (VkResult)0;
     vkCreateValidationCacheEXT_VkResult_return = vkEnc->vkCreateValidationCacheEXT(device, pCreateInfo, pAllocator, pValidationCache);
@@ -3245,6 +3586,7 @@ static void entry_vkDestroyValidationCacheEXT(
     VkValidationCacheEXT validationCache,
     const VkAllocationCallbacks* pAllocator)
 {
+    AEMU_SCOPED_TRACE("vkDestroyValidationCacheEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkDestroyValidationCacheEXT(device, validationCache, pAllocator);
 }
@@ -3254,6 +3596,7 @@ static VkResult entry_vkMergeValidationCachesEXT(
     uint32_t srcCacheCount,
     const VkValidationCacheEXT* pSrcCaches)
 {
+    AEMU_SCOPED_TRACE("vkMergeValidationCachesEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkMergeValidationCachesEXT_VkResult_return = (VkResult)0;
     vkMergeValidationCachesEXT_VkResult_return = vkEnc->vkMergeValidationCachesEXT(device, dstCache, srcCacheCount, pSrcCaches);
@@ -3265,6 +3608,7 @@ static VkResult entry_vkGetValidationCacheDataEXT(
     size_t* pDataSize,
     void* pData)
 {
+    AEMU_SCOPED_TRACE("vkGetValidationCacheDataEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetValidationCacheDataEXT_VkResult_return = (VkResult)0;
     vkGetValidationCacheDataEXT_VkResult_return = vkEnc->vkGetValidationCacheDataEXT(device, validationCache, pDataSize, pData);
@@ -3284,6 +3628,7 @@ static VkResult entry_vkGetMemoryHostPointerPropertiesEXT(
     const void* pHostPointer,
     VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
 {
+    AEMU_SCOPED_TRACE("vkGetMemoryHostPointerPropertiesEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkGetMemoryHostPointerPropertiesEXT_VkResult_return = (VkResult)0;
     vkGetMemoryHostPointerPropertiesEXT_VkResult_return = vkEnc->vkGetMemoryHostPointerPropertiesEXT(device, handleType, pHostPointer, pMemoryHostPointerProperties);
@@ -3298,6 +3643,7 @@ static void entry_vkCmdWriteBufferMarkerAMD(
     VkDeviceSize dstOffset,
     uint32_t marker)
 {
+    AEMU_SCOPED_TRACE("vkCmdWriteBufferMarkerAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
 }
@@ -3313,6 +3659,7 @@ static void entry_vkCmdSetCheckpointNV(
     VkCommandBuffer commandBuffer,
     const void* pCheckpointMarker)
 {
+    AEMU_SCOPED_TRACE("vkCmdSetCheckpointNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkCmdSetCheckpointNV(commandBuffer, pCheckpointMarker);
 }
@@ -3321,6 +3668,7 @@ static void entry_vkGetQueueCheckpointDataNV(
     uint32_t* pCheckpointDataCount,
     VkCheckpointDataNV* pCheckpointData)
 {
+    AEMU_SCOPED_TRACE("vkGetQueueCheckpointDataNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
     vkEnc->vkGetQueueCheckpointDataNV(queue, pCheckpointDataCount, pCheckpointData);
 }
@@ -3331,10 +3679,80 @@ static VkResult entry_vkMapMemoryIntoAddressSpaceGOOGLE(
     VkDeviceMemory memory,
     uint64_t* pAddress)
 {
+    AEMU_SCOPED_TRACE("vkMapMemoryIntoAddressSpaceGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return = (VkResult)0;
     vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return = vkEnc->vkMapMemoryIntoAddressSpaceGOOGLE(device, memory, pAddress);
     return vkMapMemoryIntoAddressSpaceGOOGLE_VkResult_return;
+}
+#endif
+#ifdef VK_GOOGLE_color_buffer
+static VkResult entry_vkRegisterImageColorBufferGOOGLE(
+    VkDevice device,
+    VkImage image,
+    uint32_t colorBuffer)
+{
+    AEMU_SCOPED_TRACE("vkRegisterImageColorBufferGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    VkResult vkRegisterImageColorBufferGOOGLE_VkResult_return = (VkResult)0;
+    vkRegisterImageColorBufferGOOGLE_VkResult_return = vkEnc->vkRegisterImageColorBufferGOOGLE(device, image, colorBuffer);
+    return vkRegisterImageColorBufferGOOGLE_VkResult_return;
+}
+static VkResult entry_vkRegisterBufferColorBufferGOOGLE(
+    VkDevice device,
+    VkBuffer buffer,
+    uint32_t colorBuffer)
+{
+    AEMU_SCOPED_TRACE("vkRegisterBufferColorBufferGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    VkResult vkRegisterBufferColorBufferGOOGLE_VkResult_return = (VkResult)0;
+    vkRegisterBufferColorBufferGOOGLE_VkResult_return = vkEnc->vkRegisterBufferColorBufferGOOGLE(device, buffer, colorBuffer);
+    return vkRegisterBufferColorBufferGOOGLE_VkResult_return;
+}
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+static void entry_vkUpdateDescriptorSetWithTemplateSizedGOOGLE(
+    VkDevice device,
+    VkDescriptorSet descriptorSet,
+    VkDescriptorUpdateTemplate descriptorUpdateTemplate,
+    uint32_t imageInfoCount,
+    uint32_t bufferInfoCount,
+    uint32_t bufferViewCount,
+    const uint32_t* pImageInfoEntryIndices,
+    const uint32_t* pBufferInfoEntryIndices,
+    const uint32_t* pBufferViewEntryIndices,
+    const VkDescriptorImageInfo* pImageInfos,
+    const VkDescriptorBufferInfo* pBufferInfos,
+    const VkBufferView* pBufferViews)
+{
+    AEMU_SCOPED_TRACE("vkUpdateDescriptorSetWithTemplateSizedGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    vkEnc->vkUpdateDescriptorSetWithTemplateSizedGOOGLE(device, descriptorSet, descriptorUpdateTemplate, imageInfoCount, bufferInfoCount, bufferViewCount, pImageInfoEntryIndices, pBufferInfoEntryIndices, pBufferViewEntryIndices, pImageInfos, pBufferInfos, pBufferViews);
+}
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+static void entry_vkBeginCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+    const VkCommandBufferBeginInfo* pBeginInfo)
+{
+    AEMU_SCOPED_TRACE("vkBeginCommandBufferAsyncGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    vkEnc->vkBeginCommandBufferAsyncGOOGLE(commandBuffer, pBeginInfo);
+}
+static void entry_vkEndCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer)
+{
+    AEMU_SCOPED_TRACE("vkEndCommandBufferAsyncGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    vkEnc->vkEndCommandBufferAsyncGOOGLE(commandBuffer);
+}
+static void entry_vkResetCommandBufferAsyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+    VkCommandBufferResetFlags flags)
+{
+    AEMU_SCOPED_TRACE("vkResetCommandBufferAsyncGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    vkEnc->vkResetCommandBufferAsyncGOOGLE(commandBuffer, flags);
 }
 #endif
 void* goldfish_vulkan_get_proc_address(const char* name){
@@ -4734,6 +5152,36 @@ void* goldfish_vulkan_get_proc_address(const char* name){
 #endif
 #ifdef VK_GOOGLE_address_space
     if (!strcmp(name, "vkMapMemoryIntoAddressSpaceGOOGLE"))
+    {
+        return nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_color_buffer
+    if (!strcmp(name, "vkRegisterImageColorBufferGOOGLE"))
+    {
+        return nullptr;
+    }
+    if (!strcmp(name, "vkRegisterBufferColorBufferGOOGLE"))
+    {
+        return nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+    if (!strcmp(name, "vkUpdateDescriptorSetWithTemplateSizedGOOGLE"))
+    {
+        return nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+    if (!strcmp(name, "vkBeginCommandBufferAsyncGOOGLE"))
+    {
+        return nullptr;
+    }
+    if (!strcmp(name, "vkEndCommandBufferAsyncGOOGLE"))
+    {
+        return nullptr;
+    }
+    if (!strcmp(name, "vkResetCommandBufferAsyncGOOGLE"))
     {
         return nullptr;
     }
@@ -6296,6 +6744,42 @@ void* goldfish_vulkan_get_instance_proc_address(VkInstance instance, const char*
         return hasExt ? (void*)entry_vkMapMemoryIntoAddressSpaceGOOGLE : nullptr;
     }
 #endif
+#ifdef VK_GOOGLE_color_buffer
+    if (!strcmp(name, "vkRegisterImageColorBufferGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_color_buffer");
+        return hasExt ? (void*)entry_vkRegisterImageColorBufferGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkRegisterBufferColorBufferGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_color_buffer");
+        return hasExt ? (void*)entry_vkRegisterBufferColorBufferGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+    if (!strcmp(name, "vkUpdateDescriptorSetWithTemplateSizedGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_sized_descriptor_update_template");
+        return hasExt ? (void*)entry_vkUpdateDescriptorSetWithTemplateSizedGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+    if (!strcmp(name, "vkBeginCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkBeginCommandBufferAsyncGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkEndCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkEndCommandBufferAsyncGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkResetCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkResetCommandBufferAsyncGOOGLE : nullptr;
+    }
+#endif
     return nullptr;
 }
 void* goldfish_vulkan_get_device_proc_address(VkDevice device, const char* name){
@@ -7852,6 +8336,42 @@ void* goldfish_vulkan_get_device_proc_address(VkDevice device, const char* name)
     {
         bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_address_space");
         return hasExt ? (void*)entry_vkMapMemoryIntoAddressSpaceGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_color_buffer
+    if (!strcmp(name, "vkRegisterImageColorBufferGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_color_buffer");
+        return hasExt ? (void*)entry_vkRegisterImageColorBufferGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkRegisterBufferColorBufferGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_color_buffer");
+        return hasExt ? (void*)entry_vkRegisterBufferColorBufferGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+    if (!strcmp(name, "vkUpdateDescriptorSetWithTemplateSizedGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_sized_descriptor_update_template");
+        return hasExt ? (void*)entry_vkUpdateDescriptorSetWithTemplateSizedGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+    if (!strcmp(name, "vkBeginCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkBeginCommandBufferAsyncGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkEndCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkEndCommandBufferAsyncGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkResetCommandBufferAsyncGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkResetCommandBufferAsyncGOOGLE : nullptr;
     }
 #endif
     return nullptr;

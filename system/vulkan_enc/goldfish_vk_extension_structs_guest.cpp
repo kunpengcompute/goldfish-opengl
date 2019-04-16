@@ -276,6 +276,12 @@ namespace goldfish_vk {
 #endif
 #ifdef VK_GOOGLE_address_space
 #endif
+#ifdef VK_GOOGLE_color_buffer
+#endif
+#ifdef VK_GOOGLE_sized_descriptor_update_template
+#endif
+#ifdef VK_GOOGLE_async_command_buffers
+#endif
 uint32_t goldfish_vk_struct_type(
     const void* structExtension)
 {
@@ -815,6 +821,16 @@ size_t goldfish_vk_extension_struct_size(
         case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV:
         {
             return sizeof(VkQueueFamilyCheckpointPropertiesNV);
+        }
+#endif
+#ifdef VK_GOOGLE_color_buffer
+        case VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE:
+        {
+            return sizeof(VkImportColorBufferGOOGLE);
+        }
+        case VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE:
+        {
+            return sizeof(VkImportPhysicalAddressGOOGLE);
         }
 #endif
         default:

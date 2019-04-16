@@ -11,20 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include "VulkanStream.h"
+#include "VulkanStreamGuest.h"
 
 #include "IOStream.h"
 
 #include "android/base/Pool.h"
+#include "android/base/Tracing.h"
 
 #include <vector>
 
-#include <cutils/log.h>
+#include <log/log.h>
 #include <inttypes.h>
 
 namespace goldfish_vk {
 
-class VulkanStream::Impl : public android::base::Stream {
+class VulkanStreamGuest::Impl : public android::base::Stream {
 public:
     Impl(IOStream* stream) : mStream(stream) { unsetHandleMapping(); }
 
@@ -42,7 +43,9 @@ public:
     }
 
     ssize_t write(const void *buffer, size_t size) override {
-        return bufferedWrite(buffer, size);
+        uint8_t* streamBuf = (uint8_t*)mStream->alloc(size);
+        memcpy(streamBuf, buffer, size);
+        return size;
     }
 
     ssize_t read(void *buffer, size_t size) override {
@@ -84,22 +87,8 @@ private:
     }
 
     void commitWrite() {
+        AEMU_SCOPED_TRACE("VulkanStreamGuest device write");
         mStream->flush();
-
-        if (!valid()) {
-            ALOGE("FATAL: Tried to commit write to vulkan pipe with invalid pipe!");
-            abort();
-        }
-
-        int written =
-            mStream->writeFully(mWriteBuffer.data(), mWritePos);
-
-        if (written) {
-            ALOGE("FATAL: Did not write exactly %zu bytes!",
-                  mWritePos);
-            abort();
-        }
-        mWritePos = 0;
     }
 
     ssize_t bufferedWrite(const void *buffer, size_t size) {
@@ -120,20 +109,20 @@ private:
     VulkanHandleMapping* mCurrentHandleMapping;
 };
 
-VulkanStream::VulkanStream(IOStream *stream) :
-    mImpl(new VulkanStream::Impl(stream)) { }
+VulkanStreamGuest::VulkanStreamGuest(IOStream *stream) :
+    mImpl(new VulkanStreamGuest::Impl(stream)) { }
 
-VulkanStream::~VulkanStream() = default;
+VulkanStreamGuest::~VulkanStreamGuest() = default;
 
-bool VulkanStream::valid() {
+bool VulkanStreamGuest::valid() {
     return mImpl->valid();
 }
 
-void VulkanStream::alloc(void** ptrAddr, size_t bytes) {
+void VulkanStreamGuest::alloc(void** ptrAddr, size_t bytes) {
     mImpl->alloc(ptrAddr, bytes);
 }
 
-void VulkanStream::loadStringInPlace(char** forOutput) {
+void VulkanStreamGuest::loadStringInPlace(char** forOutput) {
     size_t len = getBe32();
 
     alloc((void**)forOutput, len + 1);
@@ -143,7 +132,7 @@ void VulkanStream::loadStringInPlace(char** forOutput) {
     if (len > 0) read(*forOutput, len);
 }
 
-void VulkanStream::loadStringArrayInPlace(char*** forOutput) {
+void VulkanStreamGuest::loadStringArrayInPlace(char*** forOutput) {
     size_t count = getBe32();
 
     if (!count) {
@@ -161,35 +150,35 @@ void VulkanStream::loadStringArrayInPlace(char*** forOutput) {
 }
 
 
-ssize_t VulkanStream::read(void *buffer, size_t size) {
+ssize_t VulkanStreamGuest::read(void *buffer, size_t size) {
     return mImpl->read(buffer, size);
 }
 
-ssize_t VulkanStream::write(const void *buffer, size_t size) {
+ssize_t VulkanStreamGuest::write(const void *buffer, size_t size) {
     return mImpl->write(buffer, size);
 }
 
-void VulkanStream::clearPool() {
+void VulkanStreamGuest::clearPool() {
     mImpl->clearPool();
 }
 
-void VulkanStream::setHandleMapping(VulkanHandleMapping* mapping) {
+void VulkanStreamGuest::setHandleMapping(VulkanHandleMapping* mapping) {
     mImpl->setHandleMapping(mapping);
 }
 
-void VulkanStream::unsetHandleMapping() {
+void VulkanStreamGuest::unsetHandleMapping() {
     mImpl->unsetHandleMapping();
 }
 
-VulkanHandleMapping* VulkanStream::handleMapping() const {
+VulkanHandleMapping* VulkanStreamGuest::handleMapping() const {
     return mImpl->handleMapping();
 }
 
-void VulkanStream::flush() {
+void VulkanStreamGuest::flush() {
     mImpl->flush();
 }
 
-VulkanCountingStream::VulkanCountingStream() : VulkanStream(nullptr) { }
+VulkanCountingStream::VulkanCountingStream() : VulkanStreamGuest(nullptr) { }
 VulkanCountingStream::~VulkanCountingStream() = default;
 
 ssize_t VulkanCountingStream::read(void*, size_t size) {

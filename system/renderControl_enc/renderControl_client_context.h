@@ -48,6 +48,14 @@ struct renderControl_client_context_t {
 	rcCreateColorBufferDMA_client_proc_t rcCreateColorBufferDMA;
 	rcWaitSyncKHR_client_proc_t rcWaitSyncKHR;
 	rcCompose_client_proc_t rcCompose;
+	rcCreateDisplay_client_proc_t rcCreateDisplay;
+	rcDestroyDisplay_client_proc_t rcDestroyDisplay;
+	rcSetDisplayColorBuffer_client_proc_t rcSetDisplayColorBuffer;
+	rcGetDisplayColorBuffer_client_proc_t rcGetDisplayColorBuffer;
+	rcGetColorBufferDisplay_client_proc_t rcGetColorBufferDisplay;
+	rcGetDisplayPose_client_proc_t rcGetDisplayPose;
+	rcSetDisplayPose_client_proc_t rcSetDisplayPose;
+	rcSetColorBufferVulkanMode_client_proc_t rcSetColorBufferVulkanMode;
 	virtual ~renderControl_client_context_t() {}
 
 	typedef renderControl_client_context_t *CONTEXT_ACCESSOR_TYPE(void);

@@ -63,6 +63,14 @@ bool isHostVisibleMemoryTypeIndexForGuest(
     const HostVisibleMemoryVirtualizationInfo* info,
     uint32_t index);
 
+bool isDeviceLocalMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index);
+
+bool isNoFlagsMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index);
+
 struct HostMemAlloc {
     bool initialized = false;
     VkResult initResult = VK_SUCCESS;
@@ -109,4 +117,5 @@ void subAllocHostMemory(
 
 void subFreeHostMemory(SubAlloc* toFree);
 
+bool canSubAlloc(android::base::SubAllocator* subAlloc, VkDeviceSize size);
 } // namespace goldfish_vk

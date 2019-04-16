@@ -15,11 +15,18 @@
 #include "goldfish_dma.h"
 #include "qemu_pipe.h"
 
+#if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
+#else
+#include <log/log.h>
+#endif
 #include <errno.h>
+#ifdef __ANDROID__
 #include <linux/ioctl.h>
 #include <linux/types.h>
 #include <sys/cdefs.h>
+#endif
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -43,18 +50,6 @@ struct goldfish_dma_ioctl_info {
     uint64_t phys_begin;
     uint64_t size;
 };
-
-int goldfish_dma_lock(struct goldfish_dma_context* cxt) {
-    struct goldfish_dma_ioctl_info info;
-
-    return ioctl(cxt->fd, GOLDFISH_DMA_IOC_LOCK, &info);
-}
-
-int goldfish_dma_unlock(struct goldfish_dma_context* cxt) {
-    struct goldfish_dma_ioctl_info info;
-
-    return ioctl(cxt->fd, GOLDFISH_DMA_IOC_UNLOCK, &info);
-}
 
 int goldfish_dma_create_region(uint32_t sz, struct goldfish_dma_context* res) {
 
@@ -102,7 +97,7 @@ void* goldfish_dma_map(struct goldfish_dma_context* cxt) {
 }
 
 int goldfish_dma_unmap(struct goldfish_dma_context* cxt) {
-    ALOGV("%s: cxt=%p mapped=0x%08llx", __FUNCTION__, cxt, cxt->mapped_addr);
+    ALOGV("%s: cxt=%p mapped=0x%" PRIu64, __FUNCTION__, cxt, cxt->mapped_addr);
     munmap(reinterpret_cast<void *>(cxt->mapped_addr), cxt->size);
     cxt->mapped_addr = 0;
     cxt->size = 0;
@@ -112,7 +107,7 @@ int goldfish_dma_unmap(struct goldfish_dma_context* cxt) {
 void goldfish_dma_write(struct goldfish_dma_context* cxt,
                                const void* to_write,
                                uint32_t sz) {
-    ALOGV("%s: cxt=%p mapped=0x%08llx to_write=%p size=%u",
+    ALOGV("%s: cxt=%p mapped=0x%" PRIu64 " to_write=%p size=%u",
         __FUNCTION__, cxt, cxt->mapped_addr, to_write, sz);
     memcpy(reinterpret_cast<void *>(cxt->mapped_addr), to_write, sz);
 }
