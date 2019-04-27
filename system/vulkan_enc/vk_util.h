@@ -26,6 +26,7 @@
 /* common inlines and macros for vulkan drivers */
 
 #include <vulkan/vulkan.h>
+#include <stdlib.h>
 
 struct vk_struct_common {
     VkStructureType sType;
@@ -191,11 +192,24 @@ __vk_find_struct(void *start, VkStructureType sType)
    return NULL;
 }
 
-#define vk_find_struct(__start, __sType) \
-   __vk_find_struct((__start), __sType)
+template <class T> void vk_is_vk_struct(T *s)
+{
+    static_assert(sizeof(s->sType) == sizeof(VkStructureType), "Vulkan structures has the sType field of type VkStructureType");
+    static_assert(sizeof(s->pNext) == sizeof(void*), "Vulkan structures has the pNext field of void*");
+}
 
-#define vk_find_struct_const(__start, __sType) \
-   (const void *)__vk_find_struct((void *)(__start), __sType)
+template <class T, class H> T* vk_find_struct(H* head, VkStructureType sType)
+{
+    vk_is_vk_struct(head);
+    return static_cast<T*>(__vk_find_struct(static_cast<void*>(head), sType));
+}
+
+template <class T, class H> const T* vk_find_struct(const H* head, VkStructureType sType)
+{
+    vk_is_vk_struct(head);
+    return static_cast<const T*>(__vk_find_struct(const_cast<void*>(static_cast<const void*>(head)),
+                                 sType));
+}
 
 uint32_t vk_get_driver_version(void);
 
@@ -215,11 +229,28 @@ vk_init_struct_chain(vk_struct_common* start)
 }
 
 static inline vk_struct_common*
+vk_last_struct_chain(vk_struct_common* i)
+{
+    for (int n = 1000000; n > 0; --n) {
+        vk_struct_common* next = i->pNext;
+        if (next) {
+            i = next;
+        } else {
+            return i;
+        }
+    }
+
+    ::abort();  // crash on loops in the chain
+    return NULL;
+}
+
+static inline vk_struct_common*
 vk_append_struct(vk_struct_common* current, vk_struct_common* next)
 {
-   current->pNext = next;
-   next->pNext = nullptr;
-   return next;
+    vk_struct_common* last = vk_last_struct_chain(current);
+    last->pNext = next;
+    next->pNext = nullptr;
+    return current;
 }
 
 #endif /* VK_UTIL_H */
