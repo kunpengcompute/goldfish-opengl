@@ -58,7 +58,6 @@ typedef struct VkImportMemoryBufferCollectionFUCHSIA {
 #ifdef VK_USE_PLATFORM_FUCHSIA
 
 #include <cutils/native_handle.h>
-#include <fuchsia/hardware/goldfish/c/fidl.h>
 #include <fuchsia/sysmem/cpp/fidl.h>
 #include <lib/fdio/directory.h>
 #include <lib/fdio/fd.h>
@@ -1210,7 +1209,7 @@ public:
         for (uint32_t i = 0; i < info.memProps.memoryTypeCount; ++i) {
             if (info.memProps.memoryTypes[i].propertyFlags &
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-                pProperties->memoryTypeBits = 1ull << i;
+                pProperties->memoryTypeBits |= 1ull << i;
             }
         }
         return VK_SUCCESS;
@@ -1362,6 +1361,45 @@ public:
 
         auto sysmem_collection = reinterpret_cast<fuchsia::sysmem::BufferCollectionSyncPtr*>(collection);
         (*sysmem_collection)->SetConstraints(true, constraints);
+        return VK_SUCCESS;
+    }
+
+    VkResult on_vkGetBufferCollectionPropertiesFUCHSIA(
+        void*, VkResult,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        VkBufferCollectionPropertiesFUCHSIA* pProperties) {
+        auto sysmem_collection = reinterpret_cast<fuchsia::sysmem::BufferCollectionSyncPtr*>(collection);
+        fuchsia::sysmem::BufferCollectionInfo_2 info;
+        zx_status_t status2;
+        zx_status_t status = (*sysmem_collection)->WaitForBuffersAllocated(&status2, &info);
+        if (status != ZX_OK || status2 != ZX_OK) {
+            ALOGE("Failed wait for allocation: %d %d", status, status2);
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+        if (!info.settings.has_image_format_constraints) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+        pProperties->count = info.buffer_count;
+
+        AutoLock lock(mLock);
+
+        auto deviceIt = info_VkDevice.find(device);
+
+        if (deviceIt == info_VkDevice.end()) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
+        auto& deviceInfo = deviceIt->second;
+
+        // Device local memory type supported.
+        pProperties->memoryTypeBits = 0;
+        for (uint32_t i = 0; i < deviceInfo.memProps.memoryTypeCount; ++i) {
+            if (deviceInfo.memProps.memoryTypes[i].propertyFlags &
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+                pProperties->memoryTypeBits |= 1ull << i;
+            }
+        }
         return VK_SUCCESS;
     }
 #endif
@@ -1698,10 +1736,17 @@ public:
         }
 
         if (vmo_handle != ZX_HANDLE_INVALID) {
-            uint64_t cb = 0;
+            uint32_t cb = 0;
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
-            zx_object_get_cookie(vmo_handle, vmo_handle, &cb);
+            // TODO(reveman): Remove use of zx_vmo_read. Goldfish FIDL interface
+            // should provide a mechanism to query the color buffer ID associated
+            // with a VMO.
+            zx_status_t status = zx_vmo_read(vmo_handle, &cb, 0, sizeof(cb));
+            if (status != ZX_OK) {
+                ALOGE("failed to read color buffer name");
+                return VK_ERROR_INITIALIZATION_FAILED;
+            }
 #endif
 
             if (cb) {
@@ -2377,11 +2422,12 @@ public:
                     abort();
                 }
             }
-            status = zx_object_set_cookie(memoryInfo.vmoHandle,
-                                          memoryInfo.vmoHandle,
-                                          imageInfo.cbHandle);
+            // TODO(reveman): Remove use of zx_vmo_write. Sysmem
+            // and goldfish pipe driver should manage this association.
+            status = zx_vmo_write(memoryInfo.vmoHandle, &imageInfo.cbHandle,
+                                  0, sizeof(imageInfo.cbHandle));
             if (status != ZX_OK) {
-                ALOGE("%s: failed to set color buffer cookie", __func__);
+                ALOGE("%s: failed writing color buffer id to vmo", __func__);
                 abort();
             }
             // Color buffer backed images are already bound.
@@ -3691,6 +3737,15 @@ VkResult ResourceTracker::on_vkSetBufferCollectionConstraintsFUCHSIA(
         const VkImageCreateInfo* pImageInfo) {
     return mImpl->on_vkSetBufferCollectionConstraintsFUCHSIA(
         context, input_result, device, collection, pImageInfo);
+}
+
+VkResult ResourceTracker::on_vkGetBufferCollectionPropertiesFUCHSIA(
+        void* context, VkResult input_result,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        VkBufferCollectionPropertiesFUCHSIA* pProperties) {
+    return mImpl->on_vkGetBufferCollectionPropertiesFUCHSIA(
+        context, input_result, device, collection, pProperties);
 }
 #endif
 
