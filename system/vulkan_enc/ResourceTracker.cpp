@@ -1536,7 +1536,9 @@ public:
 
         VkEncoder* enc = (VkEncoder*)context;
 
-        VkMemoryAllocateInfo finalAllocInfo = *pAllocateInfo;
+        VkMemoryAllocateInfo finalAllocInfo = vk_make_orphan_copy(*pAllocateInfo);
+        vk_struct_chain_iterator structChainIter = vk_make_chain_iterator(&finalAllocInfo);
+
         VkMemoryDedicatedAllocateInfo dedicatedAllocInfo;
         VkImportColorBufferGOOGLE importCbInfo = {
             VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE, 0,
@@ -1545,29 +1547,24 @@ public:
         //     VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE, 0,
         // };
 
-        vk_struct_common* structChain =
-        structChain = vk_init_struct_chain(
-            (vk_struct_common*)(&finalAllocInfo));
-        structChain->pNext = nullptr;
-
-        VkExportMemoryAllocateInfo* exportAllocateInfoPtr =
-            (VkExportMemoryAllocateInfo*)vk_find_struct((vk_struct_common*)pAllocateInfo,
+        const VkExportMemoryAllocateInfo* exportAllocateInfoPtr =
+            vk_find_struct<VkExportMemoryAllocateInfo>(pAllocateInfo,
                 VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO);
 
-        VkImportAndroidHardwareBufferInfoANDROID* importAhbInfoPtr =
-            (VkImportAndroidHardwareBufferInfoANDROID*)vk_find_struct((vk_struct_common*)pAllocateInfo,
+        const VkImportAndroidHardwareBufferInfoANDROID* importAhbInfoPtr =
+            vk_find_struct<VkImportAndroidHardwareBufferInfoANDROID>(pAllocateInfo,
                 VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID);
 
-        VkImportMemoryBufferCollectionFUCHSIA* importBufferCollectionInfoPtr =
-            (VkImportMemoryBufferCollectionFUCHSIA*)vk_find_struct((vk_struct_common*)pAllocateInfo,
+        const VkImportMemoryBufferCollectionFUCHSIA* importBufferCollectionInfoPtr =
+            vk_find_struct<VkImportMemoryBufferCollectionFUCHSIA>(pAllocateInfo,
                 VK_STRUCTURE_TYPE_IMPORT_MEMORY_BUFFER_COLLECTION_FUCHSIA);
 
-        VkImportMemoryZirconHandleInfoFUCHSIA* importVmoInfoPtr =
-            (VkImportMemoryZirconHandleInfoFUCHSIA*)vk_find_struct((vk_struct_common*)pAllocateInfo,
+        const VkImportMemoryZirconHandleInfoFUCHSIA* importVmoInfoPtr =
+            vk_find_struct<VkImportMemoryZirconHandleInfoFUCHSIA>(pAllocateInfo,
                 VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA);
 
-        VkMemoryDedicatedAllocateInfo* dedicatedAllocInfoPtr =
-            (VkMemoryDedicatedAllocateInfo*)vk_find_struct((vk_struct_common*)pAllocateInfo,
+        const VkMemoryDedicatedAllocateInfo* dedicatedAllocInfoPtr =
+            vk_find_struct<VkMemoryDedicatedAllocateInfo>(pAllocateInfo,
                 VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO);
 
         bool shouldPassThroughDedicatedAllocInfo =
@@ -1592,12 +1589,8 @@ public:
 
         if (shouldPassThroughDedicatedAllocInfo &&
             dedicatedAllocInfoPtr) {
-            dedicatedAllocInfo = *dedicatedAllocInfoPtr;
-            structChain->pNext =
-                (vk_struct_common*)(&dedicatedAllocInfo);
-            structChain =
-                (vk_struct_common*)(&dedicatedAllocInfo);
-            structChain->pNext = nullptr;
+            dedicatedAllocInfo = vk_make_orphan_copy(*dedicatedAllocInfoPtr);
+            vk_append_struct(&structChainIter, &dedicatedAllocInfo);
         }
 
         // State needed for import/export.
@@ -1708,8 +1701,7 @@ public:
             const cb_handle_t* cb_handle =
                 reinterpret_cast<const cb_handle_t*>(handle);
             importCbInfo.colorBuffer = cb_handle->hostHandle;
-            structChain =
-                vk_append_struct(structChain, (vk_struct_common*)(&importCbInfo));
+            vk_append_struct(&structChainIter, &importCbInfo);
         }
 
         zx_handle_t vmo_handle = ZX_HANDLE_INVALID;
@@ -1829,8 +1821,7 @@ public:
             if (status != ZX_OK || status2 != ZX_OK) {
                 ALOGE("GetColorBuffer failed: %d:%d", status, status2);
             }
-            structChain =
-                vk_append_struct(structChain, (vk_struct_common*)(&importCbInfo));
+            vk_append_struct(&structChainIter, &importCbInfo);
         }
 #endif
 
@@ -2125,10 +2116,8 @@ public:
         transformExternalResourceMemoryRequirementsForGuest(&reqs2->memoryRequirements);
 
         VkMemoryDedicatedRequirements* dedicatedReqs =
-            (VkMemoryDedicatedRequirements*)
-            vk_find_struct(
-                (vk_struct_common*)reqs2,
-                VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS);
+            vk_find_struct<VkMemoryDedicatedRequirements>(
+                reqs2, VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS);
 
         if (!dedicatedReqs) return;
 
@@ -2157,10 +2146,8 @@ public:
         transformExternalResourceMemoryRequirementsForGuest(&reqs2->memoryRequirements);
 
         VkMemoryDedicatedRequirements* dedicatedReqs =
-            (VkMemoryDedicatedRequirements*)
-            vk_find_struct(
-                (vk_struct_common*)reqs2,
-                VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS);
+            vk_find_struct<VkMemoryDedicatedRequirements>(
+                reqs2, VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS);
 
         if (!dedicatedReqs) return;
 
@@ -2175,82 +2162,55 @@ public:
         VkImage *pImage) {
         VkEncoder* enc = (VkEncoder*)context;
 
-        VkImageCreateInfo localCreateInfo = *pCreateInfo;
-        VkNativeBufferANDROID localAnb;
+        VkImageCreateInfo localCreateInfo = vk_make_orphan_copy(*pCreateInfo);
+        vk_struct_chain_iterator structChainIter = vk_make_chain_iterator(&localCreateInfo);
         VkExternalMemoryImageCreateInfo localExtImgCi;
 
-        VkImageCreateInfo* pCreateInfo_mut = &localCreateInfo;
-
-        VkNativeBufferANDROID* anbInfoPtr =
-            (VkNativeBufferANDROID*)
-            vk_find_struct(
-                (vk_struct_common*)pCreateInfo_mut,
-                VK_STRUCTURE_TYPE_NATIVE_BUFFER_ANDROID);
-
-        if (anbInfoPtr) {
-            localAnb = *anbInfoPtr;
-        }
-
-        VkExternalMemoryImageCreateInfo* extImgCiPtr =
-            (VkExternalMemoryImageCreateInfo*)
-            vk_find_struct(
-                (vk_struct_common*)pCreateInfo_mut,
+        const VkExternalMemoryImageCreateInfo* extImgCiPtr =
+            vk_find_struct<VkExternalMemoryImageCreateInfo>(
+                pCreateInfo,
                 VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO);
-
         if (extImgCiPtr) {
-            localExtImgCi = *extImgCiPtr;
+            localExtImgCi = vk_make_orphan_copy(*extImgCiPtr);
+            vk_append_struct(&structChainIter, &localExtImgCi);
         }
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-        VkExternalFormatANDROID localExtFormatAndroid;
-        VkExternalFormatANDROID* extFormatAndroidPtr =
-        (VkExternalFormatANDROID*)
-        vk_find_struct(
-            (vk_struct_common*)pCreateInfo_mut,
-            VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
-        if (extFormatAndroidPtr) {
-            localExtFormatAndroid = *extFormatAndroidPtr;
-        }
-#endif
-
-#ifdef VK_USE_PLATFORM_FUCHSIA
-        VkBufferCollectionImageCreateInfoFUCHSIA* extBufferCollectionPtr =
-        (VkBufferCollectionImageCreateInfoFUCHSIA*)
-        vk_find_struct(
-            (vk_struct_common*)pCreateInfo_mut,
-            VK_STRUCTURE_TYPE_BUFFER_COLLECTION_IMAGE_CREATE_INFO_FUCHSIA);
-#endif
-
-        vk_struct_common* structChain =
-            vk_init_struct_chain((vk_struct_common*)pCreateInfo_mut);
-
-        if (extImgCiPtr) {
-            structChain =
-                vk_append_struct(
-                    structChain, (vk_struct_common*)(&localExtImgCi));
-        }
-
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        VkNativeBufferANDROID localAnb;
+        const VkNativeBufferANDROID* anbInfoPtr =
+            vk_find_struct<VkNativeBufferANDROID>(
+                pCreateInfo,
+                VK_STRUCTURE_TYPE_NATIVE_BUFFER_ANDROID);
         if (anbInfoPtr) {
-            structChain =
-                vk_append_struct(
-                    structChain, (vk_struct_common*)(&localAnb));
+            localAnb = vk_make_orphan_copy(*anbInfoPtr);
+            vk_append_struct(&structChainIter, &localAnb);
         }
 
+        VkExternalFormatANDROID localExtFormatAndroid;
+        const VkExternalFormatANDROID* extFormatAndroidPtr =
+            vk_find_struct<VkExternalFormatANDROID>(
+                pCreateInfo,
+                VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
         if (extFormatAndroidPtr) {
+            localExtFormatAndroid = vk_make_orphan_copy(*extFormatAndroidPtr);
+
             // Do not append external format android;
-            // instead, replace the local image pCreateInfo_mut format
+            // instead, replace the local image localCreateInfo format
             // with the corresponding Vulkan format
             if (extFormatAndroidPtr->externalFormat) {
-                pCreateInfo_mut->format =
+                localCreateInfo.format =
                     vk_format_from_android(extFormatAndroidPtr->externalFormat);
-                if (pCreateInfo_mut->format == VK_FORMAT_UNDEFINED)
+                if (localCreateInfo.format == VK_FORMAT_UNDEFINED)
                     return VK_ERROR_VALIDATION_FAILED_EXT;
             }
         }
 #endif
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
+        const VkBufferCollectionImageCreateInfoFUCHSIA* extBufferCollectionPtr =
+            vk_find_struct<VkBufferCollectionImageCreateInfoFUCHSIA>(
+                pCreateInfo,
+                VK_STRUCTURE_TYPE_BUFFER_COLLECTION_IMAGE_CREATE_INFO_FUCHSIA);
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<fuchsia::sysmem::BufferCollectionSyncPtr*>(
                 extBufferCollectionPtr->collection);
@@ -2273,8 +2233,8 @@ public:
                 status = fuchsia_hardware_goldfish_control_DeviceCreateColorBuffer(
                     mControlDevice,
                     vmo_handle,
-                    pCreateInfo_mut->extent.width,
-                    pCreateInfo_mut->extent.height,
+                    localCreateInfo.extent.width,
+                    localCreateInfo.extent.height,
                     fuchsia_hardware_goldfish_control_FormatType_BGRA,
                     &status2);
                 if (status != ZX_OK || status2 != ZX_OK) {
@@ -2284,17 +2244,17 @@ public:
         }
 
         // Allow external memory for all color attachments on fuchsia.
-        if (pCreateInfo_mut->usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+        if (localCreateInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
             if (!extImgCiPtr) {
                 localExtImgCi.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
                 localExtImgCi.pNext = nullptr;
                 localExtImgCi.handleTypes = ~0; // handle type just needs to be non-zero
-                extImgCiPtr = &localExtImgCi;
+                extImgCiPtr = &localExtImgCi;   // no vk_append_struct required
             }
         }
 #endif
 
-        VkResult res = enc->vkCreateImage(device, pCreateInfo_mut, pAllocator, pImage);
+        VkResult res = enc->vkCreateImage(device, &localCreateInfo, pAllocator, pImage);
 
         if (res != VK_SUCCESS) return res;
 
@@ -2306,7 +2266,7 @@ public:
         auto& info = it->second;
 
         info.device = device;
-        info.createInfo = *pCreateInfo_mut;
+        info.createInfo = *pCreateInfo;
         info.createInfo.pNext = nullptr;
 
         if (!extImgCiPtr) return res;
@@ -2324,28 +2284,16 @@ public:
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion) {
 
-        VkSamplerYcbcrConversionCreateInfo localCreateInfo = *pCreateInfo;
-        VkSamplerYcbcrConversionCreateInfo* pCreateInfo_mut = &localCreateInfo;
+        VkSamplerYcbcrConversionCreateInfo localCreateInfo = vk_make_orphan_copy(*pCreateInfo);
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-        VkExternalFormatANDROID localExtFormatAndroid;
-        VkExternalFormatANDROID* extFormatAndroidPtr =
-        (VkExternalFormatANDROID*)
-        vk_find_struct(
-            (vk_struct_common*)pCreateInfo_mut,
-            VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
-        if (extFormatAndroidPtr) {
-            localExtFormatAndroid = *extFormatAndroidPtr;
-        }
-#endif
-
-        vk_struct_common* structChain =
-            vk_init_struct_chain((vk_struct_common*)pCreateInfo_mut);
-
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        const VkExternalFormatANDROID* extFormatAndroidPtr =
+            vk_find_struct<VkExternalFormatANDROID>(
+                pCreateInfo,
+                VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
         if (extFormatAndroidPtr) {
             if (extFormatAndroidPtr->externalFormat) {
-                pCreateInfo_mut->format =
+                localCreateInfo.format =
                     vk_format_from_android(extFormatAndroidPtr->externalFormat);
             }
         }
@@ -2353,7 +2301,7 @@ public:
 
         VkEncoder* enc = (VkEncoder*)context;
         return enc->vkCreateSamplerYcbcrConversion(
-            device, pCreateInfo, pAllocator, pYcbcrConversion);
+            device, &localCreateInfo, pAllocator, pYcbcrConversion);
     }
 
     VkResult on_vkCreateSamplerYcbcrConversionKHR(
@@ -2363,34 +2311,24 @@ public:
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion) {
 
-        VkSamplerYcbcrConversionCreateInfo localCreateInfo = *pCreateInfo;
-        VkSamplerYcbcrConversionCreateInfo* pCreateInfo_mut = &localCreateInfo;
+        VkSamplerYcbcrConversionCreateInfo localCreateInfo = vk_make_orphan_copy(*pCreateInfo);
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-        VkExternalFormatANDROID localExtFormatAndroid;
-        VkExternalFormatANDROID* extFormatAndroidPtr =
-        (VkExternalFormatANDROID*)
-        vk_find_struct(
-            (vk_struct_common*)pCreateInfo_mut,
-            VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
+        const VkExternalFormatANDROID* extFormatAndroidPtr =
+            vk_find_struct<VkExternalFormatANDROID>(
+                pCreateInfo,
+                VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID);
         if (extFormatAndroidPtr) {
-            localExtFormatAndroid = *extFormatAndroidPtr;
-        }
-#endif
-
-        vk_struct_common* structChain =
-            vk_init_struct_chain((vk_struct_common*)pCreateInfo_mut);
-
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-        if (extFormatAndroidPtr) {
-            pCreateInfo_mut->format =
-                vk_format_from_android(extFormatAndroidPtr->externalFormat);
+            if (extFormatAndroidPtr->externalFormat) {
+                localCreateInfo.format =
+                    vk_format_from_android(extFormatAndroidPtr->externalFormat);
+            }
         }
 #endif
 
         VkEncoder* enc = (VkEncoder*)context;
         return enc->vkCreateSamplerYcbcrConversionKHR(
-            device, pCreateInfo, pAllocator, pYcbcrConversion);
+            device, &localCreateInfo, pAllocator, pYcbcrConversion);
     }
 
     void on_vkDestroyImage(
@@ -2473,8 +2411,8 @@ public:
         info.createInfo = *pCreateInfo;
         info.createInfo.pNext = nullptr;
 
-        VkExternalMemoryBufferCreateInfo* extBufCi =
-            (VkExternalMemoryBufferCreateInfo*)vk_find_struct((vk_struct_common*)pCreateInfo,
+        const VkExternalMemoryBufferCreateInfo* extBufCi =
+            vk_find_struct<VkExternalMemoryBufferCreateInfo>(pCreateInfo,
                 VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO);
 
         if (!extBufCi) return res;
@@ -2565,9 +2503,9 @@ public:
 
         VkSemaphoreCreateInfo finalCreateInfo = *pCreateInfo;
 
-        VkExportSemaphoreCreateInfoKHR* exportSemaphoreInfoPtr =
-            (VkExportSemaphoreCreateInfoKHR*)vk_find_struct(
-                (vk_struct_common*)pCreateInfo,
+        const VkExportSemaphoreCreateInfoKHR* exportSemaphoreInfoPtr =
+            vk_find_struct<VkExportSemaphoreCreateInfoKHR>(
+                pCreateInfo,
                 VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR);
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
@@ -3137,8 +3075,8 @@ public:
         (void)input_result;
 
         VkAndroidHardwareBufferUsageANDROID* output_ahw_usage =
-            (VkAndroidHardwareBufferUsageANDROID*)vk_find_struct(
-                (vk_struct_common*)pImageFormatProperties,
+            vk_find_struct<VkAndroidHardwareBufferUsageANDROID>(
+                pImageFormatProperties,
                 VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID);
 
         VkResult hostRes;
