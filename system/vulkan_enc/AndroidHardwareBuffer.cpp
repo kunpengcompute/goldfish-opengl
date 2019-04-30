@@ -67,7 +67,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
         AHardwareBuffer_Desc desc;
         AHardwareBuffer_describe(buffer, &desc);
 
-       uint64_t gpu_usage =
+       const uint64_t gpu_usage =
           AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
           AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT |
           AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
@@ -76,10 +76,8 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
             return VK_ERROR_INVALID_EXTERNAL_HANDLE;
         }
 
-        ahbFormatProps->format =
-            vk_format_from_android(desc.format);
-
-        ahbFormatProps->externalFormat = VK_FORMAT_G8B8G8R8_422_UNORM;
+        ahbFormatProps->format = VK_FORMAT_UNDEFINED;
+        ahbFormatProps->externalFormat = desc.format;
 
         // The formatFeatures member must include
         // VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT and at least one of
