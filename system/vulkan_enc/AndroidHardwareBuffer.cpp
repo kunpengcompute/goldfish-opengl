@@ -59,9 +59,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
     VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
 
     VkAndroidHardwareBufferFormatPropertiesANDROID* ahbFormatProps =
-        vk_find_struct<VkAndroidHardwareBufferFormatPropertiesANDROID>(
-            pProperties,
-            VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID);
+        vk_find_struct<VkAndroidHardwareBufferFormatPropertiesANDROID>(pProperties);
 
     if (ahbFormatProps) {
         AHardwareBuffer_Desc desc;
@@ -76,7 +74,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
             return VK_ERROR_INVALID_EXTERNAL_HANDLE;
         }
 
-        ahbFormatProps->format = VK_FORMAT_UNDEFINED;
+        ahbFormatProps->format = vk_format_from_android(desc.format);
         ahbFormatProps->externalFormat = desc.format;
 
         // The formatFeatures member must include
@@ -101,7 +99,10 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
         ahbFormatProps->samplerYcbcrConversionComponents.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         ahbFormatProps->samplerYcbcrConversionComponents.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-        ahbFormatProps->suggestedYcbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601;
+        ahbFormatProps->suggestedYcbcrModel =
+            android_format_is_yuv(desc.format) ?
+                VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601 :
+                VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY;
         ahbFormatProps->suggestedYcbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
 
         ahbFormatProps->suggestedXChromaOffset = VK_CHROMA_LOCATION_MIDPOINT;
