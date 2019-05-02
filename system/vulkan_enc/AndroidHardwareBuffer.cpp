@@ -59,8 +59,8 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
     VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
 
     VkAndroidHardwareBufferFormatPropertiesANDROID* ahbFormatProps =
-        (VkAndroidHardwareBufferFormatPropertiesANDROID*)vk_find_struct(
-            (vk_struct_common*)pProperties->pNext,
+        vk_find_struct<VkAndroidHardwareBufferFormatPropertiesANDROID>(
+            pProperties,
             VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID);
 
     if (ahbFormatProps) {
@@ -76,7 +76,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
             return VK_ERROR_INVALID_EXTERNAL_HANDLE;
         }
 
-        ahbFormatProps->format = VK_FORMAT_UNDEFINED;
+        ahbFormatProps->format = vk_format_from_android(desc.format);
         ahbFormatProps->externalFormat = desc.format;
 
         // The formatFeatures member must include
