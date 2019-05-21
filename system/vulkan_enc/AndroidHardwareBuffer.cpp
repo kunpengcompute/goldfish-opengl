@@ -59,15 +59,13 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
     VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
 
     VkAndroidHardwareBufferFormatPropertiesANDROID* ahbFormatProps =
-        (VkAndroidHardwareBufferFormatPropertiesANDROID*)vk_find_struct(
-            (vk_struct_common*)pProperties->pNext,
-            VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID);
+        vk_find_struct<VkAndroidHardwareBufferFormatPropertiesANDROID>(pProperties);
 
     if (ahbFormatProps) {
         AHardwareBuffer_Desc desc;
         AHardwareBuffer_describe(buffer, &desc);
 
-       uint64_t gpu_usage =
+       const uint64_t gpu_usage =
           AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
           AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT |
           AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
@@ -76,10 +74,8 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
             return VK_ERROR_INVALID_EXTERNAL_HANDLE;
         }
 
-        ahbFormatProps->format =
-            vk_format_from_android(desc.format);
-
-        ahbFormatProps->externalFormat = VK_FORMAT_G8B8G8R8_422_UNORM;
+        ahbFormatProps->format = vk_format_from_android(desc.format);
+        ahbFormatProps->externalFormat = desc.format;
 
         // The formatFeatures member must include
         // VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT and at least one of
@@ -103,7 +99,10 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
         ahbFormatProps->samplerYcbcrConversionComponents.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         ahbFormatProps->samplerYcbcrConversionComponents.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-        ahbFormatProps->suggestedYcbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601;
+        ahbFormatProps->suggestedYcbcrModel =
+            android_format_is_yuv(desc.format) ?
+                VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601 :
+                VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY;
         ahbFormatProps->suggestedYcbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
 
         ahbFormatProps->suggestedXChromaOffset = VK_CHROMA_LOCATION_MIDPOINT;

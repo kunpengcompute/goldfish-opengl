@@ -666,7 +666,8 @@ static VkResult entry_vkCreateImageView(
     AEMU_SCOPED_TRACE("vkCreateImageView");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateImageView_VkResult_return = (VkResult)0;
-    vkCreateImageView_VkResult_return = vkEnc->vkCreateImageView(device, pCreateInfo, pAllocator, pView);
+    auto resources = ResourceTracker::get();
+    vkCreateImageView_VkResult_return = resources->on_vkCreateImageView(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pView);
     return vkCreateImageView_VkResult_return;
 }
 static void entry_vkDestroyImageView(
@@ -1095,7 +1096,7 @@ static void entry_vkCmdSetDepthBias(
 }
 static void entry_vkCmdSetBlendConstants(
     VkCommandBuffer commandBuffer,
-    const float blendConstants)
+    const float blendConstants[4])
 {
     AEMU_SCOPED_TRACE("vkCmdSetBlendConstants");
     auto vkEnc = HostConnection::get()->vkEncoder();

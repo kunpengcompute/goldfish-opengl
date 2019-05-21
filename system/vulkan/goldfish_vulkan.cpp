@@ -17,6 +17,9 @@
 
 #include <errno.h>
 #include <string.h>
+#ifdef VK_USE_PLATFORM_FUCHSIA
+#include <unistd.h>
+#endif
 
 #include "HostConnection.h"
 #include "ResourceTracker.h"
@@ -218,6 +221,8 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance,
 
 namespace {
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+
 int OpenDevice(const hw_module_t* module, const char* id, hw_device_t** device);
 
 hw_module_methods_t goldfish_vulkan_module_methods = {
@@ -241,6 +246,8 @@ int CloseDevice(struct hw_device_t* /*device*/) {
     // nothing to do - opening a device doesn't allocate any resources
     return 0;
 }
+
+#endif
 
 #define VK_HOST_CONNECTION(ret) \
     HostConnection *hostCon = HostConnection::get(); \
@@ -531,6 +538,8 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
     return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_instance_proc_address(instance, name));
 }
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+
 hwvulkan_device_t goldfish_vulkan_device = {
     .common = {
         .tag = HARDWARE_DEVICE_TAG,
@@ -550,27 +559,49 @@ int OpenDevice(const hw_module_t* /*module*/,
 
     if (strcmp(id, HWVULKAN_DEVICE_0) == 0) {
         *device = &goldfish_vulkan_device.common;
-#ifdef VK_USE_PLATFORM_FUCHSIA
-        goldfish_vk::ResourceTracker::get()->setColorBufferFunctions(
-            [](uint32_t width, uint32_t height, uint32_t format) {
-                VK_HOST_CONNECTION((uint32_t)0)
-                uint32_t r = rcEnc->rcCreateColorBuffer(rcEnc, width, height, format);
-                return r;
-            },
-            [](uint32_t id) {
-                VK_HOST_CONNECTION()
-                rcEnc->rcOpenColorBuffer(rcEnc, id);
-            },
-            [](uint32_t id){
-                VK_HOST_CONNECTION()
-                rcEnc->rcCloseColorBuffer(rcEnc, id);
-            });
-#else
         goldfish_vk::ResourceTracker::get();
-#endif
         return 0;
     }
     return -ENOENT;
 }
+
+#endif
+
+#ifdef VK_USE_PLATFORM_FUCHSIA
+
+class VulkanDevice {
+public:
+    VulkanDevice() : mHostSupportsGoldfish(access(QEMU_PIPE_PATH, F_OK) != -1) {
+        goldfish_vk::ResourceTracker::get();
+    }
+
+    static VulkanDevice& GetInstance() {
+        static VulkanDevice g_instance;
+        return g_instance;
+    }
+
+    PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
+        if (!mHostSupportsGoldfish) {
+            return vkstubhal::GetInstanceProcAddr(instance, name);
+        }
+        return ::GetInstanceProcAddr(instance, name);
+    }
+
+private:
+    const bool mHostSupportsGoldfish;
+};
+
+extern "C" __attribute__((visibility("default"))) PFN_vkVoidFunction
+vk_icdGetInstanceProcAddr(VkInstance instance, const char* name) {
+    return VulkanDevice::GetInstance().GetInstanceProcAddr(instance, name);
+}
+
+extern "C" __attribute__((visibility("default"))) VkResult
+vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t* pSupportedVersion) {
+    *pSupportedVersion = std::min(*pSupportedVersion, 3u);
+    return VK_SUCCESS;
+}
+
+#endif
 
 } // namespace
