@@ -114,6 +114,10 @@ struct gralloc_memregions_t {
     typedef std::map<void*, uint32_t> MemRegionMap;  // base -> refCount
     typedef MemRegionMap::const_iterator mem_region_handle_t;
 
+    gralloc_memregions_t() {
+        pthread_mutex_init(&lock, NULL);
+    }
+
     MemRegionMap ashmemRegions;
     pthread_mutex_t lock;
 };
@@ -139,10 +143,9 @@ static gralloc_memregions_t* s_memregions = NULL;
 static gralloc_dmaregion_t* s_grdma = NULL;
 
 static gralloc_memregions_t* init_gralloc_memregions() {
-    if (s_memregions) return s_memregions;
-
-    s_memregions = new gralloc_memregions_t;
-    pthread_mutex_init(&s_memregions->lock, NULL);
+    if (!s_memregions) {
+        s_memregions = new gralloc_memregions_t;
+    }
     return s_memregions;
 }
 
@@ -389,7 +392,7 @@ static void updateHostColorBuffer(cb_handle_t* cb,
     if ((doLocked && is_rgb_format) ||
         (!grdma && (doLocked || !is_rgb_format))) {
         convertedBuf.resize(rgbSz);
-        to_send = convertedBuf.data();
+        to_send = &convertedBuf.front();
         send_buffer_size = rgbSz;
     }
 
@@ -457,6 +460,8 @@ static void updateHostColorBuffer(cb_handle_t* cb,
 //
 // gralloc device functions (alloc interface)
 //
+static void gralloc_dump(struct alloc_device_t* /*dev*/, char* /*buff*/, int /*buff_len*/) {}
+
 static int gralloc_alloc(alloc_device_t* dev,
                          int w, int h, int format, int usage,
                          buffer_handle_t* pHandle, int* pStride)
@@ -477,6 +482,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     bool sw_write = (0 != (usage & GRALLOC_USAGE_SW_WRITE_MASK));
     bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
+    const bool hw_texture = usage & GRALLOC_USAGE_HW_TEXTURE;
 #if PLATFORM_SDK_VERSION >= 17
     bool hw_cam_write = (usage & GRALLOC_USAGE_HW_CAMERA_WRITE);
     bool hw_cam_read = (usage & GRALLOC_USAGE_HW_CAMERA_READ);
@@ -504,10 +510,6 @@ static int gralloc_alloc(alloc_device_t* dev,
             } else if (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
                 // Camera-to-encoder is NV21
                 format = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            } else if ((usage & GRALLOC_USAGE_HW_CAMERA_MASK) ==
-                    GRALLOC_USAGE_HW_CAMERA_ZSL) {
-                // Camera-to-ZSL-queue is RGB_888
-                format = HAL_PIXEL_FORMAT_RGB_888;
             }
         }
 
@@ -544,10 +546,14 @@ static int gralloc_alloc(alloc_device_t* dev,
             glType = GL_UNSIGNED_BYTE;
             break;
         case HAL_PIXEL_FORMAT_RGB_888:
-            bpp = 3;
-            glFormat = GL_RGB;
-            glType = GL_UNSIGNED_BYTE;
-            break;
+            if (hw_texture) {
+                return -EINVAL;  // we dont support RGB_888 for HW textures
+            } else {
+                bpp = 3;
+                glFormat = GL_RGB;
+                glType = GL_UNSIGNED_BYTE;
+                break;
+            }
         case HAL_PIXEL_FORMAT_RGB_565:
             bpp = 2;
             // Workaround: distinguish vs the RGB8/RGBA8
@@ -1196,7 +1202,9 @@ static int gralloc_lock(gralloc_module_t const* module,
             return -EBUSY;
         }
 
-        if (sw_read) {
+        // camera delivers bits to the buffer directly and does not require
+        // an explicit read, it also writes in YUV_420 (interleaved)
+        if (sw_read & !(usage & GRALLOC_USAGE_HW_CAMERA_MASK)) {
             void* rgb_addr = cpu_addr;
             char* tmpBuf = 0;
             if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
@@ -1320,8 +1328,10 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
         return -EINVAL;
     }
 
+    usage |= (cb->usage & GRALLOC_USAGE_HW_CAMERA_MASK);
+
     void *vaddr;
-    int ret = gralloc_lock(module, handle, usage | GRALLOC_USAGE_SW_WRITE_MASK, l, t, w, h, &vaddr);
+    int ret = gralloc_lock(module, handle, usage, l, t, w, h, &vaddr);
     if (ret) {
         return ret;
     }
@@ -1358,12 +1368,21 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
             cStep = 1;
             break;
         case HAL_PIXEL_FORMAT_YCbCr_420_888:
-            yStride = cb->width;
-            cStride = yStride / 2;
-            yOffset = 0;
-            uOffset = cb->height * yStride;
-            vOffset = uOffset + cStride * cb->height / 2;
-            cStep = 1;
+            if (usage & GRALLOC_USAGE_HW_CAMERA_MASK) {
+                yStride = cb->width;
+                cStride = cb->width;
+                yOffset = 0;
+                vOffset = yStride * cb->height;
+                uOffset = vOffset + 1;
+                cStep = 2;
+            } else {
+                yStride = cb->width;
+                cStride = yStride / 2;
+                yOffset = 0;
+                uOffset = cb->height * yStride;
+                vOffset = uOffset + cStride * cb->height / 2;
+                cStep = 1;
+            }
             break;
         default:
             ALOGE("gralloc_lock_ycbcr unexpected internal format %x",
@@ -1430,6 +1449,7 @@ static int gralloc_device_open(const hw_module_t* module,
 
         dev->device.alloc   = gralloc_alloc;
         dev->device.free    = gralloc_free;
+        dev->device.dump = gralloc_dump;
         pthread_mutex_init(&dev->lock, NULL);
 
         *device = &dev->device.common;

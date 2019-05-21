@@ -18,6 +18,10 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#ifdef __Fuchsia__
+#include <fuchsia/hardware/goldfish/address/space/cpp/fidl.h>
+#endif
+
 class GoldfishAddressSpaceBlock;
 
 #ifdef HOST_BUILD
@@ -45,7 +49,11 @@ private:
    GoldfishAddressSpaceBlockProvider &operator=(const GoldfishAddressSpaceBlockProvider &rhs);
 
    bool is_opened();
+#ifdef __Fuchsia__
+   fuchsia::hardware::goldfish::address::space::DeviceSyncPtr m_device;
+#else
    int m_fd;
+#endif
 
    friend class GoldfishAddressSpaceBlock;
 };
@@ -74,14 +82,16 @@ private:
     GoldfishAddressSpaceBlockProvider* m_provider;
 #else
 #ifdef __Fuchsia__
+    fuchsia::hardware::goldfish::address::space::DeviceSyncPtr* m_device;
     uint32_t  m_vmo;
+#else
+    int       m_fd;
 #endif
     void     *m_mmaped_ptr;
     uint64_t  m_phys_addr;
     uint64_t  m_host_addr;
     uint64_t  m_offset;
     size_t    m_size;
-    int       m_fd;
 #endif
 };
 

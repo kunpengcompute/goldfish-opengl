@@ -28,10 +28,6 @@ struct EmulatorFeatureInfo;
 
 namespace goldfish_vk {
 
-typedef uint32_t (*PFN_CreateColorBuffer)(uint32_t width, uint32_t height, uint32_t format);
-typedef void (*PFN_OpenColorBuffer)(uint32_t id);
-typedef void (*PFN_CloseColorBuffer)(uint32_t id);
-
 class ResourceTracker {
 public:
     ResourceTracker();
@@ -249,6 +245,11 @@ public:
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         const VkImageCreateInfo* pImageInfo);
+    VkResult on_vkGetBufferCollectionPropertiesFUCHSIA(
+        void* context, VkResult input_result,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        VkBufferCollectionPropertiesFUCHSIA* pProperties);
 #endif
 
     VkResult on_vkGetAndroidHardwareBufferPropertiesANDROID(
@@ -333,6 +334,13 @@ public:
         VkCommandBuffer commandBuffer,
         VkCommandBufferResetFlags flags);
 
+    VkResult on_vkCreateImageView(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkImageViewCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkImageView* pView);
+
     bool isMemoryTypeHostVisible(VkDevice device, uint32_t typeIndex) const;
     uint8_t* getMappedPointer(VkDeviceMemory memory);
     VkDeviceSize getMappedSize(VkDeviceMemory memory);
@@ -345,9 +353,6 @@ public:
     uint32_t getApiVersionFromDevice(VkDevice device) const;
     bool hasInstanceExtension(VkInstance instance, const std::string& name) const;
     bool hasDeviceExtension(VkDevice instance, const std::string& name) const;
-    void setColorBufferFunctions(PFN_CreateColorBuffer create,
-                                 PFN_OpenColorBuffer open,
-                                 PFN_CloseColorBuffer close);
 
     // Transforms
     void deviceMemoryTransform_tohost(
