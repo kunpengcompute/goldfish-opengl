@@ -554,7 +554,10 @@ public:
                 abort();
             }
             mControlDevice.Bind(std::move(channel));
-            status = mControlDevice->ConnectSysmem(mSysmemAllocator.NewRequest().TakeChannel());
+
+            status = fdio_service_connect(
+                "/svc/fuchsia.sysmem.Allocator",
+                mSysmemAllocator.NewRequest().TakeChannel().release());
             if (status != ZX_OK) {
                 ALOGE("failed to get sysmem connection, status %d", status);
                 abort();
@@ -1303,10 +1306,12 @@ public:
         buffer_constraints.max_size_bytes = 0xffffffff;
         buffer_constraints.physically_contiguous_required = false;
         buffer_constraints.secure_required = false;
-        buffer_constraints.secure_permitted = false;
         buffer_constraints.ram_domain_supported = false;
         buffer_constraints.cpu_domain_supported = false;
-        buffer_constraints.gpu_domain_supported = true;
+        buffer_constraints.inaccessible_domain_supported = true;
+        buffer_constraints.heap_permitted_count = 1;
+        buffer_constraints.heap_permitted[0] =
+            fuchsia::sysmem::HeapType::GoldfishDeviceLocal;
         constraints.image_format_constraints_count = 1;
         fuchsia::sysmem::ImageFormatConstraints& image_constraints =
             constraints.image_format_constraints[0];
@@ -1702,9 +1707,7 @@ public:
         }
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
-        if (vmo_handle == ZX_HANDLE_INVALID &&
-            !isHostVisibleMemoryTypeIndexForGuest(
-                &mHostVisibleMemoryVirtInfo, finalAllocInfo.memoryTypeIndex)) {
+        if (exportVmo) {
             bool hasDedicatedImage = dedicatedAllocInfoPtr &&
                 (dedicatedAllocInfoPtr->image != VK_NULL_HANDLE);
             VkImageCreateInfo imageCreateInfo = {};
@@ -1719,7 +1722,10 @@ public:
                 imageCreateInfo = imageInfo.createInfo;
             }
 
-            if (imageCreateInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+            if (imageCreateInfo.usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                         VK_IMAGE_USAGE_SAMPLED_BIT)) {
                 fuchsia::sysmem::BufferCollectionTokenSyncPtr token;
                 zx_status_t status = mSysmemAllocator->AllocateSharedCollection(
                     token.NewRequest());
@@ -1763,6 +1769,8 @@ public:
                     ALOGE("Failed to duplicate VMO: %d", status);
                     abort();
                 }
+                // TODO(reveman): Use imageCreateInfo.format to determine color
+                // buffer format.
                 status = mControlDevice->CreateColorBuffer(
                     std::move(vmo_copy),
                     imageCreateInfo.extent.width,
@@ -1794,8 +1802,6 @@ public:
             vk_append_struct(&structChainIter, &importCbInfo);
         }
 #endif
-
-        // TODO if (exportVmo) { }
 
         if (!isHostVisibleMemoryTypeIndexForGuest(
                 &mHostVisibleMemoryVirtInfo,
@@ -2203,6 +2209,9 @@ public:
         }
 
         // Allow external memory for all color attachments on fuchsia.
+        // Note: This causes external to be set to true below. The result
+        // is that a dedicated memory allocation is required for the image,
+        // which allows the memory to be exported.
         if (localCreateInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
             if (!extImgCiPtr) {
                 localExtImgCi.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
