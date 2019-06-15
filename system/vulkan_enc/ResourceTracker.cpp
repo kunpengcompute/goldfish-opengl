@@ -878,9 +878,12 @@ public:
         bool posixExtMemAvailable =
             getHostDeviceExtensionIndex(
                 "VK_KHR_external_memory_fd") != -1;
+        bool extMoltenVkAvailable =
+            getHostDeviceExtensionIndex(
+                "VK_MVK_moltenvk") != -1;
 
         bool hostHasExternalMemorySupport =
-            win32ExtMemAvailable || posixExtMemAvailable;
+            win32ExtMemAvailable || posixExtMemAvailable || extMoltenVkAvailable;
 
         if (hostHasExternalMemorySupport) {
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -2200,22 +2203,6 @@ public:
                 if (status != ZX_OK || status2 != ZX_OK) {
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
                 }
-            }
-        }
-
-        // Allow external memory for all color attachments on fuchsia.
-        // Note: This causes external to be set to true below. The result
-        // is that a dedicated memory allocation is required for the image,
-        // which allows the memory to be exported.
-        // TODO(reveman): Remove this when Fuchsia code is explicitly
-        // specifying external memory image info.
-        if (localCreateInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-            if (!extImgCiPtr) {
-                localExtImgCi.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-                localExtImgCi.pNext = nullptr;
-                localExtImgCi.handleTypes = ~0; // handle type just needs to be non-zero
-                extImgCiPtr = &localExtImgCi;
-                vk_append_struct(&structChainIter, &localExtImgCi);
             }
         }
 #endif
