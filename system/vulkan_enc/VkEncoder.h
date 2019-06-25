@@ -28,6 +28,7 @@
 
 
 #include "goldfish_vk_private_defs.h"
+#include <functional>
 #include <memory>
 class IOStream;
 
@@ -39,6 +40,12 @@ class VkEncoder {
 public:
     VkEncoder(IOStream* stream);
     ~VkEncoder();
+
+    void flush();
+
+    using CleanupCallback = std::function<void()>;
+    void registerCleanupCallback(void* handle, CleanupCallback cb);
+    void unregisterCleanupCallback(void* handle);
 #ifdef VK_VERSION_1_0
     VkResult vkCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
@@ -1781,6 +1788,10 @@ public:
     void vkResetCommandBufferAsyncGOOGLE(
     VkCommandBuffer commandBuffer,
         VkCommandBufferResetFlags flags);
+    void vkCommandBufferHostSyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+        uint32_t needHostSync,
+        uint32_t sequenceNumber);
 #endif
 
 private:
