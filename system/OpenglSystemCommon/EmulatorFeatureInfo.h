@@ -79,6 +79,18 @@ static const char kVulkan[] = "ANDROID_EMU_vulkan";
 // Deferred Vulkan commands
 static const char kDeferredVulkanCommands[] = "ANDROID_EMU_deferred_vulkan_commands";
 
+// Vulkan null optional strings
+static const char kVulkanNullOptionalStrings[] = "ANDROID_EMU_vulkan_null_optional_strings";
+
+// Vulkan create resources with requirements
+static const char kVulkanCreateResourcesWithRequirements[] = "ANDROID_EMU_vulkan_create_resources_with_requirements";
+
+// YUV420_888 to NV21
+static const char kYUV420888toNV21[] = "ANDROID_EMU_YUV420_888_to_NV21";
+
+// YUV host cache
+static const char kYUVCache[] = "ANDROID_EMU_YUV_Cache";
+
 // Struct describing available emulator features
 struct EmulatorFeatureInfo {
 
@@ -89,7 +101,11 @@ struct EmulatorFeatureInfo {
         glesMaxVersion(GLES_MAX_VERSION_2),
         hasDirectMem(false),
         hasVulkan(false),
-        hasDeferredVulkanCommands(false) { }
+        hasDeferredVulkanCommands(false),
+        hasVulkanNullOptionalStrings(false),
+        hasVulkanCreateResourcesWithRequirements(false),
+        hasYUV420888toNV21(false),
+        hasYUVCache (false) { }
 
     SyncImpl syncImpl;
     DmaImpl dmaImpl;
@@ -98,6 +114,10 @@ struct EmulatorFeatureInfo {
     bool hasDirectMem;
     bool hasVulkan;
     bool hasDeferredVulkanCommands;
+    bool hasVulkanNullOptionalStrings;
+    bool hasVulkanCreateResourcesWithRequirements;
+    bool hasYUV420888toNV21;
+    bool hasYUVCache;
 };
 
 #endif // __COMMON_EMULATOR_FEATURE_INFO_H

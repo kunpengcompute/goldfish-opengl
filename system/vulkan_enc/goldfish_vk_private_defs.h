@@ -424,6 +424,15 @@ typedef void (VKAPI_PTR *PFN_vkEndCommandBufferAsyncGOOGLE)(
 typedef void (VKAPI_PTR *PFN_vkResetCommandBufferAsyncGOOGLE)(
     VkCommandBuffer commandBuffer,
     VkCommandBufferResetFlags flags);
+typedef void (VKAPI_PTR *PFN_vkCommandBufferHostSyncGOOGLE)(
+    VkCommandBuffer commandBuffer,
+    uint32_t needHostSync,
+    uint32_t sequenceNumber);
+
+#define VK_GOOGLE_create_resources_with_requirements 1
+
+typedef void (VKAPI_PTR *PFN_vkCreateImageWithRequirementsGOOGLE)(
+    VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkMemoryRequirements* pMemoryRequirements);
 
 #ifndef VK_FUCHSIA_buffer_collection
 #define VK_FUCHSIA_buffer_collection 1
@@ -522,6 +531,11 @@ typedef struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
 #define VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA \
     ((VkExternalSemaphoreHandleTypeFlagBits)0x00100000)
 #endif  // VK_FUCHSIA_external_semaphore
+
+// VulkanStream features
+#define VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT (1 << 0)
+
+#define VK_YCBCR_CONVERSION_DO_NOTHING ((VkSamplerYcbcrConversion)0x1111111111111111)
 
 #ifdef __cplusplus
 } // extern "C"

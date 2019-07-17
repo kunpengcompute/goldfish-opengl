@@ -292,6 +292,11 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetHostCompositionImpl(m_rcEnc);
         queryAndSetDirectMemSupport(m_rcEnc);
         queryAndSetVulkanSupport(m_rcEnc);
+        queryAndSetDeferredVulkanCommandsSupport(m_rcEnc);
+        queryAndSetVulkanNullOptionalStringsSupport(m_rcEnc);
+        queryAndSetVulkanCreateResourcesWithRequirementsSupport(m_rcEnc);
+        queryAndSetYUV420888toNV21(m_rcEnc);
+        queryAndSetYUVCache(m_rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_rcEnc);
         }
@@ -445,5 +450,33 @@ void HostConnection::queryAndSetDeferredVulkanCommandsSupport(ExtendedRCEncoderC
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kDeferredVulkanCommands) != std::string::npos) {
         rcEnc->featureInfo()->hasDeferredVulkanCommands = true;
+    }
+}
+
+void HostConnection::queryAndSetVulkanNullOptionalStringsSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kVulkanNullOptionalStrings) != std::string::npos) {
+        rcEnc->featureInfo()->hasVulkanNullOptionalStrings = true;
+    }
+}
+
+void HostConnection::queryAndSetVulkanCreateResourcesWithRequirementsSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kVulkanCreateResourcesWithRequirements) != std::string::npos) {
+        rcEnc->featureInfo()->hasVulkanCreateResourcesWithRequirements = true;
+    }
+}
+
+void HostConnection::queryAndSetYUV420888toNV21(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kYUV420888toNV21) != std::string::npos) {
+        rcEnc->featureInfo()->hasYUV420888toNV21 = true;
+    }
+}
+
+void HostConnection::queryAndSetYUVCache(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kYUVCache) != std::string::npos) {
+        rcEnc->featureInfo()->hasYUVCache = true;
     }
 }
