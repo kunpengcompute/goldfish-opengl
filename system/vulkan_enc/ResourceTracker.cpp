@@ -796,9 +796,6 @@ public:
         }
 
         VkExtensionProperties anbExtProps[] = {
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-            { "VK_ANDROID_native_buffer", 7 },
-#endif
 #ifdef VK_USE_PLATFORM_FUCHSIA
             { "VK_KHR_external_memory_capabilities", 1},
             { "VK_KHR_external_semaphore_capabilities", 1},
@@ -809,17 +806,41 @@ public:
             filteredExts.push_back(anbExtProp);
         }
 
-        if (pPropertyCount) {
-            *pPropertyCount = filteredExts.size();
-        }
+        // Spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateInstanceExtensionProperties.html
+        //
+        // If pProperties is NULL, then the number of extensions properties
+        // available is returned in pPropertyCount. Otherwise, pPropertyCount
+        // must point to a variable set by the user to the number of elements
+        // in the pProperties array, and on return the variable is overwritten
+        // with the number of structures actually written to pProperties. If
+        // pPropertyCount is less than the number of extension properties
+        // available, at most pPropertyCount structures will be written. If
+        // pPropertyCount is smaller than the number of extensions available,
+        // VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate
+        // that not all the available properties were returned.
+        //
+        // pPropertyCount must be a valid pointer to a uint32_t value
+        if (!pPropertyCount) return VK_ERROR_INITIALIZATION_FAILED;
 
-        if (pPropertyCount && pProperties) {
-            for (size_t i = 0; i < *pPropertyCount; ++i) {
+        if (!pProperties) {
+            *pPropertyCount = (uint32_t)filteredExts.size();
+            return VK_SUCCESS;
+        } else {
+            auto actualExtensionCount = (uint32_t)filteredExts.size();
+            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
                 pProperties[i] = filteredExts[i];
             }
-        }
 
-        return VK_SUCCESS;
+            if (actualExtensionCount > *pPropertyCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
+        }
     }
 
     VkResult on_vkEnumerateDeviceExtensionProperties(
@@ -937,18 +958,49 @@ public:
 #endif
         }
 
-        if (pPropertyCount) {
-            *pPropertyCount = filteredExts.size();
-        }
+        // Spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateDeviceExtensionProperties.html
+        //
+        // pPropertyCount is a pointer to an integer related to the number of
+        // extension properties available or queried, and is treated in the
+        // same fashion as the
+        // vkEnumerateInstanceExtensionProperties::pPropertyCount parameter.
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateInstanceExtensionProperties.html
+        //
+        // If pProperties is NULL, then the number of extensions properties
+        // available is returned in pPropertyCount. Otherwise, pPropertyCount
+        // must point to a variable set by the user to the number of elements
+        // in the pProperties array, and on return the variable is overwritten
+        // with the number of structures actually written to pProperties. If
+        // pPropertyCount is less than the number of extension properties
+        // available, at most pPropertyCount structures will be written. If
+        // pPropertyCount is smaller than the number of extensions available,
+        // VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate
+        // that not all the available properties were returned.
+        //
+        // pPropertyCount must be a valid pointer to a uint32_t value
 
-        if (pPropertyCount && pProperties) {
-            for (size_t i = 0; i < *pPropertyCount; ++i) {
+        if (!pPropertyCount) return VK_ERROR_INITIALIZATION_FAILED;
+
+        if (!pProperties) {
+            *pPropertyCount = (uint32_t)filteredExts.size();
+            return VK_SUCCESS;
+        } else {
+            auto actualExtensionCount = (uint32_t)filteredExts.size();
+            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
                 pProperties[i] = filteredExts[i];
             }
+
+            if (actualExtensionCount > *pPropertyCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
         }
-
-
-        return VK_SUCCESS;
     }
 
     VkResult on_vkEnumeratePhysicalDevices(
@@ -964,18 +1016,26 @@ public:
 
         AutoLock lock(mLock);
 
+        // When this function is called, we actually need to do two things:
+        // - Get full information about physical devices from the host,
+        // even if the guest did not ask for it
+        // - Serve the guest query according to the spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumeratePhysicalDevices.html
+
         auto it = info_VkInstance.find(instance);
 
         if (it == info_VkInstance.end()) return VK_ERROR_INITIALIZATION_FAILED;
 
         auto& info = it->second;
 
+        // Get the full host information here if it doesn't exist already.
         if (info.physicalDevices.empty()) {
-            uint32_t physdevCount = 0;
+            uint32_t hostPhysicalDeviceCount = 0;
 
             lock.unlock();
             VkResult countRes = enc->vkEnumeratePhysicalDevices(
-                instance, &physdevCount, nullptr);
+                instance, &hostPhysicalDeviceCount, nullptr);
             lock.lock();
 
             if (countRes != VK_SUCCESS) {
@@ -984,11 +1044,11 @@ public:
                 return countRes;
             }
 
-            info.physicalDevices.resize(physdevCount);
+            info.physicalDevices.resize(hostPhysicalDeviceCount);
 
             lock.unlock();
             VkResult enumRes = enc->vkEnumeratePhysicalDevices(
-                instance, &physdevCount, info.physicalDevices.data());
+                instance, &hostPhysicalDeviceCount, info.physicalDevices.data());
             lock.lock();
 
             if (enumRes != VK_SUCCESS) {
@@ -998,16 +1058,41 @@ public:
             }
         }
 
-        *pPhysicalDeviceCount = (uint32_t)info.physicalDevices.size();
+        // Serve the guest query according to the spec.
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumeratePhysicalDevices.html
+        //
+        // If pPhysicalDevices is NULL, then the number of physical devices
+        // available is returned in pPhysicalDeviceCount. Otherwise,
+        // pPhysicalDeviceCount must point to a variable set by the user to the
+        // number of elements in the pPhysicalDevices array, and on return the
+        // variable is overwritten with the number of handles actually written
+        // to pPhysicalDevices. If pPhysicalDeviceCount is less than the number
+        // of physical devices available, at most pPhysicalDeviceCount
+        // structures will be written.  If pPhysicalDeviceCount is smaller than
+        // the number of physical devices available, VK_INCOMPLETE will be
+        // returned instead of VK_SUCCESS, to indicate that not all the
+        // available physical devices were returned.
 
-        if (pPhysicalDevices && *pPhysicalDeviceCount) {
-            memcpy(pPhysicalDevices,
-                   info.physicalDevices.data(),
-                   sizeof(VkPhysicalDevice) *
-                   info.physicalDevices.size());
+        if (!pPhysicalDevices) {
+            *pPhysicalDeviceCount = (uint32_t)info.physicalDevices.size();
+            return VK_SUCCESS;
+        } else {
+            uint32_t actualDeviceCount = (uint32_t)info.physicalDevices.size();
+            uint32_t toWrite = actualDeviceCount < *pPhysicalDeviceCount ? actualDeviceCount : *pPhysicalDeviceCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
+                pPhysicalDevices[i] = info.physicalDevices[i];
+            }
+
+            *pPhysicalDeviceCount = toWrite;
+
+            if (actualDeviceCount > *pPhysicalDeviceCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
         }
-
-        return VK_SUCCESS;
     }
 
     void on_vkGetPhysicalDeviceMemoryProperties(
