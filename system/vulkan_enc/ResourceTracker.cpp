@@ -950,6 +950,9 @@ public:
             filteredExts.push_back({
                 "VK_ANDROID_external_memory_android_hardware_buffer", 7
             });
+            filteredExts.push_back({
+                "VK_EXT_queue_family_foreign", 1
+            });
 #endif
 #ifdef VK_USE_PLATFORM_FUCHSIA
             filteredExts.push_back({
@@ -2950,7 +2953,17 @@ public:
         if (input_result != VK_SUCCESS) return input_result;
 
         if (!post_wait_events.empty() || !post_wait_sync_fds.empty()) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+            // Super bad hack: Just signal stuff early :D
+            // The reason is that it is better than freezing up.
+            // The VK CTS tests external semaphores by queueing up vkCmdWaitEvent
+            // in vkQueueSubmit, which would mean vkQueueWaitIdle here would time out.
+            //
+            // TODO (b/139194471): Have proper sync fd implementation for Android
+            // enc->vkQueueWaitIdle(queue);
+#else
             enc->vkQueueWaitIdle(queue);
+#endif
         }
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
@@ -3000,7 +3013,20 @@ public:
 
     void unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int*) {
         if (fd != -1) {
+            // Implicit Synchronization
             sync_wait(fd, 3000);
+            // From libvulkan's swapchain.cpp:
+            // """
+            // NOTE: we're relying on AcquireImageANDROID to close fence_clone,
+            // even if the call fails. We could close it ourselves on failure, but
+            // that would create a race condition if the driver closes it on a
+            // failure path: some other thread might create an fd with the same
+            // number between the time the driver closes it and the time we close
+            // it. We must assume one of: the driver *always* closes it even on
+            // failure, or *never* closes it on failure.
+            // """
+            // Therefore, assume contract where we need to close fd in this driver
+            close(fd);
         }
     }
 
