@@ -812,7 +812,8 @@ static VkResult entry_vkCreateSampler(
     AEMU_SCOPED_TRACE("vkCreateSampler");
     auto vkEnc = HostConnection::get()->vkEncoder();
     VkResult vkCreateSampler_VkResult_return = (VkResult)0;
-    vkCreateSampler_VkResult_return = vkEnc->vkCreateSampler(device, pCreateInfo, pAllocator, pSampler);
+    auto resources = ResourceTracker::get();
+    vkCreateSampler_VkResult_return = resources->on_vkCreateSampler(vkEnc, VK_SUCCESS, device, pCreateInfo, pAllocator, pSampler);
     return vkCreateSampler_VkResult_return;
 }
 static void entry_vkDestroySampler(
@@ -1021,6 +1022,7 @@ static VkResult entry_vkBeginCommandBuffer(
 {
     AEMU_SCOPED_TRACE("vkBeginCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     VkResult vkBeginCommandBuffer_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
     vkBeginCommandBuffer_VkResult_return = resources->on_vkBeginCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer, pBeginInfo);
@@ -1031,6 +1033,7 @@ static VkResult entry_vkEndCommandBuffer(
 {
     AEMU_SCOPED_TRACE("vkEndCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     VkResult vkEndCommandBuffer_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
     vkEndCommandBuffer_VkResult_return = resources->on_vkEndCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer);
@@ -1042,6 +1045,7 @@ static VkResult entry_vkResetCommandBuffer(
 {
     AEMU_SCOPED_TRACE("vkResetCommandBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     VkResult vkResetCommandBuffer_VkResult_return = (VkResult)0;
     auto resources = ResourceTracker::get();
     vkResetCommandBuffer_VkResult_return = resources->on_vkResetCommandBuffer(vkEnc, VK_SUCCESS, commandBuffer, flags);
@@ -1054,6 +1058,7 @@ static void entry_vkCmdBindPipeline(
 {
     AEMU_SCOPED_TRACE("vkCmdBindPipeline");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
 static void entry_vkCmdSetViewport(
@@ -1064,6 +1069,7 @@ static void entry_vkCmdSetViewport(
 {
     AEMU_SCOPED_TRACE("vkCmdSetViewport");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
 }
 static void entry_vkCmdSetScissor(
@@ -1074,6 +1080,7 @@ static void entry_vkCmdSetScissor(
 {
     AEMU_SCOPED_TRACE("vkCmdSetScissor");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
 }
 static void entry_vkCmdSetLineWidth(
@@ -1082,6 +1089,7 @@ static void entry_vkCmdSetLineWidth(
 {
     AEMU_SCOPED_TRACE("vkCmdSetLineWidth");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetLineWidth(commandBuffer, lineWidth);
 }
 static void entry_vkCmdSetDepthBias(
@@ -1092,6 +1100,7 @@ static void entry_vkCmdSetDepthBias(
 {
     AEMU_SCOPED_TRACE("vkCmdSetDepthBias");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
 static void entry_vkCmdSetBlendConstants(
@@ -1100,6 +1109,7 @@ static void entry_vkCmdSetBlendConstants(
 {
     AEMU_SCOPED_TRACE("vkCmdSetBlendConstants");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetBlendConstants(commandBuffer, blendConstants);
 }
 static void entry_vkCmdSetDepthBounds(
@@ -1109,6 +1119,7 @@ static void entry_vkCmdSetDepthBounds(
 {
     AEMU_SCOPED_TRACE("vkCmdSetDepthBounds");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
 }
 static void entry_vkCmdSetStencilCompareMask(
@@ -1118,6 +1129,7 @@ static void entry_vkCmdSetStencilCompareMask(
 {
     AEMU_SCOPED_TRACE("vkCmdSetStencilCompareMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
 }
 static void entry_vkCmdSetStencilWriteMask(
@@ -1127,6 +1139,7 @@ static void entry_vkCmdSetStencilWriteMask(
 {
     AEMU_SCOPED_TRACE("vkCmdSetStencilWriteMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
 }
 static void entry_vkCmdSetStencilReference(
@@ -1136,6 +1149,7 @@ static void entry_vkCmdSetStencilReference(
 {
     AEMU_SCOPED_TRACE("vkCmdSetStencilReference");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetStencilReference(commandBuffer, faceMask, reference);
 }
 static void entry_vkCmdBindDescriptorSets(
@@ -1150,6 +1164,7 @@ static void entry_vkCmdBindDescriptorSets(
 {
     AEMU_SCOPED_TRACE("vkCmdBindDescriptorSets");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
 }
 static void entry_vkCmdBindIndexBuffer(
@@ -1160,6 +1175,7 @@ static void entry_vkCmdBindIndexBuffer(
 {
     AEMU_SCOPED_TRACE("vkCmdBindIndexBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
 }
 static void entry_vkCmdBindVertexBuffers(
@@ -1171,6 +1187,7 @@ static void entry_vkCmdBindVertexBuffers(
 {
     AEMU_SCOPED_TRACE("vkCmdBindVertexBuffers");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
 }
 static void entry_vkCmdDraw(
@@ -1182,6 +1199,7 @@ static void entry_vkCmdDraw(
 {
     AEMU_SCOPED_TRACE("vkCmdDraw");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 static void entry_vkCmdDrawIndexed(
@@ -1194,6 +1212,7 @@ static void entry_vkCmdDrawIndexed(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndexed");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 static void entry_vkCmdDrawIndirect(
@@ -1205,6 +1224,7 @@ static void entry_vkCmdDrawIndirect(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 static void entry_vkCmdDrawIndexedIndirect(
@@ -1216,6 +1236,7 @@ static void entry_vkCmdDrawIndexedIndirect(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 static void entry_vkCmdDispatch(
@@ -1226,6 +1247,7 @@ static void entry_vkCmdDispatch(
 {
     AEMU_SCOPED_TRACE("vkCmdDispatch");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 static void entry_vkCmdDispatchIndirect(
@@ -1235,6 +1257,7 @@ static void entry_vkCmdDispatchIndirect(
 {
     AEMU_SCOPED_TRACE("vkCmdDispatchIndirect");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDispatchIndirect(commandBuffer, buffer, offset);
 }
 static void entry_vkCmdCopyBuffer(
@@ -1246,6 +1269,7 @@ static void entry_vkCmdCopyBuffer(
 {
     AEMU_SCOPED_TRACE("vkCmdCopyBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
 }
 static void entry_vkCmdCopyImage(
@@ -1259,6 +1283,7 @@ static void entry_vkCmdCopyImage(
 {
     AEMU_SCOPED_TRACE("vkCmdCopyImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
 static void entry_vkCmdBlitImage(
@@ -1273,6 +1298,7 @@ static void entry_vkCmdBlitImage(
 {
     AEMU_SCOPED_TRACE("vkCmdBlitImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
 }
 static void entry_vkCmdCopyBufferToImage(
@@ -1285,6 +1311,7 @@ static void entry_vkCmdCopyBufferToImage(
 {
     AEMU_SCOPED_TRACE("vkCmdCopyBufferToImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
 }
 static void entry_vkCmdCopyImageToBuffer(
@@ -1297,6 +1324,7 @@ static void entry_vkCmdCopyImageToBuffer(
 {
     AEMU_SCOPED_TRACE("vkCmdCopyImageToBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
 }
 static void entry_vkCmdUpdateBuffer(
@@ -1308,6 +1336,7 @@ static void entry_vkCmdUpdateBuffer(
 {
     AEMU_SCOPED_TRACE("vkCmdUpdateBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
 }
 static void entry_vkCmdFillBuffer(
@@ -1319,6 +1348,7 @@ static void entry_vkCmdFillBuffer(
 {
     AEMU_SCOPED_TRACE("vkCmdFillBuffer");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
 }
 static void entry_vkCmdClearColorImage(
@@ -1331,6 +1361,7 @@ static void entry_vkCmdClearColorImage(
 {
     AEMU_SCOPED_TRACE("vkCmdClearColorImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdClearColorImage(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges);
 }
 static void entry_vkCmdClearDepthStencilImage(
@@ -1343,6 +1374,7 @@ static void entry_vkCmdClearDepthStencilImage(
 {
     AEMU_SCOPED_TRACE("vkCmdClearDepthStencilImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
 static void entry_vkCmdClearAttachments(
@@ -1354,6 +1386,7 @@ static void entry_vkCmdClearAttachments(
 {
     AEMU_SCOPED_TRACE("vkCmdClearAttachments");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdClearAttachments(commandBuffer, attachmentCount, pAttachments, rectCount, pRects);
 }
 static void entry_vkCmdResolveImage(
@@ -1367,6 +1400,7 @@ static void entry_vkCmdResolveImage(
 {
     AEMU_SCOPED_TRACE("vkCmdResolveImage");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
 static void entry_vkCmdSetEvent(
@@ -1376,6 +1410,7 @@ static void entry_vkCmdSetEvent(
 {
     AEMU_SCOPED_TRACE("vkCmdSetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetEvent(commandBuffer, event, stageMask);
 }
 static void entry_vkCmdResetEvent(
@@ -1385,6 +1420,7 @@ static void entry_vkCmdResetEvent(
 {
     AEMU_SCOPED_TRACE("vkCmdResetEvent");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdResetEvent(commandBuffer, event, stageMask);
 }
 static void entry_vkCmdWaitEvents(
@@ -1402,6 +1438,7 @@ static void entry_vkCmdWaitEvents(
 {
     AEMU_SCOPED_TRACE("vkCmdWaitEvents");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdWaitEvents(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
 static void entry_vkCmdPipelineBarrier(
@@ -1418,6 +1455,7 @@ static void entry_vkCmdPipelineBarrier(
 {
     AEMU_SCOPED_TRACE("vkCmdPipelineBarrier");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
 }
 static void entry_vkCmdBeginQuery(
@@ -1428,6 +1466,7 @@ static void entry_vkCmdBeginQuery(
 {
     AEMU_SCOPED_TRACE("vkCmdBeginQuery");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBeginQuery(commandBuffer, queryPool, query, flags);
 }
 static void entry_vkCmdEndQuery(
@@ -1437,6 +1476,7 @@ static void entry_vkCmdEndQuery(
 {
     AEMU_SCOPED_TRACE("vkCmdEndQuery");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdEndQuery(commandBuffer, queryPool, query);
 }
 static void entry_vkCmdResetQueryPool(
@@ -1447,6 +1487,7 @@ static void entry_vkCmdResetQueryPool(
 {
     AEMU_SCOPED_TRACE("vkCmdResetQueryPool");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
 }
 static void entry_vkCmdWriteTimestamp(
@@ -1457,6 +1498,7 @@ static void entry_vkCmdWriteTimestamp(
 {
     AEMU_SCOPED_TRACE("vkCmdWriteTimestamp");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
 }
 static void entry_vkCmdCopyQueryPoolResults(
@@ -1471,6 +1513,7 @@ static void entry_vkCmdCopyQueryPoolResults(
 {
     AEMU_SCOPED_TRACE("vkCmdCopyQueryPoolResults");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags);
 }
 static void entry_vkCmdPushConstants(
@@ -1483,6 +1526,7 @@ static void entry_vkCmdPushConstants(
 {
     AEMU_SCOPED_TRACE("vkCmdPushConstants");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
 }
 static void entry_vkCmdBeginRenderPass(
@@ -1492,6 +1536,7 @@ static void entry_vkCmdBeginRenderPass(
 {
     AEMU_SCOPED_TRACE("vkCmdBeginRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
 }
 static void entry_vkCmdNextSubpass(
@@ -1500,6 +1545,7 @@ static void entry_vkCmdNextSubpass(
 {
     AEMU_SCOPED_TRACE("vkCmdNextSubpass");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdNextSubpass(commandBuffer, contents);
 }
 static void entry_vkCmdEndRenderPass(
@@ -1507,6 +1553,7 @@ static void entry_vkCmdEndRenderPass(
 {
     AEMU_SCOPED_TRACE("vkCmdEndRenderPass");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdEndRenderPass(commandBuffer);
 }
 static void entry_vkCmdExecuteCommands(
@@ -1516,6 +1563,7 @@ static void entry_vkCmdExecuteCommands(
 {
     AEMU_SCOPED_TRACE("vkCmdExecuteCommands");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
 #endif
@@ -1570,6 +1618,7 @@ static void entry_vkCmdSetDeviceMask(
 {
     AEMU_SCOPED_TRACE("vkCmdSetDeviceMask");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetDeviceMask(commandBuffer, deviceMask);
 }
 static void entry_vkCmdDispatchBase(
@@ -1583,6 +1632,7 @@ static void entry_vkCmdDispatchBase(
 {
     AEMU_SCOPED_TRACE("vkCmdDispatchBase");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDispatchBase(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
 static VkResult entry_vkEnumeratePhysicalDeviceGroups(
@@ -1728,7 +1778,8 @@ static void entry_vkDestroySamplerYcbcrConversion(
 {
     AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversion");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroySamplerYcbcrConversion(vkEnc, device, ycbcrConversion, pAllocator);
 }
 static VkResult entry_vkCreateDescriptorUpdateTemplate(
     VkDevice device,
@@ -2288,6 +2339,7 @@ static void entry_vkCmdSetDeviceMaskKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdSetDeviceMaskKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetDeviceMaskKHR(commandBuffer, deviceMask);
 }
 static void entry_vkCmdDispatchBaseKHR(
@@ -2301,6 +2353,7 @@ static void entry_vkCmdDispatchBaseKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdDispatchBaseKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDispatchBaseKHR(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
 #endif
@@ -2467,6 +2520,7 @@ static void entry_vkCmdPushDescriptorSetKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdPushDescriptorSetKHR(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
 }
 static void entry_vkCmdPushDescriptorSetWithTemplateKHR(
@@ -2478,6 +2532,7 @@ static void entry_vkCmdPushDescriptorSetWithTemplateKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdPushDescriptorSetWithTemplateKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdPushDescriptorSetWithTemplateKHR(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
 }
 #endif
@@ -2538,6 +2593,7 @@ static void entry_vkCmdBeginRenderPass2KHR(
 {
     AEMU_SCOPED_TRACE("vkCmdBeginRenderPass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBeginRenderPass2KHR(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
 }
 static void entry_vkCmdNextSubpass2KHR(
@@ -2547,6 +2603,7 @@ static void entry_vkCmdNextSubpass2KHR(
 {
     AEMU_SCOPED_TRACE("vkCmdNextSubpass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdNextSubpass2KHR(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
 static void entry_vkCmdEndRenderPass2KHR(
@@ -2555,6 +2612,7 @@ static void entry_vkCmdEndRenderPass2KHR(
 {
     AEMU_SCOPED_TRACE("vkCmdEndRenderPass2KHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdEndRenderPass2KHR(commandBuffer, pSubpassEndInfo);
 }
 #endif
@@ -2766,7 +2824,8 @@ static void entry_vkDestroySamplerYcbcrConversionKHR(
 {
     AEMU_SCOPED_TRACE("vkDestroySamplerYcbcrConversionKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
-    vkEnc->vkDestroySamplerYcbcrConversionKHR(device, ycbcrConversion, pAllocator);
+    auto resources = ResourceTracker::get();
+    resources->on_vkDestroySamplerYcbcrConversionKHR(vkEnc, device, ycbcrConversion, pAllocator);
 }
 #endif
 #ifdef VK_KHR_bind_memory2
@@ -2818,6 +2877,7 @@ static void entry_vkCmdDrawIndirectCountKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 static void entry_vkCmdDrawIndexedIndirectCountKHR(
@@ -2831,6 +2891,7 @@ static void entry_vkCmdDrawIndexedIndirectCountKHR(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountKHR");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndexedIndirectCountKHR(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 #endif
@@ -2952,6 +3013,7 @@ static void entry_vkCmdDebugMarkerBeginEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdDebugMarkerBeginEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
 }
 static void entry_vkCmdDebugMarkerEndEXT(
@@ -2959,6 +3021,7 @@ static void entry_vkCmdDebugMarkerEndEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdDebugMarkerEndEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDebugMarkerEndEXT(commandBuffer);
 }
 static void entry_vkCmdDebugMarkerInsertEXT(
@@ -2967,6 +3030,7 @@ static void entry_vkCmdDebugMarkerInsertEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdDebugMarkerInsertEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
 }
 #endif
@@ -2986,6 +3050,7 @@ static void entry_vkCmdDrawIndirectCountAMD(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndirectCountAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 static void entry_vkCmdDrawIndexedIndirectCountAMD(
@@ -2999,6 +3064,7 @@ static void entry_vkCmdDrawIndexedIndirectCountAMD(
 {
     AEMU_SCOPED_TRACE("vkCmdDrawIndexedIndirectCountAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 #endif
@@ -3093,6 +3159,7 @@ static void entry_vkCmdBeginConditionalRenderingEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdBeginConditionalRenderingEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
 }
 static void entry_vkCmdEndConditionalRenderingEXT(
@@ -3100,6 +3167,7 @@ static void entry_vkCmdEndConditionalRenderingEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdEndConditionalRenderingEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdEndConditionalRenderingEXT(commandBuffer);
 }
 #endif
@@ -3110,6 +3178,7 @@ static void entry_vkCmdProcessCommandsNVX(
 {
     AEMU_SCOPED_TRACE("vkCmdProcessCommandsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdProcessCommandsNVX(commandBuffer, pProcessCommandsInfo);
 }
 static void entry_vkCmdReserveSpaceForCommandsNVX(
@@ -3118,6 +3187,7 @@ static void entry_vkCmdReserveSpaceForCommandsNVX(
 {
     AEMU_SCOPED_TRACE("vkCmdReserveSpaceForCommandsNVX");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdReserveSpaceForCommandsNVX(commandBuffer, pReserveSpaceInfo);
 }
 static VkResult entry_vkCreateIndirectCommandsLayoutNVX(
@@ -3207,6 +3277,7 @@ static void entry_vkCmdSetViewportWScalingNV(
 {
     AEMU_SCOPED_TRACE("vkCmdSetViewportWScalingNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetViewportWScalingNV(commandBuffer, firstViewport, viewportCount, pViewportWScalings);
 }
 #endif
@@ -3354,6 +3425,7 @@ static void entry_vkCmdSetDiscardRectangleEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdSetDiscardRectangleEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
 #endif
@@ -3455,6 +3527,7 @@ static void entry_vkCmdBeginDebugUtilsLabelEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdBeginDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
 static void entry_vkCmdEndDebugUtilsLabelEXT(
@@ -3462,6 +3535,7 @@ static void entry_vkCmdEndDebugUtilsLabelEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdEndDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 }
 static void entry_vkCmdInsertDebugUtilsLabelEXT(
@@ -3470,6 +3544,7 @@ static void entry_vkCmdInsertDebugUtilsLabelEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdInsertDebugUtilsLabelEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
 }
 static VkResult entry_vkCreateDebugUtilsMessengerEXT(
@@ -3547,6 +3622,7 @@ static void entry_vkCmdSetSampleLocationsEXT(
 {
     AEMU_SCOPED_TRACE("vkCmdSetSampleLocationsEXT");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
 }
 static void entry_vkGetPhysicalDeviceMultisamplePropertiesEXT(
@@ -3646,6 +3722,7 @@ static void entry_vkCmdWriteBufferMarkerAMD(
 {
     AEMU_SCOPED_TRACE("vkCmdWriteBufferMarkerAMD");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
 }
 #endif
@@ -3662,6 +3739,7 @@ static void entry_vkCmdSetCheckpointNV(
 {
     AEMU_SCOPED_TRACE("vkCmdSetCheckpointNV");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkCmdSetCheckpointNV(commandBuffer, pCheckpointMarker);
 }
 static void entry_vkGetQueueCheckpointDataNV(
@@ -3738,6 +3816,7 @@ static void entry_vkBeginCommandBufferAsyncGOOGLE(
 {
     AEMU_SCOPED_TRACE("vkBeginCommandBufferAsyncGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkBeginCommandBufferAsyncGOOGLE(commandBuffer, pBeginInfo);
 }
 static void entry_vkEndCommandBufferAsyncGOOGLE(
@@ -3745,6 +3824,7 @@ static void entry_vkEndCommandBufferAsyncGOOGLE(
 {
     AEMU_SCOPED_TRACE("vkEndCommandBufferAsyncGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkEndCommandBufferAsyncGOOGLE(commandBuffer);
 }
 static void entry_vkResetCommandBufferAsyncGOOGLE(
@@ -3753,7 +3833,46 @@ static void entry_vkResetCommandBufferAsyncGOOGLE(
 {
     AEMU_SCOPED_TRACE("vkResetCommandBufferAsyncGOOGLE");
     auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
     vkEnc->vkResetCommandBufferAsyncGOOGLE(commandBuffer, flags);
+}
+static void entry_vkCommandBufferHostSyncGOOGLE(
+    VkCommandBuffer commandBuffer,
+    uint32_t needHostSync,
+    uint32_t sequenceNumber)
+{
+    AEMU_SCOPED_TRACE("vkCommandBufferHostSyncGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    ResourceTracker::get()->syncEncodersForCommandBuffer(commandBuffer, vkEnc);
+    vkEnc->vkCommandBufferHostSyncGOOGLE(commandBuffer, needHostSync, sequenceNumber);
+}
+#endif
+#ifdef VK_GOOGLE_create_resources_with_requirements
+static VkResult entry_vkCreateImageWithRequirementsGOOGLE(
+    VkDevice device,
+    const VkImageCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkImage* pImage,
+    VkMemoryRequirements* pMemoryRequirements)
+{
+    AEMU_SCOPED_TRACE("vkCreateImageWithRequirementsGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    VkResult vkCreateImageWithRequirementsGOOGLE_VkResult_return = (VkResult)0;
+    vkCreateImageWithRequirementsGOOGLE_VkResult_return = vkEnc->vkCreateImageWithRequirementsGOOGLE(device, pCreateInfo, pAllocator, pImage, pMemoryRequirements);
+    return vkCreateImageWithRequirementsGOOGLE_VkResult_return;
+}
+static VkResult entry_vkCreateBufferWithRequirementsGOOGLE(
+    VkDevice device,
+    const VkBufferCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkBuffer* pBuffer,
+    VkMemoryRequirements* pMemoryRequirements)
+{
+    AEMU_SCOPED_TRACE("vkCreateBufferWithRequirementsGOOGLE");
+    auto vkEnc = HostConnection::get()->vkEncoder();
+    VkResult vkCreateBufferWithRequirementsGOOGLE_VkResult_return = (VkResult)0;
+    vkCreateBufferWithRequirementsGOOGLE_VkResult_return = vkEnc->vkCreateBufferWithRequirementsGOOGLE(device, pCreateInfo, pAllocator, pBuffer, pMemoryRequirements);
+    return vkCreateBufferWithRequirementsGOOGLE_VkResult_return;
 }
 #endif
 void* goldfish_vulkan_get_proc_address(const char* name){
@@ -5183,6 +5302,20 @@ void* goldfish_vulkan_get_proc_address(const char* name){
         return nullptr;
     }
     if (!strcmp(name, "vkResetCommandBufferAsyncGOOGLE"))
+    {
+        return nullptr;
+    }
+    if (!strcmp(name, "vkCommandBufferHostSyncGOOGLE"))
+    {
+        return nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_create_resources_with_requirements
+    if (!strcmp(name, "vkCreateImageWithRequirementsGOOGLE"))
+    {
+        return nullptr;
+    }
+    if (!strcmp(name, "vkCreateBufferWithRequirementsGOOGLE"))
     {
         return nullptr;
     }
@@ -6780,6 +6913,23 @@ void* goldfish_vulkan_get_instance_proc_address(VkInstance instance, const char*
         bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_async_command_buffers");
         return hasExt ? (void*)entry_vkResetCommandBufferAsyncGOOGLE : nullptr;
     }
+    if (!strcmp(name, "vkCommandBufferHostSyncGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkCommandBufferHostSyncGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_create_resources_with_requirements
+    if (!strcmp(name, "vkCreateImageWithRequirementsGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_create_resources_with_requirements");
+        return hasExt ? (void*)entry_vkCreateImageWithRequirementsGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkCreateBufferWithRequirementsGOOGLE"))
+    {
+        bool hasExt = resources->hasInstanceExtension(instance, "VK_GOOGLE_create_resources_with_requirements");
+        return hasExt ? (void*)entry_vkCreateBufferWithRequirementsGOOGLE : nullptr;
+    }
 #endif
     return nullptr;
 }
@@ -8373,6 +8523,23 @@ void* goldfish_vulkan_get_device_proc_address(VkDevice device, const char* name)
     {
         bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_async_command_buffers");
         return hasExt ? (void*)entry_vkResetCommandBufferAsyncGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkCommandBufferHostSyncGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_async_command_buffers");
+        return hasExt ? (void*)entry_vkCommandBufferHostSyncGOOGLE : nullptr;
+    }
+#endif
+#ifdef VK_GOOGLE_create_resources_with_requirements
+    if (!strcmp(name, "vkCreateImageWithRequirementsGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_create_resources_with_requirements");
+        return hasExt ? (void*)entry_vkCreateImageWithRequirementsGOOGLE : nullptr;
+    }
+    if (!strcmp(name, "vkCreateBufferWithRequirementsGOOGLE"))
+    {
+        bool hasExt = resources->hasDeviceExtension(device, "VK_GOOGLE_create_resources_with_requirements");
+        return hasExt ? (void*)entry_vkCreateBufferWithRequirementsGOOGLE : nullptr;
     }
 #endif
     return nullptr;

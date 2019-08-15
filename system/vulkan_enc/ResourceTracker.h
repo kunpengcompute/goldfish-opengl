@@ -28,6 +28,8 @@ struct EmulatorFeatureInfo;
 
 namespace goldfish_vk {
 
+class VkEncoder;
+
 class ResourceTracker {
 public:
     ResourceTracker();
@@ -269,12 +271,29 @@ public:
         const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion);
+    void on_vkDestroySamplerYcbcrConversion(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator);
     VkResult on_vkCreateSamplerYcbcrConversionKHR(
         void* context, VkResult input_result,
         VkDevice device,
         const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion);
+    void on_vkDestroySamplerYcbcrConversionKHR(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator);
+
+    VkResult on_vkCreateSampler(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkSamplerCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkSampler* pSampler);
 
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
         void* context,
@@ -322,6 +341,8 @@ public:
         const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
         VkImageFormatProperties2* pImageFormatProperties);
 
+    uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* current);
+
     VkResult on_vkBeginCommandBuffer(
         void* context, VkResult input_result,
         VkCommandBuffer commandBuffer,
@@ -349,6 +370,7 @@ public:
     void setupFeatures(const EmulatorFeatureInfo* features);
     bool hostSupportsVulkan() const;
     bool usingDirectMapping() const;
+    uint32_t getStreamFeatures() const;
     uint32_t getApiVersionFromInstance(VkInstance instance) const;
     uint32_t getApiVersionFromDevice(VkDevice device) const;
     bool hasInstanceExtension(VkInstance instance, const std::string& name) const;

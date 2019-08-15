@@ -29,6 +29,7 @@
 #endif
 
 #include "goldfish_dma.h"
+#include "goldfish_address_space.h"
 #include "FormatConversions.h"
 #include "HostConnection.h"
 #include "ProcessPipe.h"
@@ -125,13 +126,20 @@ struct gralloc_memregions_t {
 #define INITIAL_DMA_REGION_SIZE 4096
 struct gralloc_dmaregion_t {
     gralloc_dmaregion_t(ExtendedRCEncoderContext *rcEnc)
-      : sz(0), refcount(0), bigbufCount(0) {
+      : sz(INITIAL_DMA_REGION_SIZE), refcount(0), bigbufCount(0) {
+        memset(&goldfish_dma, 0, sizeof(goldfish_dma));
         pthread_mutex_init(&lock, NULL);
-        sz = INITIAL_DMA_REGION_SIZE;
-        goldfish_dma_create_region(sz, &goldfish_dma);
+
+        if (rcEnc->hasDirectMem()) {
+            host_memory_allocator.hostMalloc(&address_space_block, sz);
+        } else if (rcEnc->getDmaVersion() > 0) {
+            goldfish_dma_create_region(sz, &goldfish_dma);
+        }
     }
 
     goldfish_dma_context goldfish_dma;
+    GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator;
+    GoldfishAddressSpaceBlock address_space_block;
     uint32_t sz;
     uint32_t refcount;
     pthread_mutex_t lock;
@@ -147,6 +155,10 @@ static gralloc_memregions_t* init_gralloc_memregions() {
         s_memregions = new gralloc_memregions_t;
     }
     return s_memregions;
+}
+
+static bool has_DMA_support(const ExtendedRCEncoderContext *rcEnc) {
+    return rcEnc->getDmaVersion() > 0 || rcEnc->hasDirectMem();
 }
 
 static gralloc_dmaregion_t* init_gralloc_dmaregion(ExtendedRCEncoderContext *rcEnc) {
@@ -178,6 +190,15 @@ static void resize_gralloc_dmaregion_locked(gralloc_dmaregion_t* grdma, uint32_t
 // max dma size: 2x 4K rgba8888
 #define MAX_DMA_SIZE 66355200
 
+static bool put_gralloc_region_direct_mem_locked(gralloc_dmaregion_t* grdma, uint32_t sz) {
+    const bool shouldDelete = !grdma->refcount;
+    if (shouldDelete) {
+        grdma->host_memory_allocator.hostFree(&grdma->address_space_block);
+    }
+
+    return shouldDelete;
+}
+
 static bool put_gralloc_region_dma_locked(gralloc_dmaregion_t* grdma, uint32_t sz) {
     D("%s: call. refcount before: %u\n", __func__, grdma->refcount);
     grdma->refcount--;
@@ -199,20 +220,36 @@ static bool put_gralloc_region(ExtendedRCEncoderContext *rcEnc, uint32_t sz) {
 
     gralloc_dmaregion_t* grdma = init_gralloc_dmaregion(rcEnc);
     pthread_mutex_lock(&grdma->lock);
-    shouldDelete = put_gralloc_region_dma_locked(grdma, sz);
+    if (rcEnc->hasDirectMem()) {
+        shouldDelete = put_gralloc_region_direct_mem_locked(grdma, sz);
+    } else if (rcEnc->getDmaVersion() > 0) {
+        shouldDelete = put_gralloc_region_dma_locked(grdma, sz);
+    } else {
+        shouldDelete = false;
+    }
     pthread_mutex_unlock(&grdma->lock);
 
     return shouldDelete;
 }
 
-static void gralloc_dmaregion_register_ashmem_dma(gralloc_dmaregion_t* grdma, uint32_t new_sz) {
+static void gralloc_dmaregion_register_ashmem_direct_mem_locked(gralloc_dmaregion_t* grdma, uint32_t new_sz) {
+    if (new_sz == grdma->sz) return;
+
+    GoldfishAddressSpaceHostMemoryAllocator* allocator = &grdma->host_memory_allocator;
+    GoldfishAddressSpaceBlock* block = &grdma->address_space_block;
+    allocator->hostFree(block);
+    allocator->hostMalloc(block, new_sz);
+    grdma->sz = new_sz;
+}
+
+static void gralloc_dmaregion_register_ashmem_dma_locked(gralloc_dmaregion_t* grdma, uint32_t new_sz) {
     if (new_sz != grdma->sz) {
         if (new_sz > MAX_DMA_SIZE)  {
             D("%s: requested sz %u too large (limit %u), set to fallback.",
-              __func__, sz, MAX_DMA_SIZE);
+              __func__, new_sz, MAX_DMA_SIZE);
             grdma->bigbufCount++;
         } else {
-            D("%s: change sz from %u to %u", __func__, grdma->sz, sz);
+            D("%s: change sz from %u to %u", __func__, grdma->sz, new_sz);
             resize_gralloc_dmaregion_locked(grdma, new_sz);
         }
     }
@@ -227,7 +264,15 @@ static void gralloc_dmaregion_register_ashmem(ExtendedRCEncoderContext *rcEnc, u
     pthread_mutex_lock(&grdma->lock);
     D("%s: for sz %u, refcount %u", __func__, sz, grdma->refcount);
     const uint32_t new_sz = std::max(grdma->sz, sz);
-    gralloc_dmaregion_register_ashmem_dma(grdma, new_sz);
+
+    if (rcEnc->hasDirectMem()) {
+        gralloc_dmaregion_register_ashmem_direct_mem_locked(grdma, new_sz);
+    } else if (rcEnc->getDmaVersion() > 0) {
+        gralloc_dmaregion_register_ashmem_dma_locked(grdma, new_sz);
+    } else {
+        ALOGE("%s: unexpected DMA type", __func__);
+    }
+
     pthread_mutex_unlock(&grdma->lock);
 }
 
@@ -389,37 +434,40 @@ static void updateHostColorBuffer(cb_handle_t* cb,
         cb->frameworkFormat != HAL_PIXEL_FORMAT_YCbCr_420_888;
 
     std::vector<char> convertedBuf;
-    if ((doLocked && is_rgb_format) ||
-        (!grdma && (doLocked || !is_rgb_format))) {
-        convertedBuf.resize(rgbSz);
-        to_send = &convertedBuf.front();
-        send_buffer_size = rgbSz;
-    }
 
     if (doLocked && is_rgb_format) {
+        convertedBuf.resize(rgbSz);
+        to_send = &convertedBuf.front();
         copy_rgb_buffer_from_unlocked(
                 to_send, pixels,
                 cb->width,
                 width, height, top, left, bpp);
     }
 
-    const bool hasDMA = rcEnc->getDmaVersion() > 0;
+    const bool hasDMA = has_DMA_support(rcEnc);
     if (hasDMA && grdma->bigbufCount) {
         D("%s: there are big buffers alive, use fallback (count %u)", __FUNCTION__,
           grdma->bigbufCount);
     }
 
     if (hasDMA && !grdma->bigbufCount) {
-        if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
-            get_yv12_offsets(width, height, NULL, NULL,
-                             &send_buffer_size);
-        }
-        if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-            get_yuv420p_offsets(width, height, NULL, NULL,
-                                &send_buffer_size);
+        switch (cb->frameworkFormat) {
+        case HAL_PIXEL_FORMAT_YV12:
+            get_yv12_offsets(width, height, NULL, NULL, &send_buffer_size);
+            break;
+
+        case HAL_PIXEL_FORMAT_YCbCr_420_888:
+            get_yuv420p_offsets(width, height, NULL, NULL, &send_buffer_size);
+            break;
         }
 
-        rcEnc->bindDmaContext(&grdma->goldfish_dma);
+        if (grdma->address_space_block.guestPtr()) {
+            rcEnc->bindAddressSpaceBlock(&grdma->address_space_block);
+        } else if (grdma->goldfish_dma.mapped_addr) {
+            rcEnc->bindDmaContext(&grdma->goldfish_dma);
+        } else {
+            ALOGE("%s: Unexpected DMA", __func__);
+        }
 
         D("%s: call. dma update with sz=%u", __func__, send_buffer_size);
         pthread_mutex_lock(&grdma->lock);
@@ -429,15 +477,29 @@ static void updateHostColorBuffer(cb_handle_t* cb,
                 to_send, send_buffer_size);
         pthread_mutex_unlock(&grdma->lock);
     } else {
-        if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
+        switch (cb->frameworkFormat) {
+        case HAL_PIXEL_FORMAT_YV12:
+            convertedBuf.resize(rgbSz);
+            to_send = &convertedBuf.front();
+            D("convert yv12 to rgb888 here");
             yv12_to_rgb888(to_send, pixels,
                            width, height, left, top,
                            left + width - 1, top + height - 1);
-        }
-        if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-            yuv420p_to_rgb888(to_send, pixels,
-                              width, height, left, top,
-                              left + width - 1, top + height - 1);
+            break;
+
+        case HAL_PIXEL_FORMAT_YCbCr_420_888:
+            convertedBuf.resize(rgbSz);
+            to_send = &convertedBuf.front();
+            if (rcEnc->hasYUV420toNV21()) {
+                nv21_to_rgb888(to_send, pixels,
+                               width, height, left, top,
+                               left + width - 1, top + height - 1);
+            } else {
+                yuv420p_to_rgb888(to_send, pixels,
+                                  width, height, left, top,
+                                  left + width - 1, top + height - 1);
+            }
+            break;
         }
         rcEnc->rcUpdateColorBuffer(rcEnc, cb->hostHandle,
                 left, top, width, height,
@@ -483,6 +545,12 @@ static int gralloc_alloc(alloc_device_t* dev,
     bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
     const bool hw_texture = usage & GRALLOC_USAGE_HW_TEXTURE;
+    const bool hw_render = usage & GRALLOC_USAGE_HW_RENDER;
+    const bool hw_2d = usage & GRALLOC_USAGE_HW_2D;
+    const bool hw_composer = usage & GRALLOC_USAGE_HW_COMPOSER;
+    const bool hw_fb = usage & GRALLOC_USAGE_HW_FB;
+    const bool rgb888_unsupported_usage =
+        hw_texture || hw_render || hw_2d || hw_composer || hw_fb;
 #if PLATFORM_SDK_VERSION >= 17
     bool hw_cam_write = (usage & GRALLOC_USAGE_HW_CAMERA_WRITE);
     bool hw_cam_read = (usage & GRALLOC_USAGE_HW_CAMERA_READ);
@@ -546,8 +614,8 @@ static int gralloc_alloc(alloc_device_t* dev,
             glType = GL_UNSIGNED_BYTE;
             break;
         case HAL_PIXEL_FORMAT_RGB_888:
-            if (hw_texture) {
-                return -EINVAL;  // we dont support RGB_888 for HW textures
+            if (rgb888_unsupported_usage) {
+                return -EINVAL;  // we dont support RGB_888 for HW usage
             } else {
                 bpp = 3;
                 glFormat = GL_RGB;
@@ -738,6 +806,8 @@ static int gralloc_alloc(alloc_device_t* dev,
         cb->setFd(fd);
     }
 
+    const bool hasDMA = has_DMA_support(rcEnc);
+
     if (needHostCb) {
         if (hostCon && rcEnc) {
             GLenum allocFormat = glFormat;
@@ -750,9 +820,8 @@ static int gralloc_alloc(alloc_device_t* dev,
                 allocFormat = GL_RGB;
             }
 
-            gralloc_dmaregion_t* grdma = init_gralloc_dmaregion(rcEnc);
             hostCon->lock();
-            if (rcEnc->getDmaVersion() > 0) {
+            if (hasDMA) {
                 cb->hostHandle = rcEnc->rcCreateColorBufferDMA(rcEnc, w, h, allocFormat, cb->emuFrameworkFormat);
             } else {
                 cb->hostHandle = rcEnc->rcCreateColorBuffer(rcEnc, w, h, allocFormat);
@@ -764,7 +833,7 @@ static int gralloc_alloc(alloc_device_t* dev,
             // Could not create colorbuffer on host !!!
             close(fd);
             delete cb;
-            ALOGD("%s: failed to create host cb! -EIO", __FUNCTION__);
+            ALOGE("%s: failed to create host cb! -EIO", __FUNCTION__);
             return -EIO;
         } else {
             QEMU_PIPE_HANDLE refcountPipeFd = qemu_pipe_open("refcount");
@@ -798,7 +867,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     hostCon->lock();
-    if (rcEnc->getDmaVersion() > 0) {
+    if (hasDMA) {
         get_gralloc_region(rcEnc);  // map_buffer(cb, ...) refers here
     }
     hostCon->unlock();
@@ -1025,13 +1094,6 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
             int32_t* openCountPtr = getOpenCountPtr(cb);
             if (!*openCountPtr) *openCountPtr = 1;
         }
-
-        hostCon->lock();
-        if (rcEnc->getDmaVersion() > 0) {
-            gralloc_dmaregion_register_ashmem(rcEnc, cb->ashmemSize);
-        }
-        hostCon->unlock();
-
     }
 
     if (cb->ashmemSize > 0) {
@@ -1205,26 +1267,52 @@ static int gralloc_lock(gralloc_module_t const* module,
         // camera delivers bits to the buffer directly and does not require
         // an explicit read, it also writes in YUV_420 (interleaved)
         if (sw_read & !(usage & GRALLOC_USAGE_HW_CAMERA_MASK)) {
+            D("gralloc_lock read back color buffer %d %d ashmem base %p sz %d\n",
+              cb->width, cb->height, cb->ashmemBase, cb->ashmemSize);
             void* rgb_addr = cpu_addr;
             char* tmpBuf = 0;
             if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
                 cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                // We are using RGB888
-                tmpBuf = new char[cb->width * cb->height * 3];
-                rgb_addr = tmpBuf;
-            }
-            D("gralloc_lock read back color buffer %d %d ashmem base %p sz %d\n",
-              cb->width, cb->height, cb->ashmemBase, cb->ashmemSize);
-            rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
-                    0, 0, cb->width, cb->height, cb->glFormat, cb->glType, rgb_addr);
-            if (tmpBuf) {
-                if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
-                    rgb888_to_yv12((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
-                } else if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                    rgb888_to_yuv420p((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
+                if (rcEnc->hasYUVCache()) {
+                    uint32_t buffer_size;
+                    if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
+                       get_yv12_offsets(cb->width, cb->height, NULL, NULL,
+                                        &buffer_size);
+                    } else {
+                       get_yuv420p_offsets(cb->width, cb->height, NULL, NULL,
+                                           &buffer_size);
+                    }
+                    D("read YUV copy from host");
+                    rcEnc->rcReadColorBufferYUV(rcEnc, cb->hostHandle,
+                                            0, 0, cb->width, cb->height,
+                                            rgb_addr, buffer_size);
+                } else {
+                    // We are using RGB888
+                    tmpBuf = new char[cb->width * cb->height * 3];
+                    rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
+                                              0, 0, cb->width, cb->height, cb->glFormat, cb->glType, tmpBuf);
+                    if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
+                        D("convert rgb888 to yv12 here");
+                        rgb888_to_yv12((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
+                    } else if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+                        if (rcEnc->hasYUV420toNV21()) {
+                            D("convert rgb888 to nv21 here");
+                            rgb888_to_nv21((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
+                        } else {
+                            D("convert rgb888 to yuv420p here");
+                            rgb888_to_yuv420p((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
+                        }
+                    }
+                    delete [] tmpBuf;
                 }
-                delete [] tmpBuf;
+            } else {
+                rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
+                        0, 0, cb->width, cb->height, cb->glFormat, cb->glType, rgb_addr);
             }
+        }
+
+        if (has_DMA_support(rcEnc)) {
+            gralloc_dmaregion_register_ashmem(rcEnc, cb->ashmemSize);
         }
         hostCon->unlock();
     }
@@ -1367,8 +1455,9 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
             uOffset = vOffset + cSize;
             cStep = 1;
             break;
-        case HAL_PIXEL_FORMAT_YCbCr_420_888:
-            if (usage & GRALLOC_USAGE_HW_CAMERA_MASK) {
+        case HAL_PIXEL_FORMAT_YCbCr_420_888: {
+            DEFINE_AND_VALIDATE_HOST_CONNECTION
+            if (rcEnc->hasYUV420toNV21()) {
                 yStride = cb->width;
                 cStride = cb->width;
                 yOffset = 0;
@@ -1376,14 +1465,24 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
                 uOffset = vOffset + 1;
                 cStep = 2;
             } else {
-                yStride = cb->width;
-                cStride = yStride / 2;
-                yOffset = 0;
-                uOffset = cb->height * yStride;
-                vOffset = uOffset + cStride * cb->height / 2;
-                cStep = 1;
+                if (usage & GRALLOC_USAGE_HW_CAMERA_MASK) {
+                    yStride = cb->width;
+                    cStride = cb->width;
+                    yOffset = 0;
+                    vOffset = yStride * cb->height;
+                    uOffset = vOffset + 1;
+                    cStep = 2;
+                } else {
+                    yStride = cb->width;
+                    cStride = yStride / 2;
+                    yOffset = 0;
+                    uOffset = cb->height * yStride;
+                    vOffset = uOffset + cStride * cb->height / 2;
+                    cStep = 1;
+                }
             }
             break;
+        }
         default:
             ALOGE("gralloc_lock_ycbcr unexpected internal format %x",
                     cb->format);
@@ -1553,6 +1652,10 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         lock: gralloc_lock,
         unlock: gralloc_unlock,
         perform: NULL,
+#if PLATFORM_SDK_VERSION >= 29 // For Q and later
+        validateBufferSize: NULL,
+        getTransportSize: NULL,
+#endif // PLATFORM_SDK_VERSION >= 29
 #if PLATFORM_SDK_VERSION >= 18
         lock_ycbcr: gralloc_lock_ycbcr,
 #endif // PLATFORM_SDK_VERSION >= 18

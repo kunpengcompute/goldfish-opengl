@@ -123,9 +123,8 @@ VkResult getMemoryAndroidHardwareBufferANDROID(struct AHardwareBuffer **) { retu
 #include "android/utils/tempfile.h"
 #endif
 
-#ifndef HAVE_MEMFD_CREATE
 static inline int
-memfd_create(const char *name, unsigned int flags) {
+inline_memfd_create(const char *name, unsigned int flags) {
 #ifdef HOST_BUILD
     TempFile* tmpFile = tempfile_create();
     return open(tempfile_path(tmpFile), O_RDWR);
@@ -134,7 +133,7 @@ memfd_create(const char *name, unsigned int flags) {
     return syscall(SYS_memfd_create, name, flags);
 #endif
 }
-#endif // !HAVE_MEMFD_CREATE
+#define memfd_create inline_memfd_create
 #endif // !VK_USE_PLATFORM_ANDROID_KHR
 
 #define RESOURCE_TRACKER_DEBUG 0
@@ -235,7 +234,6 @@ public:
         std::vector<HostMemBlocks> hostMemBlocks { VK_MAX_MEMORY_TYPES };
         uint32_t apiVersion;
         std::set<std::string> enabledExtensions;
-        VkFence fence = VK_NULL_HANDLE;
     };
 
     struct VkDeviceMemory_Info {
@@ -252,6 +250,11 @@ public:
         zx_handle_t vmoHandle = ZX_HANDLE_INVALID;
     };
 
+    struct VkCommandBuffer_Info {
+        VkEncoder** lastUsedEncoderPtr = nullptr;
+        uint32_t sequenceNumber = 0;
+    };
+
     // custom guest-side structs for images/buffers because of AHardwareBuffer :((
     struct VkImage_Info {
         VkDevice device;
@@ -261,6 +264,8 @@ public:
         VkDeviceMemory currentBacking = VK_NULL_HANDLE;
         VkDeviceSize currentBackingOffset = 0;
         VkDeviceSize currentBackingSize = 0;
+        bool baseRequirementsKnown = false;
+        VkMemoryRequirements baseRequirements;
     };
 
     struct VkBuffer_Info {
@@ -271,6 +276,8 @@ public:
         VkDeviceMemory currentBacking = VK_NULL_HANDLE;
         VkDeviceSize currentBackingOffset = 0;
         VkDeviceSize currentBackingSize = 0;
+        bool baseRequirementsKnown = false;
+        VkMemoryRequirements baseRequirements;
     };
 
     struct VkSemaphore_Info {
@@ -325,6 +332,24 @@ public:
         auto info = it->second;
         info_VkDevice.erase(device);
         lock.unlock();
+    }
+
+    void unregister_VkCommandBuffer(VkCommandBuffer commandBuffer) {
+        AutoLock lock(mLock);
+
+        auto it = info_VkCommandBuffer.find(commandBuffer);
+        if (it == info_VkCommandBuffer.end()) return;
+        auto& info = it->second;
+        auto lastUsedEncoder =
+            info.lastUsedEncoderPtr ?
+            *(info.lastUsedEncoderPtr) : nullptr;
+
+        if (lastUsedEncoder) {
+            lastUsedEncoder->unregisterCleanupCallback(commandBuffer);
+            delete info.lastUsedEncoderPtr;
+        }
+
+        info_VkCommandBuffer.erase(commandBuffer);
     }
 
     void unregister_VkDeviceMemory(VkDeviceMemory mem) {
@@ -564,6 +589,10 @@ public:
             }
         }
 #endif
+
+        if (mFeatureInfo->hasVulkanNullOptionalStrings) {
+            mStreamFeatureBits |= VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT;
+        }
     }
 
     bool hostSupportsVulkan() const {
@@ -576,9 +605,18 @@ public:
         return mHostVisibleMemoryVirtInfo.virtualizationSupported;
     }
 
+    uint32_t getStreamFeatures() const {
+        return mStreamFeatureBits;
+    }
+
     bool supportsDeferredCommands() const {
         if (!mFeatureInfo) return false;
         return mFeatureInfo->hasDeferredVulkanCommands;
+    }
+
+    bool supportsCreateResourcesWithRequirements() const {
+        if (!mFeatureInfo) return false;
+        return mFeatureInfo->hasVulkanCreateResourcesWithRequirements;
     }
 
     int getHostInstanceExtensionIndex(const std::string& extName) const {
@@ -758,9 +796,6 @@ public:
         }
 
         VkExtensionProperties anbExtProps[] = {
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-            { "VK_ANDROID_native_buffer", 7 },
-#endif
 #ifdef VK_USE_PLATFORM_FUCHSIA
             { "VK_KHR_external_memory_capabilities", 1},
             { "VK_KHR_external_semaphore_capabilities", 1},
@@ -771,17 +806,41 @@ public:
             filteredExts.push_back(anbExtProp);
         }
 
-        if (pPropertyCount) {
-            *pPropertyCount = filteredExts.size();
-        }
+        // Spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateInstanceExtensionProperties.html
+        //
+        // If pProperties is NULL, then the number of extensions properties
+        // available is returned in pPropertyCount. Otherwise, pPropertyCount
+        // must point to a variable set by the user to the number of elements
+        // in the pProperties array, and on return the variable is overwritten
+        // with the number of structures actually written to pProperties. If
+        // pPropertyCount is less than the number of extension properties
+        // available, at most pPropertyCount structures will be written. If
+        // pPropertyCount is smaller than the number of extensions available,
+        // VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate
+        // that not all the available properties were returned.
+        //
+        // pPropertyCount must be a valid pointer to a uint32_t value
+        if (!pPropertyCount) return VK_ERROR_INITIALIZATION_FAILED;
 
-        if (pPropertyCount && pProperties) {
-            for (size_t i = 0; i < *pPropertyCount; ++i) {
+        if (!pProperties) {
+            *pPropertyCount = (uint32_t)filteredExts.size();
+            return VK_SUCCESS;
+        } else {
+            auto actualExtensionCount = (uint32_t)filteredExts.size();
+            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
                 pProperties[i] = filteredExts[i];
             }
-        }
 
-        return VK_SUCCESS;
+            if (actualExtensionCount > *pPropertyCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
+        }
     }
 
     VkResult on_vkEnumerateDeviceExtensionProperties(
@@ -879,14 +938,20 @@ public:
         bool posixExtMemAvailable =
             getHostDeviceExtensionIndex(
                 "VK_KHR_external_memory_fd") != -1;
+        bool extMoltenVkAvailable =
+            getHostDeviceExtensionIndex(
+                "VK_MVK_moltenvk") != -1;
 
         bool hostHasExternalMemorySupport =
-            win32ExtMemAvailable || posixExtMemAvailable;
+            win32ExtMemAvailable || posixExtMemAvailable || extMoltenVkAvailable;
 
         if (hostHasExternalMemorySupport) {
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
             filteredExts.push_back({
                 "VK_ANDROID_external_memory_android_hardware_buffer", 7
+            });
+            filteredExts.push_back({
+                "VK_EXT_queue_family_foreign", 1
             });
 #endif
 #ifdef VK_USE_PLATFORM_FUCHSIA
@@ -896,18 +961,49 @@ public:
 #endif
         }
 
-        if (pPropertyCount) {
-            *pPropertyCount = filteredExts.size();
-        }
+        // Spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateDeviceExtensionProperties.html
+        //
+        // pPropertyCount is a pointer to an integer related to the number of
+        // extension properties available or queried, and is treated in the
+        // same fashion as the
+        // vkEnumerateInstanceExtensionProperties::pPropertyCount parameter.
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumerateInstanceExtensionProperties.html
+        //
+        // If pProperties is NULL, then the number of extensions properties
+        // available is returned in pPropertyCount. Otherwise, pPropertyCount
+        // must point to a variable set by the user to the number of elements
+        // in the pProperties array, and on return the variable is overwritten
+        // with the number of structures actually written to pProperties. If
+        // pPropertyCount is less than the number of extension properties
+        // available, at most pPropertyCount structures will be written. If
+        // pPropertyCount is smaller than the number of extensions available,
+        // VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate
+        // that not all the available properties were returned.
+        //
+        // pPropertyCount must be a valid pointer to a uint32_t value
 
-        if (pPropertyCount && pProperties) {
-            for (size_t i = 0; i < *pPropertyCount; ++i) {
+        if (!pPropertyCount) return VK_ERROR_INITIALIZATION_FAILED;
+
+        if (!pProperties) {
+            *pPropertyCount = (uint32_t)filteredExts.size();
+            return VK_SUCCESS;
+        } else {
+            auto actualExtensionCount = (uint32_t)filteredExts.size();
+            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
                 pProperties[i] = filteredExts[i];
             }
+
+            if (actualExtensionCount > *pPropertyCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
         }
-
-
-        return VK_SUCCESS;
     }
 
     VkResult on_vkEnumeratePhysicalDevices(
@@ -923,18 +1019,26 @@ public:
 
         AutoLock lock(mLock);
 
+        // When this function is called, we actually need to do two things:
+        // - Get full information about physical devices from the host,
+        // even if the guest did not ask for it
+        // - Serve the guest query according to the spec:
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumeratePhysicalDevices.html
+
         auto it = info_VkInstance.find(instance);
 
         if (it == info_VkInstance.end()) return VK_ERROR_INITIALIZATION_FAILED;
 
         auto& info = it->second;
 
+        // Get the full host information here if it doesn't exist already.
         if (info.physicalDevices.empty()) {
-            uint32_t physdevCount = 0;
+            uint32_t hostPhysicalDeviceCount = 0;
 
             lock.unlock();
             VkResult countRes = enc->vkEnumeratePhysicalDevices(
-                instance, &physdevCount, nullptr);
+                instance, &hostPhysicalDeviceCount, nullptr);
             lock.lock();
 
             if (countRes != VK_SUCCESS) {
@@ -943,11 +1047,11 @@ public:
                 return countRes;
             }
 
-            info.physicalDevices.resize(physdevCount);
+            info.physicalDevices.resize(hostPhysicalDeviceCount);
 
             lock.unlock();
             VkResult enumRes = enc->vkEnumeratePhysicalDevices(
-                instance, &physdevCount, info.physicalDevices.data());
+                instance, &hostPhysicalDeviceCount, info.physicalDevices.data());
             lock.lock();
 
             if (enumRes != VK_SUCCESS) {
@@ -957,16 +1061,41 @@ public:
             }
         }
 
-        *pPhysicalDeviceCount = (uint32_t)info.physicalDevices.size();
+        // Serve the guest query according to the spec.
+        //
+        // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkEnumeratePhysicalDevices.html
+        //
+        // If pPhysicalDevices is NULL, then the number of physical devices
+        // available is returned in pPhysicalDeviceCount. Otherwise,
+        // pPhysicalDeviceCount must point to a variable set by the user to the
+        // number of elements in the pPhysicalDevices array, and on return the
+        // variable is overwritten with the number of handles actually written
+        // to pPhysicalDevices. If pPhysicalDeviceCount is less than the number
+        // of physical devices available, at most pPhysicalDeviceCount
+        // structures will be written.  If pPhysicalDeviceCount is smaller than
+        // the number of physical devices available, VK_INCOMPLETE will be
+        // returned instead of VK_SUCCESS, to indicate that not all the
+        // available physical devices were returned.
 
-        if (pPhysicalDevices && *pPhysicalDeviceCount) {
-            memcpy(pPhysicalDevices,
-                   info.physicalDevices.data(),
-                   sizeof(VkPhysicalDevice) *
-                   info.physicalDevices.size());
+        if (!pPhysicalDevices) {
+            *pPhysicalDeviceCount = (uint32_t)info.physicalDevices.size();
+            return VK_SUCCESS;
+        } else {
+            uint32_t actualDeviceCount = (uint32_t)info.physicalDevices.size();
+            uint32_t toWrite = actualDeviceCount < *pPhysicalDeviceCount ? actualDeviceCount : *pPhysicalDeviceCount;
+
+            for (uint32_t i = 0; i < toWrite; ++i) {
+                pPhysicalDevices[i] = info.physicalDevices[i];
+            }
+
+            *pPhysicalDeviceCount = toWrite;
+
+            if (actualDeviceCount > *pPhysicalDeviceCount) {
+                return VK_INCOMPLETE;
+            }
+
+            return VK_SUCCESS;
         }
-
-        return VK_SUCCESS;
     }
 
     void on_vkGetPhysicalDeviceMemoryProperties(
@@ -1068,10 +1197,6 @@ public:
             for (auto& block : info.hostMemBlocks[i]) {
                 destroyHostMemAlloc(enc, device, &block);
             }
-        }
-
-        if (info.fence != VK_NULL_HANDLE) {
-            enc->vkDestroyFence(device, info.fence, nullptr);
         }
     }
 
@@ -1298,7 +1423,7 @@ public:
                                    fuchsia::sysmem::vulkanUsageTransferSrc |
                                    fuchsia::sysmem::vulkanUsageTransferDst |
                                    fuchsia::sysmem::vulkanUsageSampled;
-        constraints.min_buffer_count_for_camping = 1;
+        constraints.min_buffer_count = 1;
         constraints.has_buffer_memory_constraints = true;
         fuchsia::sysmem::BufferMemoryConstraints& buffer_constraints =
             constraints.buffer_memory_constraints;
@@ -2031,11 +2156,9 @@ public:
         dedicatedReqs->requiresDedicatedAllocation = VK_TRUE;
     }
 
-    void transformImageMemoryRequirementsForGuest(
+    void transformImageMemoryRequirementsForGuestLocked(
         VkImage image,
         VkMemoryRequirements* reqs) {
-
-        AutoLock lock(mLock);
 
         auto it = info_VkImage.find(image);
         if (it == info_VkImage.end()) return;
@@ -2051,11 +2174,9 @@ public:
         transformExternalResourceMemoryRequirementsForGuest(reqs);
     }
 
-    void transformBufferMemoryRequirementsForGuest(
+    void transformBufferMemoryRequirementsForGuestLocked(
         VkBuffer buffer,
         VkMemoryRequirements* reqs) {
-
-        AutoLock lock(mLock);
 
         auto it = info_VkBuffer.find(buffer);
         if (it == info_VkBuffer.end()) return;
@@ -2207,22 +2328,16 @@ public:
                 }
             }
         }
-
-        // Allow external memory for all color attachments on fuchsia.
-        // Note: This causes external to be set to true below. The result
-        // is that a dedicated memory allocation is required for the image,
-        // which allows the memory to be exported.
-        if (localCreateInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-            if (!extImgCiPtr) {
-                localExtImgCi.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
-                localExtImgCi.pNext = nullptr;
-                localExtImgCi.handleTypes = ~0; // handle type just needs to be non-zero
-                extImgCiPtr = &localExtImgCi;   // no vk_append_struct required
-            }
-        }
 #endif
 
-        VkResult res = enc->vkCreateImage(device, &localCreateInfo, pAllocator, pImage);
+        VkResult res;
+        VkMemoryRequirements memReqs;
+
+        if (supportsCreateResourcesWithRequirements()) {
+            res = enc->vkCreateImageWithRequirementsGOOGLE(device, &localCreateInfo, pAllocator, pImage, &memReqs);
+        } else {
+            res = enc->vkCreateImage(device, &localCreateInfo, pAllocator, pImage);
+        }
 
         if (res != VK_SUCCESS) return res;
 
@@ -2237,10 +2352,19 @@ public:
         info.createInfo = *pCreateInfo;
         info.createInfo.pNext = nullptr;
 
-        if (!extImgCiPtr) return res;
+        if (supportsCreateResourcesWithRequirements()) {
+            info.baseRequirementsKnown = true;
+        }
 
-        info.external = true;
-        info.externalCreateInfo = *extImgCiPtr;
+        if (extImgCiPtr) {
+            info.external = true;
+            info.externalCreateInfo = *extImgCiPtr;
+        }
+
+        if (info.baseRequirementsKnown) {
+            transformImageMemoryRequirementsForGuestLocked(*pImage, &memReqs);
+            info.baseRequirements = memReqs;
+        }
 
         return res;
     }
@@ -2258,7 +2382,15 @@ public:
         const VkExternalFormatANDROID* extFormatAndroidPtr =
             vk_find_struct<VkExternalFormatANDROID>(pCreateInfo);
         if (extFormatAndroidPtr) {
-            if (extFormatAndroidPtr->externalFormat) {
+            if (extFormatAndroidPtr->externalFormat == AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM) {
+                // We don't support external formats on host and it causes RGB565
+                // to fail in CtsGraphicsTestCases android.graphics.cts.BasicVulkanGpuTest
+                // when passed as an external format.
+                // We may consider doing this for all external formats.
+                // See b/134771579.
+                *pYcbcrConversion = VK_YCBCR_CONVERSION_DO_NOTHING;
+                return VK_SUCCESS;
+            } else if (extFormatAndroidPtr->externalFormat) {
                 localCreateInfo.format =
                     vk_format_from_android(extFormatAndroidPtr->externalFormat);
             }
@@ -2266,8 +2398,25 @@ public:
 #endif
 
         VkEncoder* enc = (VkEncoder*)context;
-        return enc->vkCreateSamplerYcbcrConversion(
+        VkResult res = enc->vkCreateSamplerYcbcrConversion(
             device, &localCreateInfo, pAllocator, pYcbcrConversion);
+
+        if (*pYcbcrConversion == VK_YCBCR_CONVERSION_DO_NOTHING) {
+            ALOGE("FATAL: vkCreateSamplerYcbcrConversion returned a reserved value (VK_YCBCR_CONVERSION_DO_NOTHING)");
+            abort();
+        }
+        return res;
+    }
+
+    void on_vkDestroySamplerYcbcrConversion(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator) {
+        VkEncoder* enc = (VkEncoder*)context;
+        if (ycbcrConversion != VK_YCBCR_CONVERSION_DO_NOTHING) {
+            enc->vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+        }
     }
 
     VkResult on_vkCreateSamplerYcbcrConversionKHR(
@@ -2283,7 +2432,15 @@ public:
         const VkExternalFormatANDROID* extFormatAndroidPtr =
             vk_find_struct<VkExternalFormatANDROID>(pCreateInfo);
         if (extFormatAndroidPtr) {
-            if (extFormatAndroidPtr->externalFormat) {
+            if (extFormatAndroidPtr->externalFormat == AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM) {
+                // We don't support external formats on host and it causes RGB565
+                // to fail in CtsGraphicsTestCases android.graphics.cts.BasicVulkanGpuTest
+                // when passed as an external format.
+                // We may consider doing this for all external formats.
+                // See b/134771579.
+                *pYcbcrConversion = VK_YCBCR_CONVERSION_DO_NOTHING;
+                return VK_SUCCESS;
+            } else if (extFormatAndroidPtr->externalFormat) {
                 localCreateInfo.format =
                     vk_format_from_android(extFormatAndroidPtr->externalFormat);
             }
@@ -2291,8 +2448,51 @@ public:
 #endif
 
         VkEncoder* enc = (VkEncoder*)context;
-        return enc->vkCreateSamplerYcbcrConversionKHR(
+        VkResult res = enc->vkCreateSamplerYcbcrConversionKHR(
             device, &localCreateInfo, pAllocator, pYcbcrConversion);
+
+        if (*pYcbcrConversion == VK_YCBCR_CONVERSION_DO_NOTHING) {
+            ALOGE("FATAL: vkCreateSamplerYcbcrConversionKHR returned a reserved value (VK_YCBCR_CONVERSION_DO_NOTHING)");
+            abort();
+        }
+        return res;
+    }
+
+    void on_vkDestroySamplerYcbcrConversionKHR(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator) {
+        VkEncoder* enc = (VkEncoder*)context;
+        if (ycbcrConversion != VK_YCBCR_CONVERSION_DO_NOTHING) {
+            enc->vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+        }
+    }
+
+    VkResult on_vkCreateSampler(
+        void* context, VkResult,
+        VkDevice device,
+        const VkSamplerCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkSampler* pSampler) {
+
+        VkSamplerCreateInfo localCreateInfo = vk_make_orphan_copy(*pCreateInfo);
+        vk_struct_chain_iterator structChainIter = vk_make_chain_iterator(&localCreateInfo);
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        VkSamplerYcbcrConversionInfo localVkSamplerYcbcrConversionInfo;
+        const VkSamplerYcbcrConversionInfo* samplerYcbcrConversionInfo =
+            vk_find_struct<VkSamplerYcbcrConversionInfo>(pCreateInfo);
+        if (samplerYcbcrConversionInfo) {
+            if (samplerYcbcrConversionInfo->conversion != VK_YCBCR_CONVERSION_DO_NOTHING) {
+                localVkSamplerYcbcrConversionInfo = vk_make_orphan_copy(*samplerYcbcrConversionInfo);
+                vk_append_struct(&structChainIter, &localVkSamplerYcbcrConversionInfo);
+            }
+        }
+#endif
+
+        VkEncoder* enc = (VkEncoder*)context;
+        return enc->vkCreateSampler(device, &localCreateInfo, pAllocator, pSampler);
     }
 
     void on_vkDestroyImage(
@@ -2305,11 +2505,32 @@ public:
     void on_vkGetImageMemoryRequirements(
         void *context, VkDevice device, VkImage image,
         VkMemoryRequirements *pMemoryRequirements) {
+
+        AutoLock lock(mLock);
+
+        auto it = info_VkImage.find(image);
+        if (it == info_VkImage.end()) return;
+
+        auto& info = it->second;
+
+        if (info.baseRequirementsKnown) {
+            *pMemoryRequirements = info.baseRequirements;
+            return;
+        }
+
+        lock.unlock();
+
         VkEncoder* enc = (VkEncoder*)context;
+
         enc->vkGetImageMemoryRequirements(
             device, image, pMemoryRequirements);
-        transformImageMemoryRequirementsForGuest(
+
+        lock.lock();
+
+        transformImageMemoryRequirementsForGuestLocked(
             image, pMemoryRequirements);
+        info.baseRequirementsKnown = true;
+        info.baseRequirements = *pMemoryRequirements;
     }
 
     void on_vkGetImageMemoryRequirements2(
@@ -2361,7 +2582,14 @@ public:
         VkBuffer *pBuffer) {
         VkEncoder* enc = (VkEncoder*)context;
 
-        VkResult res = enc->vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+        VkResult res;
+        VkMemoryRequirements memReqs;
+
+        if (supportsCreateResourcesWithRequirements()) {
+            res = enc->vkCreateBufferWithRequirementsGOOGLE(device, pCreateInfo, pAllocator, pBuffer, &memReqs);
+        } else {
+            res = enc->vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer);
+        }
 
         if (res != VK_SUCCESS) return res;
 
@@ -2375,13 +2603,22 @@ public:
         info.createInfo = *pCreateInfo;
         info.createInfo.pNext = nullptr;
 
+        if (supportsCreateResourcesWithRequirements()) {
+            info.baseRequirementsKnown = true;
+        }
+
         const VkExternalMemoryBufferCreateInfo* extBufCi =
             vk_find_struct<VkExternalMemoryBufferCreateInfo>(pCreateInfo);
 
-        if (!extBufCi) return res;
+        if (extBufCi) {
+            info.external = true;
+            info.externalCreateInfo = *extBufCi;
+        }
 
-        info.external = true;
-        info.externalCreateInfo = *extBufCi;
+        if (info.baseRequirementsKnown) {
+            transformBufferMemoryRequirementsForGuestLocked(*pBuffer, &memReqs);
+            info.baseRequirements = memReqs;
+        }
 
         return res;
     }
@@ -2395,11 +2632,31 @@ public:
 
     void on_vkGetBufferMemoryRequirements(
         void* context, VkDevice device, VkBuffer buffer, VkMemoryRequirements *pMemoryRequirements) {
+
+        AutoLock lock(mLock);
+
+        auto it = info_VkBuffer.find(buffer);
+        if (it == info_VkBuffer.end()) return;
+
+        auto& info = it->second;
+
+        if (info.baseRequirementsKnown) {
+            *pMemoryRequirements = info.baseRequirements;
+            return;
+        }
+
+        lock.unlock();
+
         VkEncoder* enc = (VkEncoder*)context;
         enc->vkGetBufferMemoryRequirements(
             device, buffer, pMemoryRequirements);
-        transformBufferMemoryRequirementsForGuest(
+
+        lock.lock();
+
+        transformBufferMemoryRequirementsForGuestLocked(
             buffer, pMemoryRequirements);
+        info.baseRequirementsKnown = true;
+        info.baseRequirements = *pMemoryRequirements;
     }
 
     void on_vkGetBufferMemoryRequirements2(
@@ -2632,8 +2889,6 @@ public:
         std::vector<VkSemaphore> pre_signal_semaphores;
         std::vector<zx_handle_t> post_wait_events;
         std::vector<int> post_wait_sync_fds;
-        VkDevice device = VK_NULL_HANDLE;
-        VkFence* pFence = nullptr;
 
         VkEncoder* enc = (VkEncoder*)context;
 
@@ -2670,15 +2925,11 @@ public:
 #ifdef VK_USE_PLATFORM_FUCHSIA
                     if (semInfo.eventHandle) {
                         post_wait_events.push_back(semInfo.eventHandle);
-                        device = semInfo.device;
-                        pFence = &info_VkDevice[device].fence;
                     }
 #endif
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
                     if (semInfo.syncFd >= 0) {
                         post_wait_sync_fds.push_back(semInfo.syncFd);
-                        device = semInfo.device;
-                        pFence = &info_VkDevice[device].fence;
                     }
 #endif
                 }
@@ -2701,20 +2952,19 @@ public:
 
         if (input_result != VK_SUCCESS) return input_result;
 
-        if (post_wait_events.empty())
-            return VK_SUCCESS;
-
-        if (*pFence == VK_NULL_HANDLE) {
-            VkFenceCreateInfo fence_create_info = {
-                VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, 0, 0,
-            };
-            enc->vkCreateFence(device, &fence_create_info, nullptr, pFence);
+        if (!post_wait_events.empty() || !post_wait_sync_fds.empty()) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+            // Super bad hack: Just signal stuff early :D
+            // The reason is that it is better than freezing up.
+            // The VK CTS tests external semaphores by queueing up vkCmdWaitEvent
+            // in vkQueueSubmit, which would mean vkQueueWaitIdle here would time out.
+            //
+            // TODO (b/139194471): Have proper sync fd implementation for Android
+            // enc->vkQueueWaitIdle(queue);
+#else
+            enc->vkQueueWaitIdle(queue);
+#endif
         }
-        enc->vkQueueSubmit(queue, 0, nullptr, *pFence);
-        static constexpr uint64_t MAX_WAIT_NS =
-            5ULL * 1000ULL * 1000ULL * 1000ULL;
-        enc->vkWaitForFences(device, 1, pFence, VK_TRUE, MAX_WAIT_NS);
-        enc->vkResetFences(device, 1, pFence);
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         for (auto& event : post_wait_events) {
@@ -2763,7 +3013,20 @@ public:
 
     void unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int*) {
         if (fd != -1) {
+            // Implicit Synchronization
             sync_wait(fd, 3000);
+            // From libvulkan's swapchain.cpp:
+            // """
+            // NOTE: we're relying on AcquireImageANDROID to close fence_clone,
+            // even if the call fails. We could close it ourselves on failure, but
+            // that would create a race condition if the driver closes it on a
+            // failure path: some other thread might create an fd with the same
+            // number between the time the driver closes it and the time we close
+            // it. We must assume one of: the driver *always* closes it even on
+            // failure, or *never* closes it on failure.
+            // """
+            // Therefore, assume contract where we need to close fd in this driver
+            close(fd);
         }
     }
 
@@ -3082,6 +3345,48 @@ public:
             physicalDevice, pImageFormatInfo, pImageFormatProperties);
     }
 
+    uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* currentEncoder) {
+        AutoLock lock(mLock);
+
+        auto it = info_VkCommandBuffer.find(commandBuffer);
+        if (it == info_VkCommandBuffer.end()) return 0;
+
+        auto& info = it->second;
+
+        if (!info.lastUsedEncoderPtr) {
+            info.lastUsedEncoderPtr = new VkEncoder*;
+            *(info.lastUsedEncoderPtr) = currentEncoder;
+        }
+
+        auto lastUsedEncoderPtr = info.lastUsedEncoderPtr;
+
+        auto lastEncoder = *(lastUsedEncoderPtr);
+
+        // We always make lastUsedEncoderPtr track
+        // the current encoder, even if the last encoder
+        // is null.
+        *(lastUsedEncoderPtr) = currentEncoder;
+
+        if (!lastEncoder) return 0;
+        if (lastEncoder == currentEncoder) return 0;
+
+        info.sequenceNumber++;
+        lastEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, false, info.sequenceNumber);
+        lastEncoder->flush();
+        info.sequenceNumber++;
+        currentEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, true, info.sequenceNumber);
+
+        lastEncoder->unregisterCleanupCallback(commandBuffer);
+
+        currentEncoder->registerCleanupCallback(commandBuffer, [currentEncoder, lastUsedEncoderPtr]() {
+            if (*(lastUsedEncoderPtr) == currentEncoder) {
+                *(lastUsedEncoderPtr) = nullptr;
+            }
+        });
+
+        return 1;
+    }
+
     VkResult on_vkBeginCommandBuffer(
         void* context, VkResult input_result,
         VkCommandBuffer commandBuffer,
@@ -3095,6 +3400,7 @@ public:
         }
 
         enc->vkBeginCommandBufferAsyncGOOGLE(commandBuffer, pBeginInfo);
+
         return VK_SUCCESS;
     }
 
@@ -3110,6 +3416,7 @@ public:
         }
 
         enc->vkEndCommandBufferAsyncGOOGLE(commandBuffer);
+
         return VK_SUCCESS;
     }
 
@@ -3204,6 +3511,7 @@ private:
     mutable Lock mLock;
     HostVisibleMemoryVirtualizationInfo mHostVisibleMemoryVirtInfo;
     std::unique_ptr<EmulatorFeatureInfo> mFeatureInfo;
+    uint32_t mStreamFeatureBits = 0;
     std::unique_ptr<GoldfishAddressSpaceBlockProvider> mGoldfishAddressSpaceBlockProvider;
 
     std::vector<VkExtensionProperties> mHostInstanceExtensions;
@@ -3282,6 +3590,10 @@ bool ResourceTracker::hostSupportsVulkan() const {
 
 bool ResourceTracker::usingDirectMapping() const {
     return mImpl->usingDirectMapping();
+}
+
+uint32_t ResourceTracker::getStreamFeatures() const {
+    return mImpl->getStreamFeatures();
 }
 
 uint32_t ResourceTracker::getApiVersionFromInstance(VkInstance instance) const {
@@ -3690,6 +4002,15 @@ VkResult ResourceTracker::on_vkCreateSamplerYcbcrConversion(
         context, input_result, device, pCreateInfo, pAllocator, pYcbcrConversion);
 }
 
+void ResourceTracker::on_vkDestroySamplerYcbcrConversion(
+    void* context,
+    VkDevice device,
+    VkSamplerYcbcrConversion ycbcrConversion,
+    const VkAllocationCallbacks* pAllocator) {
+    mImpl->on_vkDestroySamplerYcbcrConversion(
+        context, device, ycbcrConversion, pAllocator);
+}
+
 VkResult ResourceTracker::on_vkCreateSamplerYcbcrConversionKHR(
     void* context, VkResult input_result,
     VkDevice device,
@@ -3698,6 +4019,25 @@ VkResult ResourceTracker::on_vkCreateSamplerYcbcrConversionKHR(
     VkSamplerYcbcrConversion* pYcbcrConversion) {
     return mImpl->on_vkCreateSamplerYcbcrConversionKHR(
         context, input_result, device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+void ResourceTracker::on_vkDestroySamplerYcbcrConversionKHR(
+    void* context,
+    VkDevice device,
+    VkSamplerYcbcrConversion ycbcrConversion,
+    const VkAllocationCallbacks* pAllocator) {
+    mImpl->on_vkDestroySamplerYcbcrConversionKHR(
+        context, device, ycbcrConversion, pAllocator);
+}
+
+VkResult ResourceTracker::on_vkCreateSampler(
+    void* context, VkResult input_result,
+    VkDevice device,
+    const VkSamplerCreateInfo* pCreateInfo,
+    const VkAllocationCallbacks* pAllocator,
+    VkSampler* pSampler) {
+    return mImpl->on_vkCreateSampler(
+        context, input_result, device, pCreateInfo, pAllocator, pSampler);
 }
 
 VkResult ResourceTracker::on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
@@ -3771,6 +4111,10 @@ VkResult ResourceTracker::on_vkGetPhysicalDeviceImageFormatProperties2KHR(
     return mImpl->on_vkGetPhysicalDeviceImageFormatProperties2KHR(
         context, input_result, physicalDevice, pImageFormatInfo,
         pImageFormatProperties);
+}
+
+uint32_t ResourceTracker::syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* current) {
+    return mImpl->syncEncodersForCommandBuffer(commandBuffer, current);
 }
 
 VkResult ResourceTracker::on_vkBeginCommandBuffer(
