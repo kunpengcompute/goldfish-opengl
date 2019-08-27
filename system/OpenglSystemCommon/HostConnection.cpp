@@ -62,6 +62,8 @@ using goldfish_vk::VkEncoder;
 #include "VirtioGpuStream.h"
 #endif
 
+#undef LOG_TAG
+#define LOG_TAG "HostConnection"
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
 #else
@@ -212,10 +214,6 @@ HostConnection *HostConnection::get() {
 }
 
 HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
-
-    /* TODO: Make this configurable with a system property */
-    const enum HostConnectionType connType = HOST_CONNECTION_VIRTIO_GPU;
-
     // Get thread info
     if (!tinfo) {
         return NULL;
