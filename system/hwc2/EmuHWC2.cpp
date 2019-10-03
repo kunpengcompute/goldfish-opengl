@@ -402,16 +402,35 @@ uint32_t EmuHWC2::GrallocModule::getTargetCb() {
 
 // Display functions
 
+#define VSYNC_PERIOD_PROP "ro.kernel.qemu.vsync"
+
+static int getVsyncPeriodFromProperty() {
+    char displaysValue[PROPERTY_VALUE_MAX] = "";
+    property_get(VSYNC_PERIOD_PROP, displaysValue, "");
+    bool isValid = displaysValue[0] != '\0';
+
+    if (!isValid) return 60;
+
+    long vsyncPeriodParsed = strtol(displaysValue, 0, 10);
+
+    // On failure, strtol returns 0. Also, there's no reason to have 0
+    // as the vsync period.
+    if (!vsyncPeriodParsed) return 60;
+
+    return static_cast<int>(vsyncPeriodParsed);
+}
+
 std::atomic<hwc2_display_t> EmuHWC2::Display::sNextId(0);
 
 EmuHWC2::Display::Display(EmuHWC2& device, DisplayType type)
   : mDevice(device),
     mId(sNextId++),
+    mHostDisplayId(0),
     mName(),
     mType(type),
     mPowerMode(PowerMode::Off),
     mVsyncEnabled(Vsync::Invalid),
-    mVsyncPeriod(1000*1000*1000/60), // vsync is 60 hz
+    mVsyncPeriod(1000*1000*1000/getVsyncPeriodFromProperty()), // vsync is 60 hz
     mVsyncThread(*this),
     mClientTarget(),
     mChanges(),
@@ -816,7 +835,7 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
             p->numLayers = numLayer;
         } else {
             p2->version = 2;
-            p2->displayId = (uint32_t)mId;
+            p2->displayId = mHostDisplayId;
             p2->targetHandle = mGralloc->getTargetCb();
             p2->numLayers = numLayer;
         }
@@ -1177,6 +1196,9 @@ HWC2::Error EmuHWC2::Display::populateSecondaryConfigs(uint32_t width, uint32_t 
     rcEnc->rcCreateDisplay(rcEnc, &displayId);
     rcEnc->rcSetDisplayPose(rcEnc, displayId, -1, -1, width, height);
     hostCon->unlock();
+
+    mHostDisplayId = displayId;
+    ALOGVV("%s: mHostDisplayId=%d", __FUNCTION__, mHostDisplayId);
 
     return HWC2::Error::None;
 }
