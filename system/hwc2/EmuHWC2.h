@@ -27,6 +27,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <sstream>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
@@ -42,6 +43,7 @@ class EmuHWC2 : public hwc2_device_t {
 public:
     EmuHWC2();
     int populatePrimary();
+    int populateSecondaryDisplays();
 
 private:
     static inline EmuHWC2* getHWC2(hwc2_device_t* device) {
@@ -164,6 +166,13 @@ private:
         uint32_t numLayers;
         struct compose_layer layer[0];
     } ComposeDevice;
+    typedef struct compose_device_v2 {
+        uint32_t version;
+        uint32_t displayId;
+        uint32_t targetHandle;
+        uint32_t numLayers;
+        struct compose_layer layer[0];
+    } ComposeDevice_v2;
 
     class ComposeMsg {
     public:
@@ -182,6 +191,25 @@ private:
         std::vector<uint8_t> mData;
         uint32_t mLayerCnt;
         ComposeDevice* mComposeDevice;
+    };
+
+    class ComposeMsg_v2 {
+    public:
+        ComposeMsg_v2(uint32_t layerCnt = 0) :
+          mData(sizeof(ComposeDevice_v2) + layerCnt * sizeof(ComposeLayer))
+        {
+            mComposeDevice = reinterpret_cast<ComposeDevice_v2*>(mData.data());
+            mLayerCnt = layerCnt;
+        }
+
+        ComposeDevice_v2* get() { return mComposeDevice; }
+
+        uint32_t getLayerCnt() { return mLayerCnt; }
+
+    private:
+        std::vector<uint8_t> mData;
+        uint32_t mLayerCnt;
+        ComposeDevice_v2* mComposeDevice;
     };
 
     class Display {
@@ -232,6 +260,8 @@ private:
 
         // Read configs from PRIMARY Display
         int populatePrimaryConfigs();
+        HWC2::Error populateSecondaryConfigs(uint32_t width, uint32_t height,
+                 uint32_t dpi);
 
     private:
         class Config {
@@ -315,6 +345,8 @@ private:
         // Display ID generator.
         static std::atomic<hwc2_display_t> sNextId;
         const hwc2_display_t mId;
+        // emulator side displayId
+        uint32_t mHostDisplayId;
         std::string mName;
         HWC2::DisplayType mType;
         HWC2::PowerMode mPowerMode;
@@ -341,6 +373,7 @@ private:
         mutable std::mutex mStateMutex;
         std::unique_ptr<GrallocModule> mGralloc;
         std::unique_ptr<ComposeMsg> mComposeMsg;
+        std::unique_ptr<ComposeMsg_v2> mComposeMsg_v2;
         int mSyncDeviceFd;
 
    };
@@ -443,7 +476,8 @@ private:
     };
     std::unordered_map<HWC2::Callback, CallbackInfo> mCallbacks;
 
-    std::unordered_map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
+    // use map so displays can be pluged in by order of ID, 0, 1, 2, 3, etc.
+    std::map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
     std::unordered_map<hwc2_layer_t, std::shared_ptr<Layer>> mLayers;
 
 };

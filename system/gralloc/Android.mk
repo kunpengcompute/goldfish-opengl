@@ -9,12 +9,11 @@ $$(call emugl-set-shared-library-subpath,hw)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_$(1)\"
 LOCAL_CFLAGS += -Wno-missing-field-initializers
+LOCAL_CFLAGS += -Wno-gnu-designator
 
-LOCAL_SRC_FILES := gralloc.cpp
+LOCAL_SRC_FILES := gralloc_old.cpp
 
 ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
-# Need to access the special OPENGL TLS Slot
-LOCAL_C_INCLUDES += bionic/libc/private
 LOCAL_SHARED_LIBRARIES += libdl
 endif
 

@@ -26,6 +26,8 @@
 
 struct EmulatorFeatureInfo;
 
+class HostConnection;
+
 namespace goldfish_vk {
 
 class VkEncoder;
@@ -39,6 +41,14 @@ public:
     VulkanHandleMapping* unwrapMapping();
     VulkanHandleMapping* destroyMapping();
     VulkanHandleMapping* defaultMapping();
+
+    using HostConnectionGetFunc = HostConnection* (*)();
+    using VkEncoderGetFunc = VkEncoder* (*)(HostConnection*);
+
+    struct ThreadingCallbacks {
+        HostConnectionGetFunc hostConnectionGetFunc = 0;
+        VkEncoderGetFunc vkEncoderGetFunc = 0;
+    };
 
 #define HANDLE_REGISTER_DECL(type) \
     void register_##type(type); \
@@ -205,6 +215,10 @@ public:
         void* context, VkResult input_result,
         VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 
+    VkResult on_vkQueueWaitIdle(
+        void* context, VkResult input_result,
+        VkQueue queue);
+
     void unwrap_VkNativeBufferANDROID(
         const VkImageCreateInfo* pCreateInfo,
         VkImageCreateInfo* local_pCreateInfo);
@@ -295,6 +309,60 @@ public:
         const VkAllocationCallbacks* pAllocator,
         VkSampler* pSampler);
 
+    void on_vkGetPhysicalDeviceExternalFenceProperties(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
+        VkExternalFenceProperties* pExternalFenceProperties);
+
+    void on_vkGetPhysicalDeviceExternalFencePropertiesKHR(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
+        VkExternalFenceProperties* pExternalFenceProperties);
+
+    VkResult on_vkCreateFence(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkFenceCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator, VkFence* pFence);
+
+    void on_vkDestroyFence(
+        void* context,
+        VkDevice device,
+        VkFence fence,
+        const VkAllocationCallbacks* pAllocator);
+
+    VkResult on_vkResetFences(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        uint32_t fenceCount,
+        const VkFence* pFences);
+
+    VkResult on_vkImportFenceFdKHR(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkImportFenceFdInfoKHR* pImportFenceFdInfo);
+
+    VkResult on_vkGetFenceFdKHR(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkFenceGetFdInfoKHR* pGetFdInfo,
+        int* pFd);
+
+    VkResult on_vkWaitForFences(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        uint32_t fenceCount,
+        const VkFence* pFences,
+        VkBool32 waitAll,
+        uint64_t timeout);
+
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
         void* context,
         VkResult input_result,
@@ -368,6 +436,7 @@ public:
     VkDeviceSize getNonCoherentExtendedSize(VkDevice device, VkDeviceSize basicSize) const;
     bool isValidMemoryRange(const VkMappedMemoryRange& range) const;
     void setupFeatures(const EmulatorFeatureInfo* features);
+    void setThreadingCallbacks(const ThreadingCallbacks& callbacks);
     bool hostSupportsVulkan() const;
     bool usingDirectMapping() const;
     uint32_t getStreamFeatures() const;

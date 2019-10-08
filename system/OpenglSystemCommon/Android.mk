@@ -13,6 +13,8 @@ LOCAL_SRC_FILES := \
     QemuPipeStream.cpp \
     ProcessPipe.cpp    \
 
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
+
 ifeq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 
 LOCAL_SRC_FILES += \
@@ -49,7 +51,9 @@ LOCAL_HEADER_LIBRARIES += libhardware_headers
 $(call emugl-export,HEADER_LIBRARIES,libhardware_headers)
 endif
 
+$(call emugl-export,C_INCLUDES,$(LOCAL_PATH)/bionic-include)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH) bionic/libc/private)
+$(call emugl-export,C_INCLUDES,$(LOCAL_PATH) bionic/libc/platform)
 
 ifeq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 $(call emugl-export,SHARED_LIBRARIES,android-emu-shared)

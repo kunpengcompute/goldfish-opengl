@@ -79,6 +79,12 @@ VkResult EnumeratePhysicalDevices(VkInstance /*instance*/,
     return VK_SUCCESS;
 }
 
+VkResult EnumerateInstanceVersion(uint32_t* pApiVersion) {
+    AEMU_SCOPED_TRACE("vkstubhal::EnumerateInstanceVersion");
+    *pApiVersion = VK_API_VERSION_1_0;
+    return VK_SUCCESS;
+}
+
 VkResult
 EnumeratePhysicalDeviceGroups(VkInstance /*instance*/,
                               uint32_t* count,
@@ -92,9 +98,10 @@ VkResult
 CreateDebugReportCallbackEXT(VkInstance /*instance*/,
                              const VkDebugReportCallbackCreateInfoEXT* /*pCreateInfo*/,
                              const VkAllocationCallbacks* /*pAllocator*/,
-                             VkDebugReportCallbackEXT* /*pCallback*/)
+                             VkDebugReportCallbackEXT* pCallback)
 {
     AEMU_SCOPED_TRACE("vkstubhal::CreateDebugReportCallbackEXT");
+    *pCallback = VK_NULL_HANDLE;
     return VK_SUCCESS;
 }
 
@@ -123,9 +130,10 @@ VkResult
 CreateDebugUtilsMessengerEXT(VkInstance /*instance*/,
                              const VkDebugUtilsMessengerCreateInfoEXT* /*pCreateInfo*/,
                              const VkAllocationCallbacks* /*pAllocator*/,
-                             VkDebugUtilsMessengerEXT* /*pMessenger*/)
+                             VkDebugUtilsMessengerEXT* pMessenger)
 {
     AEMU_SCOPED_TRACE("vkstubhal::CreateDebugUtilsMessengerEXT");
+    *pMessenger = VK_NULL_HANDLE;
     return VK_SUCCESS;
 }
 
@@ -226,6 +234,8 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance,
             EnumerateInstanceExtensionProperties);
     if (strcmp(name, "vkEnumeratePhysicalDevices") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(EnumeratePhysicalDevices);
+    if (strcmp(name, "vkEnumerateInstanceVersion") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(EnumerateInstanceVersion);
     if (strcmp(name, "vkEnumeratePhysicalDeviceGroups") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(
             EnumeratePhysicalDeviceGroups);
@@ -264,12 +274,31 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance,
     if (strcmp(name, "vkGetBufferCollectionPropertiesFUCHSIA") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(GetBufferCollectionPropertiesFUCHSIA);
 #endif
-    // Per the spec, return NULL if instance is NULL.
-    if (!instance)
-        return nullptr;
-    // None of the other Vulkan functions should ever be called, as they all
-    // take a VkPhysicalDevice or other object obtained from a physical device.
-    return reinterpret_cast<PFN_vkVoidFunction>(NoOp);
+    // Return NoOp for entrypoints that should never be called.
+    if (strcmp(name, "vkGetPhysicalDeviceFeatures") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceFormatProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceImageFormatProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceMemoryProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceQueueFamilyProperties") == 0 ||
+        strcmp(name, "vkGetDeviceProcAddr") == 0 ||
+        strcmp(name, "vkCreateDevice") == 0 ||
+        strcmp(name, "vkEnumerateDeviceExtensionProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceSparseImageFormatProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceFeatures2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceFormatProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceImageFormatProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceQueueFamilyProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceMemoryProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceSparseImageFormatProperties2") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceExternalBufferProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceExternalFenceProperties") == 0 ||
+        strcmp(name, "vkGetPhysicalDeviceExternalSemaphoreProperties") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(NoOp);
+
+    // Per the spec, return NULL for nonexistent entrypoints.
+    return nullptr;
 }
 
 } // namespace vkstubhal
@@ -316,6 +345,13 @@ int CloseDevice(struct hw_device_t* /*device*/) {
         return ret; \
     } \
     goldfish_vk::ResourceTracker::get()->setupFeatures(rcEnc->featureInfo_const()); \
+    goldfish_vk::ResourceTracker::ThreadingCallbacks threadingCallbacks = { \
+        [] { auto hostCon = HostConnection::get(); \
+            ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
+            return hostCon; }, \
+        [](HostConnection* hostCon) { return hostCon->vkEncoder(); }, \
+    }; \
+    goldfish_vk::ResourceTracker::get()->setThreadingCallbacks(threadingCallbacks); \
     auto hostSupportsVulkan = goldfish_vk::ResourceTracker::get()->hostSupportsVulkan(); \
     goldfish_vk::VkEncoder *vkEnc = hostCon->vkEncoder(); \
     if (!vkEnc) { \

@@ -23,9 +23,9 @@
 #include <sys/mman.h>
 
 #if PLATFORM_SDK_VERSION < 28
-#include "gralloc_cb.h"
+#include "gralloc_cb_old.h"
 #else
-#include "../../shared/OpenglCodecCommon/gralloc_cb.h"
+#include "../../shared/OpenglCodecCommon/gralloc_cb_old.h"
 #endif
 
 #include "goldfish_dma.h"
@@ -53,10 +53,14 @@
 /* Set to 1 or 2 to enable debug traces */
 #define DEBUG  0
 
+#ifndef D
+
 #if DEBUG >= 1
 #  define D(...)   ALOGD(__VA_ARGS__)
 #else
 #  define D(...)   ((void)0)
+#endif
+
 #endif
 
 #if DEBUG >= 2
@@ -75,11 +79,11 @@ static const bool isHidlGralloc = true;
 static const bool isHidlGralloc = false;
 #endif
 
-int32_t* getOpenCountPtr(cb_handle_t* cb) {
+int32_t* getOpenCountPtr(cb_handle_old_t* cb) {
     return ((int32_t*)cb->ashmemBase) + 1;
 }
 
-uint32_t getAshmemColorOffset(cb_handle_t* cb) {
+uint32_t getAshmemColorOffset(cb_handle_old_t* cb) {
     uint32_t res = 0;
     if (cb->canBePosted()) res = GOLDFISH_OFFSET_UNIT;
     if (isHidlGralloc) res = GOLDFISH_OFFSET_UNIT * 2;
@@ -190,7 +194,7 @@ static void resize_gralloc_dmaregion_locked(gralloc_dmaregion_t* grdma, uint32_t
 // max dma size: 2x 4K rgba8888
 #define MAX_DMA_SIZE 66355200
 
-static bool put_gralloc_region_direct_mem_locked(gralloc_dmaregion_t* grdma, uint32_t sz) {
+static bool put_gralloc_region_direct_mem_locked(gralloc_dmaregion_t* grdma, uint32_t /* sz, unused */) {
     const bool shouldDelete = !grdma->refcount;
     if (shouldDelete) {
         grdma->host_memory_allocator.hostFree(&grdma->address_space_block);
@@ -286,7 +290,7 @@ static void get_mem_region(void* ashmemBase) {
     pthread_mutex_unlock(&memregions->lock);
 }
 
-static bool put_mem_region(ExtendedRCEncoderContext *rcEnc, void* ashmemBase) {
+static bool put_mem_region(ExtendedRCEncoderContext *, void* ashmemBase) {
     D("%s: call for %p", __func__, ashmemBase);
 
     gralloc_memregions_t* memregions = init_gralloc_memregions();
@@ -308,7 +312,8 @@ static bool put_mem_region(ExtendedRCEncoderContext *rcEnc, void* ashmemBase) {
     return shouldRemove;
 }
 
-static void dump_regions(ExtendedRCEncoderContext *rcEnc) {
+#if DEBUG
+static void dump_regions(ExtendedRCEncoderContext *) {
     gralloc_memregions_t* memregions = init_gralloc_memregions();
     gralloc_memregions_t::mem_region_handle_t curr = memregions->ashmemRegions.begin();
     std::stringstream res;
@@ -317,8 +322,9 @@ static void dump_regions(ExtendedRCEncoderContext *rcEnc) {
     }
     ALOGD("ashmem region dump [\n%s]", res.str().c_str());
 }
+#endif
 
-static void get_ashmem_region(ExtendedRCEncoderContext *rcEnc, cb_handle_t *cb) {
+static void get_ashmem_region(ExtendedRCEncoderContext *rcEnc, cb_handle_old_t *cb) {
 #if DEBUG
     dump_regions(rcEnc);
 #endif
@@ -332,7 +338,7 @@ static void get_ashmem_region(ExtendedRCEncoderContext *rcEnc, cb_handle_t *cb) 
     get_gralloc_region(rcEnc);
 }
 
-static bool put_ashmem_region(ExtendedRCEncoderContext *rcEnc, cb_handle_t *cb) {
+static bool put_ashmem_region(ExtendedRCEncoderContext *rcEnc, cb_handle_old_t *cb) {
 #if DEBUG
     dump_regions(rcEnc);
 #endif
@@ -355,14 +361,11 @@ struct fb_device_t {
     framebuffer_device_t  device;
 };
 
-static int map_buffer(cb_handle_t *cb, void **vaddr)
+static int map_buffer(cb_handle_old_t *cb, void **vaddr)
 {
     if (cb->fd < 0 || cb->ashmemSize <= 0) {
         return -EINVAL;
     }
-
-    int map_flags = MAP_SHARED;
-    if (isHidlGralloc) map_flags |= MAP_ANONYMOUS;
 
     void *addr = mmap(0, cb->ashmemSize, PROT_READ | PROT_WRITE,
                       MAP_SHARED, cb->fd, 0);
@@ -392,7 +395,7 @@ static HostConnection* createOrGetHostConnection() {
 #define DEFINE_HOST_CONNECTION \
     HostConnection *hostCon = createOrGetHostConnection(); \
     ExtendedRCEncoderContext *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL); \
-    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; \
+    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; (void)hasVulkan; \
 
 #define DEFINE_AND_VALIDATE_HOST_CONNECTION \
     HostConnection *hostCon = createOrGetHostConnection(); \
@@ -405,14 +408,14 @@ static HostConnection* createOrGetHostConnection() {
         ALOGE("gralloc: Failed to get renderControl encoder context\n"); \
         return -EIO; \
     } \
-    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; \
+    bool hasVulkan = rcEnc->featureInfo_const()->hasVulkan; (void)hasVulkan;\
 
 #if PLATFORM_SDK_VERSION < 18
 // On older APIs, just define it as a value no one is going to use.
 #define HAL_PIXEL_FORMAT_YCbCr_420_888 0xFFFFFFFF
 #endif
 
-static void updateHostColorBuffer(cb_handle_t* cb,
+static void updateHostColorBuffer(cb_handle_old_t* cb,
                               bool doLocked,
                               char* pixels) {
     D("%s: call. doLocked=%d", __FUNCTION__, doLocked);
@@ -542,7 +545,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     // and this is a valid usage
     //
     bool sw_write = (0 != (usage & GRALLOC_USAGE_SW_WRITE_MASK));
-    bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
+    bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER); (void)hw_write;
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
     const bool hw_texture = usage & GRALLOC_USAGE_HW_TEXTURE;
     const bool hw_render = usage & GRALLOC_USAGE_HW_RENDER;
@@ -682,8 +685,8 @@ static int gralloc_alloc(alloc_device_t* dev,
             align = 16;
             bpp = 1; // per-channel bpp
             yuv_format = true;
-            // We are going to use RGB888 on the host
-            glFormat = GL_RGB;
+            // We are going to use RGB8888 on the host for Vulkan
+            glFormat = GL_RGBA;
             glType = GL_UNSIGNED_BYTE;
             selectedEmuFrameworkFormat = FRAMEWORK_FORMAT_YV12;
             break;
@@ -710,14 +713,10 @@ static int gralloc_alloc(alloc_device_t* dev,
     //
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 #if PLATFORM_SDK_VERSION >= 17
-
-#ifdef GOLDFISH_VULKAN
-
-    bool needHostCb = (((!yuv_format) && (hasVulkan || (frameworkFormat != HAL_PIXEL_FORMAT_BLOB))) ||
-#else
+    // GPU_DATA_BUFFER is defined in hardware/interfaces/graphics/common/1.0/types.hal
+#   define _GRALLOC_USAGE_GPU_DATA_BUFFER 0x1000000
     bool needHostCb = ((!yuv_format && frameworkFormat != HAL_PIXEL_FORMAT_BLOB) ||
-#endif // !GOLDFISH_VULKAN
-
+                      usage & _GRALLOC_USAGE_GPU_DATA_BUFFER ||
 #else
     bool needHostCb = (!yuv_format ||
 #endif // !(PLATFORM_SDK_VERSION >= 17)
@@ -788,9 +787,10 @@ static int gralloc_alloc(alloc_device_t* dev,
         }
     }
 
-    cb_handle_t *cb = new cb_handle_t(fd, ashmem_size, usage,
-                                      w, h, frameworkFormat, format,
-                                      glFormat, glType, selectedEmuFrameworkFormat);
+    cb_handle_old_t *cb = new cb_handle_old_t(fd, ashmem_size, usage,
+                                              w, h, frameworkFormat, format,
+                                              glFormat, glType,
+                                              selectedEmuFrameworkFormat);
 
     if (ashmem_size > 0) {
         //
@@ -880,8 +880,8 @@ static int gralloc_free(alloc_device_t* dev,
 {
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
-    cb_handle_t *cb = (cb_handle_t *)handle;
-    if (!cb_handle_t::validate((cb_handle_t*)cb)) {
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
+    if (!cb_handle_old_t::validate((cb_handle_old_t*)cb)) {
         ERR("gralloc_free: invalid handle");
         return -EINVAL;
     }
@@ -964,9 +964,9 @@ static int fb_compositionComplete(struct framebuffer_device_t* dev)
 static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
 {
     fb_device_t *fbdev = (fb_device_t *)dev;
-    cb_handle_t *cb = (cb_handle_t *)buffer;
+    cb_handle_old_t *cb = (cb_handle_old_t *)buffer;
 
-    if (!fbdev || !cb_handle_t::validate(cb) || !cb->canBePosted()) {
+    if (!fbdev || !cb_handle_old_t::validate(cb) || !cb->canBePosted()) {
         return -EINVAL;
     }
 
@@ -990,6 +990,7 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
     return 0;
 }
 
+/* unused (for now)
 static int fb_setUpdateRect(struct framebuffer_device_t* dev,
         int l, int t, int w, int h)
 {
@@ -1013,6 +1014,7 @@ static int fb_setUpdateRect(struct framebuffer_device_t* dev,
 
     return 0;
 }
+*/
 
 static int fb_setSwapInterval(struct framebuffer_device_t* dev,
             int interval)
@@ -1060,9 +1062,9 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
     }
 
     private_module_t *gr = (private_module_t *)module;
-    cb_handle_t *cb = (cb_handle_t *)handle;
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
 
-    if (!gr || !cb_handle_t::validate(cb)) {
+    if (!gr || !cb_handle_old_t::validate(cb)) {
         ERR("gralloc_register_buffer(%p): invalid buffer", cb);
         return -EINVAL;
     }
@@ -1113,9 +1115,9 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
     }
 
     private_module_t *gr = (private_module_t *)module;
-    cb_handle_t *cb = (cb_handle_t *)handle;
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
 
-    if (!gr || !cb_handle_t::validate(cb)) {
+    if (!gr || !cb_handle_old_t::validate(cb)) {
         ERR("gralloc_unregister_buffer(%p): invalid buffer", cb);
         return -EINVAL;
     }
@@ -1149,7 +1151,6 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
         const bool should_unmap = put_ashmem_region(rcEnc, cb);
         if (!should_unmap) goto done;
 
-        void *vaddr;
         int err = munmap((void *)cb->ashmemBase, cb->ashmemSize);
         if (err) {
             ERR("gralloc_unregister_buffer(%p): unmap failed", cb);
@@ -1175,9 +1176,9 @@ static int gralloc_lock(gralloc_module_t const* module,
     }
 
     private_module_t *gr = (private_module_t *)module;
-    cb_handle_t *cb = (cb_handle_t *)handle;
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
 
-    if (!gr || !cb_handle_t::validate(cb)) {
+    if (!gr || !cb_handle_old_t::validate(cb)) {
         ALOGE("gralloc_lock bad handle\n");
         return -EINVAL;
     }
@@ -1348,9 +1349,9 @@ static int gralloc_unlock(gralloc_module_t const* module,
     }
 
     private_module_t *gr = (private_module_t *)module;
-    cb_handle_t *cb = (cb_handle_t *)handle;
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
 
-    if (!gr || !cb_handle_t::validate(cb)) {
+    if (!gr || !cb_handle_old_t::validate(cb)) {
         ALOGD("%s: invalid gr or cb handle. -EINVAL", __FUNCTION__);
         return -EINVAL;
     }
@@ -1401,8 +1402,8 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
     }
 
     private_module_t *gr = (private_module_t *)module;
-    cb_handle_t *cb = (cb_handle_t *)handle;
-    if (!gr || !cb_handle_t::validate(cb)) {
+    cb_handle_old_t *cb = (cb_handle_old_t *)handle;
+    if (!gr || !cb_handle_old_t::validate(cb)) {
         ALOGE("%s: bad colorbuffer handle. -EINVAL", __FUNCTION__);
         return -EINVAL;
     }
@@ -1623,7 +1624,7 @@ static int gralloc_device_open(const hw_module_t* module,
 // define the HMI symbol - our module interface
 //
 static struct hw_module_methods_t gralloc_module_methods = {
-        open: gralloc_device_open
+    .open = gralloc_device_open,
 };
 
 struct private_module_t HAL_MODULE_INFO_SYM = {
