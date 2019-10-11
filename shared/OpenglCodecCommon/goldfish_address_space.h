@@ -35,9 +35,23 @@ class HostAddressSpaceDevice;
 
 #endif
 
+#if defined(__Fuchsia__)
+    typedef void* address_space_handle_t;
+#elif defined(HOST_BUILD)
+    typedef uint32_t address_space_handle_t;
+#else
+    typedef int address_space_handle_t;
+#endif
+
 class GoldfishAddressSpaceBlockProvider {
 public:
+#ifdef __Fuchsia__
     GoldfishAddressSpaceBlockProvider();
+#else
+    static const uint64_t SUBDEVICE_TYPE_NO_SUBDEVICE_ID = -1;
+    static const uint64_t SUBDEVICE_TYPE_HOST_MEMORY_ALLOCATOR_ID = 5;
+    GoldfishAddressSpaceBlockProvider(uint64_t subdevice);
+#endif  // __Fuchsia__
     ~GoldfishAddressSpaceBlockProvider();
 
 private:
@@ -46,15 +60,13 @@ private:
 
     bool is_opened() const;
     void close();
-#ifdef HOST_BUILD
-    uint32_t m_handle;
-#else // HOST_BUILD
+    address_space_handle_t release();
+
 #ifdef __Fuchsia__
     fuchsia::hardware::goldfish::address::space::DeviceSyncPtr m_device;
 #else // __Fuchsia__
-    int m_fd;
+    address_space_handle_t m_handle;
 #endif // !__Fuchsia__
-#endif // !HOST_BUILD
 
     friend class GoldfishAddressSpaceBlock;
     friend class GoldfishAddressSpaceHostMemoryAllocator;
@@ -73,25 +85,18 @@ public:
     void *mmap(uint64_t opaque);
     void *guestPtr() const;
     void replace(GoldfishAddressSpaceBlock *other);
+    void release();
 
 private:
     void destroy();
     GoldfishAddressSpaceBlock &operator=(const GoldfishAddressSpaceBlock &);
 
-#ifdef HOST_BUILD
-    uint32_t m_handle;
-#else // HOST_BUILD
-
 #ifdef __Fuchsia__
     fuchsia::hardware::goldfish::address::space::DeviceSyncPtr* m_device;
     uint32_t  m_vmo;
-
 #else // __Fuchsia__
-
-    int       m_fd;
-
+    address_space_handle_t m_handle;
 #endif // !__Fuchsia__
-#endif // !HOST_BUILD
 
     void     *m_mmaped_ptr;
     uint64_t  m_phys_addr;
@@ -106,6 +111,9 @@ public:
 
     long hostMalloc(GoldfishAddressSpaceBlock *block, size_t size);
     void hostFree(GoldfishAddressSpaceBlock *block);
+
+    bool is_opened() const;
+    address_space_handle_t release() { return m_provider.release(); }
 
 private:
     GoldfishAddressSpaceBlockProvider m_provider;

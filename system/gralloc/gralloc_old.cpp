@@ -28,6 +28,8 @@
 #include "../../shared/OpenglCodecCommon/gralloc_cb_old.h"
 #endif
 
+#include "gralloc_common.h"
+
 #include "goldfish_dma.h"
 #include "goldfish_address_space.h"
 #include "FormatConversions.h"
@@ -433,8 +435,8 @@ static void updateHostColorBuffer(cb_handle_old_t* cb,
     uint32_t rgbSz = width * height * bpp;
     uint32_t send_buffer_size = rgbSz;
     bool is_rgb_format =
-        cb->frameworkFormat != HAL_PIXEL_FORMAT_YV12 &&
-        cb->frameworkFormat != HAL_PIXEL_FORMAT_YCbCr_420_888;
+        cb->format != HAL_PIXEL_FORMAT_YV12 &&
+        cb->format != HAL_PIXEL_FORMAT_YCbCr_420_888;
 
     std::vector<char> convertedBuf;
 
@@ -454,7 +456,7 @@ static void updateHostColorBuffer(cb_handle_old_t* cb,
     }
 
     if (hasDMA && !grdma->bigbufCount) {
-        switch (cb->frameworkFormat) {
+        switch (cb->format) {
         case HAL_PIXEL_FORMAT_YV12:
             get_yv12_offsets(width, height, NULL, NULL, &send_buffer_size);
             break;
@@ -465,7 +467,8 @@ static void updateHostColorBuffer(cb_handle_old_t* cb,
         }
 
         if (grdma->address_space_block.guestPtr()) {
-            rcEnc->bindAddressSpaceBlock(&grdma->address_space_block);
+            rcEnc->bindDmaDirectly(grdma->address_space_block.guestPtr(),
+                                   grdma->address_space_block.physAddr());
         } else if (grdma->goldfish_dma.mapped_addr) {
             rcEnc->bindDmaContext(&grdma->goldfish_dma);
         } else {
@@ -480,7 +483,7 @@ static void updateHostColorBuffer(cb_handle_old_t* cb,
                 to_send, send_buffer_size);
         pthread_mutex_unlock(&grdma->lock);
     } else {
-        switch (cb->frameworkFormat) {
+        switch (cb->format) {
         case HAL_PIXEL_FORMAT_YV12:
             convertedBuf.resize(rgbSz);
             to_send = &convertedBuf.front();
@@ -510,34 +513,55 @@ static void updateHostColorBuffer(cb_handle_old_t* cb,
     }
 }
 
-#ifndef GL_RGBA16F
-#define GL_RGBA16F                        0x881A
-#endif // GL_RGBA16F
-#ifndef GL_HALF_FLOAT
-#define GL_HALF_FLOAT                     0x140B
-#endif // GL_HALF_FLOAT
-#ifndef GL_RGB10_A2
-#define GL_RGB10_A2                       0x8059
-#endif // GL_RGB10_A2
-#ifndef GL_UNSIGNED_INT_2_10_10_10_REV
-#define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
-#endif // GL_UNSIGNED_INT_2_10_10_10_REV
 //
 // gralloc device functions (alloc interface)
 //
 static void gralloc_dump(struct alloc_device_t* /*dev*/, char* /*buff*/, int /*buff_len*/) {}
 
+static int gralloc_get_buffer_format(const int frameworkFormat, const int usage) {
+    // Pick the right concrete pixel format given the endpoints as encoded in
+    // the usage bits.  Every end-point pair needs explicit listing here.
+#if PLATFORM_SDK_VERSION >= 17
+    if (frameworkFormat == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+        // Camera as producer
+        if (usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+            if (usage & GRALLOC_USAGE_HW_TEXTURE) {
+                // Camera-to-display is RGBA
+                return HAL_PIXEL_FORMAT_RGBA_8888;
+            } else if (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+                // Camera-to-encoder is NV21
+                return HAL_PIXEL_FORMAT_YCrCb_420_SP;
+            }
+        }
+
+        ALOGE("gralloc_alloc: Requested auto format selection, "
+              "but no known format for this usage=%x", usage);
+        return -EINVAL;
+    } else if (frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+        ALOGW("gralloc_alloc: Requested YCbCr_420_888, taking experimental path. "
+              "usage=%x", usage);
+    }
+#endif // PLATFORM_SDK_VERSION >= 17
+
+    return frameworkFormat;
+}
+
 static int gralloc_alloc(alloc_device_t* dev,
-                         int w, int h, int format, int usage,
+                         int w, int h, const int frameworkFormat, int usage,
                          buffer_handle_t* pHandle, int* pStride)
 {
-    D("gralloc_alloc w=%d h=%d usage=0x%x format=0x%x\n", w, h, usage, format);
+    D("gralloc_alloc w=%d h=%d usage=0x%x frameworkFormat=0x%x\n", w, h, usage, frameworkFormat);
 
     gralloc_device_t *grdev = (gralloc_device_t *)dev;
     if (!grdev || !pHandle || !pStride) {
         ALOGE("gralloc_alloc: Bad inputs (grdev: %p, pHandle: %p, pStride: %p",
                 grdev, pHandle, pStride);
         return -EINVAL;
+    }
+
+    const int format = gralloc_get_buffer_format(frameworkFormat, usage);
+    if (format < 0) {
+        return format;
     }
 
     //
@@ -567,38 +591,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     bool hw_vid_enc_read = false;
 #endif // PLATFORM_SDK_VERSION
 
-    // Keep around original requested format for later validation
-    int frameworkFormat = format;
-    // Pick the right concrete pixel format given the endpoints as encoded in
-    // the usage bits.  Every end-point pair needs explicit listing here.
-#if PLATFORM_SDK_VERSION >= 17
-    if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
-        // Camera as producer
-        if (usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
-            if (usage & GRALLOC_USAGE_HW_TEXTURE) {
-                // Camera-to-display is RGBA
-                format = HAL_PIXEL_FORMAT_RGBA_8888;
-            } else if (usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
-                // Camera-to-encoder is NV21
-                format = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-            }
-        }
-
-        if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
-            ALOGE("gralloc_alloc: Requested auto format selection, "
-                    "but no known format for this usage: %d x %d, usage %x",
-                    w, h, usage);
-            return -EINVAL;
-        }
-    }
-    else if (format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-        ALOGW("gralloc_alloc: Requested YCbCr_420_888, taking experimental path. "
-                "usage: %d x %d, usage %x",
-                w, h, usage);
-    }
-#endif // PLATFORM_SDK_VERSION >= 17
     bool yuv_format = false;
-
     int ashmem_size = 0;
     int stride = w;
 
@@ -713,10 +706,8 @@ static int gralloc_alloc(alloc_device_t* dev,
     //
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 #if PLATFORM_SDK_VERSION >= 17
-    // GPU_DATA_BUFFER is defined in hardware/interfaces/graphics/common/1.0/types.hal
-#   define _GRALLOC_USAGE_GPU_DATA_BUFFER 0x1000000
     bool needHostCb = ((!yuv_format && frameworkFormat != HAL_PIXEL_FORMAT_BLOB) ||
-                      usage & _GRALLOC_USAGE_GPU_DATA_BUFFER ||
+                      usage & GOLDFISH_GRALLOC_USAGE_GPU_DATA_BUFFER ||
 #else
     bool needHostCb = (!yuv_format ||
 #endif // !(PLATFORM_SDK_VERSION >= 17)
@@ -788,7 +779,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     cb_handle_old_t *cb = new cb_handle_old_t(fd, ashmem_size, usage,
-                                              w, h, frameworkFormat, format,
+                                              w, h, format,
                                               glFormat, glType,
                                               selectedEmuFrameworkFormat);
 
@@ -1069,8 +1060,8 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
         return -EINVAL;
     }
 
-    D("gralloc_register_buffer(%p) w %d h %d format 0x%x framworkFormat 0x%x",
-        handle, cb->width, cb->height, cb->format, cb->frameworkFormat);
+    D("gralloc_register_buffer(%p) w %d h %d format 0x%x",
+        handle, cb->width, cb->height, cb->format);
 
     if (cb->hostHandle != 0 && !cb->hasRefcountPipe()) {
         D("Opening host ColorBuffer 0x%x\n", cb->hostHandle);
@@ -1230,7 +1221,6 @@ static int gralloc_lock(gralloc_module_t const* module,
         //return -EINVAL;
     }
 
-    intptr_t postCount = 0;
     void *cpu_addr = NULL;
 
     //
@@ -1255,13 +1245,12 @@ static int gralloc_lock(gralloc_module_t const* module,
         // flush color buffer write cache on host and get its sync status.
         //
         int hostSyncStatus = rcEnc->rcColorBufferCacheFlush(rcEnc, cb->hostHandle,
-                                                            postCount,
+                                                            0,
                                                             sw_read);
         if (hostSyncStatus < 0) {
             // host failed the color buffer sync - probably since it was already
             // locked for write access. fail the lock.
-            ALOGE("gralloc_lock cacheFlush failed postCount=%d sw_read=%d\n",
-                 (int)postCount, sw_read);
+            ALOGE("gralloc_lock cacheFlush failed sw_read=%d\n", sw_read);
             return -EBUSY;
         }
 
@@ -1272,11 +1261,11 @@ static int gralloc_lock(gralloc_module_t const* module,
               cb->width, cb->height, cb->ashmemBase, cb->ashmemSize);
             void* rgb_addr = cpu_addr;
             char* tmpBuf = 0;
-            if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
-                cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+            if (cb->format == HAL_PIXEL_FORMAT_YV12 ||
+                cb->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                 if (rcEnc->hasYUVCache()) {
                     uint32_t buffer_size;
-                    if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
+                    if (cb->format == HAL_PIXEL_FORMAT_YV12) {
                        get_yv12_offsets(cb->width, cb->height, NULL, NULL,
                                         &buffer_size);
                     } else {
@@ -1292,10 +1281,10 @@ static int gralloc_lock(gralloc_module_t const* module,
                     tmpBuf = new char[cb->width * cb->height * 3];
                     rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
                                               0, 0, cb->width, cb->height, cb->glFormat, cb->glType, tmpBuf);
-                    if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
+                    if (cb->format == HAL_PIXEL_FORMAT_YV12) {
                         D("convert rgb888 to yv12 here");
                         rgb888_to_yv12((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
-                    } else if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+                    } else if (cb->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                         if (rcEnc->hasYUV420toNV21()) {
                             D("convert rgb888 to nv21 here");
                             rgb888_to_nv21((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
@@ -1408,12 +1397,12 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
         return -EINVAL;
     }
 
-    if (cb->frameworkFormat != HAL_PIXEL_FORMAT_YV12 &&
-        cb->frameworkFormat != HAL_PIXEL_FORMAT_YCbCr_420_888) {
+    if (cb->format != HAL_PIXEL_FORMAT_YV12 &&
+        cb->format != HAL_PIXEL_FORMAT_YCbCr_420_888) {
         ALOGE("gralloc_lock_ycbcr can only be used with "
                 "HAL_PIXEL_FORMAT_YCbCr_420_888 or HAL_PIXEL_FORMAT_YV12, got %x instead. "
                 "-EINVAL",
-                cb->frameworkFormat);
+                cb->format);
         return -EINVAL;
     }
 
