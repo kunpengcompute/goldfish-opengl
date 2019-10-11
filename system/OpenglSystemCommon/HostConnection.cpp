@@ -62,6 +62,8 @@ using goldfish_vk::VkEncoder;
 #include "VirtioGpuStream.h"
 #endif
 
+#undef LOG_TAG
+#define LOG_TAG "HostConnection"
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
 #else
@@ -82,12 +84,12 @@ class GoldfishGralloc : public Gralloc
 public:
     uint32_t getHostHandle(native_handle_t const* handle)
     {
-        return ((cb_handle_t *)handle)->hostHandle;
+        return cb_handle_t::from_native_handle(handle)->hostHandle;
     }
 
     int getFormat(native_handle_t const* handle)
     {
-        return ((cb_handle_t *)handle)->format;
+        return cb_handle_t::from_native_handle(handle)->format;
     }
 };
 
@@ -212,10 +214,6 @@ HostConnection *HostConnection::get() {
 }
 
 HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
-
-    /* TODO: Make this configurable with a system property */
-    const enum HostConnectionType connType = HOST_CONNECTION_VIRTIO_GPU;
-
     // Get thread info
     if (!tinfo) {
         return NULL;

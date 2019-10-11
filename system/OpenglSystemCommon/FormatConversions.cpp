@@ -12,6 +12,7 @@
  *
  */
 
+#include <hardware/gralloc.h>
 #include "FormatConversions.h"
 
 #if PLATFORM_SDK_VERSION < 26
@@ -32,6 +33,18 @@
 
 static int get_rgb_offset(int row, int width, int rgbStride) {
     return row * width * rgbStride;
+}
+
+bool gralloc_is_yuv_format(const int format) {
+    switch (format) {
+    case HAL_PIXEL_FORMAT_YV12:
+    case HAL_PIXEL_FORMAT_YCbCr_420_888:
+    case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 void get_yv12_offsets(int width, int height,
@@ -80,7 +93,6 @@ void rgb565_to_yv12(char* dest, char* src, int width, int height,
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
     int cStride = (yStride / 2 + (align - 1)) & ~(align-1);
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
     uint16_t *rgb_ptr0 = (uint16_t *)src;
@@ -122,7 +134,6 @@ void rgb888_to_yv12(char* dest, char* src, int width, int height,
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
     int cStride = (yStride / 2 + (align - 1)) & ~(align-1);
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
 
@@ -190,7 +201,6 @@ void rgb888_to_yuv420p(char* dest, char* src, int width, int height,
     DD("%s convert %d by %d", __func__, width, height);
     int yStride = width;
     int cStride = yStride / 2;
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
     uint8_t *rgb_ptr0 = (uint8_t *)src;
@@ -228,7 +238,6 @@ void rgb888_to_nv21(char* dest, char* src, int width, int height,
     DD("%s convert %d by %d", __func__, width, height);
     int yStride = width;
     int cStride = yStride;
-    int yOffset = 0;
 
     uint8_t *rgb_ptr0 = (uint8_t *)src;
     uint8_t *nv21_y0 = (uint8_t *)dest;
@@ -266,7 +275,6 @@ void yv12_to_rgb565(char* dest, char* src, int width, int height,
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
     int cStride = (yStride / 2 + (align - 1)) & ~(align-1);
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
     uint16_t *rgb_ptr0 = (uint16_t *)dest;
@@ -312,7 +320,6 @@ void yv12_to_rgb888(char* dest, char* src, int width, int height,
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
     int cStride = (yStride / 2 + (align - 1)) & ~(align-1);
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
     uint8_t *rgb_ptr0 = (uint8_t *)dest;
@@ -350,7 +357,6 @@ void yuv420p_to_rgb888(char* dest, char* src, int width, int height,
     DD("%s convert %d by %d", __func__, width, height);
     int yStride = width;
     int cStride = yStride / 2;
-    int yOffset = 0;
     int cSize = cStride * height/2;
 
     uint8_t *rgb_ptr0 = (uint8_t *)dest;
@@ -395,7 +401,6 @@ void nv21_to_rgb888(char* dest, char* src, int width, int height,
     DD("%s convert %d by %d", __func__, width, height);
     int yStride = width;
     int cStride = yStride;
-    int yOffset = 0;
 
     uint8_t *rgb_ptr0 = (uint8_t *)dest;
     uint8_t *nv21_y0 = (uint8_t *)src;
@@ -431,14 +436,13 @@ void nv21_to_rgb888(char* dest, char* src, int width, int height,
 }
 
 void copy_rgb_buffer_from_unlocked(
-        char* _dst, char* raw_data,
+        char* dst, const char* raw_data,
         int unlockedWidth,
         int width, int height, int top, int left,
         int bpp) {
-    char* dst = _dst;
     int dst_line_len = width * bpp;
     int src_line_len = unlockedWidth * bpp;
-    char *src = (char *)raw_data + top*src_line_len + left*bpp;
+    const char *src = raw_data + top*src_line_len + left*bpp;
     for (int y = 0; y < height; y++) {
         memcpy(dst, src, dst_line_len);
         src += src_line_len;

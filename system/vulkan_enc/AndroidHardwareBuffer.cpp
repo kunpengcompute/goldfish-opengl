@@ -111,8 +111,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
 
     const native_handle_t *handle =
        AHardwareBuffer_getNativeHandle(buffer);
-    const cb_handle_t* cb_handle =
-        reinterpret_cast<const cb_handle_t*>(handle);
+    const cb_handle_t* cb_handle = cb_handle_t::from_native_handle(handle);
     uint32_t colorBufferHandle = cb_handle->hostHandle;
 
     if (!colorBufferHandle) {
@@ -129,8 +128,7 @@ VkResult getAndroidHardwareBufferPropertiesANDROID(
     }
 
     pProperties->memoryTypeBits = memoryTypeBits;
-    pProperties->allocationSize =
-        cb_handle->ashmemBase ? cb_handle->ashmemSize : 0;
+    pProperties->allocationSize = cb_handle->allocationSize();
 
     return VK_SUCCESS;
 }
@@ -166,8 +164,7 @@ VkResult importAndroidHardwareBuffer(
 
     const native_handle_t *handle =
        AHardwareBuffer_getNativeHandle(info->buffer);
-    const cb_handle_t* cb_handle =
-        reinterpret_cast<const cb_handle_t*>(handle);
+    const cb_handle_t* cb_handle = cb_handle_t::from_native_handle(handle);
     uint32_t colorBufferHandle = cb_handle->hostHandle;
 
     if (!colorBufferHandle) {
@@ -212,12 +209,14 @@ VkResult createAndroidHardwareBuffer(
        w = bufferSize;
        format = AHARDWAREBUFFER_FORMAT_BLOB;
        usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-               AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN;
+               AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+               AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
     } else {
        w = allocationInfoAllocSize;
        format = AHARDWAREBUFFER_FORMAT_BLOB;
        usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-               AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN;
+               AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+               AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER;
     }
 
     struct AHardwareBuffer *ahw = NULL;

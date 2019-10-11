@@ -27,6 +27,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <sstream>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
@@ -42,6 +43,7 @@ class EmuHWC2 : public hwc2_device_t {
 public:
     EmuHWC2();
     int populatePrimary();
+    int populateSecondaryDisplays();
 
 private:
     static inline EmuHWC2* getHWC2(hwc2_device_t* device) {
@@ -258,6 +260,8 @@ private:
 
         // Read configs from PRIMARY Display
         int populatePrimaryConfigs();
+        HWC2::Error populateSecondaryConfigs(uint32_t width, uint32_t height,
+                 uint32_t dpi);
 
     private:
         class Config {
@@ -341,6 +345,8 @@ private:
         // Display ID generator.
         static std::atomic<hwc2_display_t> sNextId;
         const hwc2_display_t mId;
+        // emulator side displayId
+        uint32_t mHostDisplayId;
         std::string mName;
         HWC2::DisplayType mType;
         HWC2::PowerMode mPowerMode;
@@ -470,7 +476,8 @@ private:
     };
     std::unordered_map<HWC2::Callback, CallbackInfo> mCallbacks;
 
-    std::unordered_map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
+    // use map so displays can be pluged in by order of ID, 0, 1, 2, 3, etc.
+    std::map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
     std::unordered_map<hwc2_layer_t, std::shared_ptr<Layer>> mLayers;
 
 };
