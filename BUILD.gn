@@ -4,6 +4,7 @@ shared_library("libvulkan_goldfish") {
     "android-emu/android/base/AlignedBuf.h",
     "android-emu/android/base/Pool.cpp",
     "android-emu/android/base/Pool.h",
+    "android-emu/android/base/ring_buffer.c",
     "android-emu/android/base/SubAllocator.cpp",
     "android-emu/android/base/SubAllocator.h",
     "android-emu/android/base/files/MemStream.cpp",
@@ -89,6 +90,14 @@ shared_library("libvulkan_goldfish") {
     "VK_USE_PLATFORM_FUCHSIA",
     "PLATFORM_SDK_VERSION=1",
     "PAGE_SIZE=4096",
+  ]
+
+  cflags_c = [
+    "-Wno-missing-field-initializers",
+    "-Wno-newline-eof",
+    "-Wno-unused-function",
+    "-Wno-unused-value",
+    "-Wno-unused-variable",
   ]
 
   cflags_cc = [

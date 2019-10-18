@@ -37,7 +37,7 @@ using android::emulation::AddressSpaceDevicePingInfo;
 GoldfishAddressSpaceBlockProvider::GoldfishAddressSpaceBlockProvider(uint64_t subdevice)
     : m_handle(HostAddressSpaceDevice::get()->open())
 {
-    if ((subdevice != SUBDEVICE_TYPE_HOST_MEMORY_ALLOCATOR_ID) && is_opened()) {
+    if ((subdevice != SUBDEVICE_TYPE_NO_SUBDEVICE_ID) && is_opened()) {
         AddressSpaceDevicePingInfo request;
         ::memset(&request, 0, sizeof(request));
         request.metadata = subdevice;
@@ -71,6 +71,11 @@ address_space_handle_t GoldfishAddressSpaceBlockProvider::release()
     address_space_handle_t handle = m_handle;
     m_handle = 0;
     return handle;
+}
+
+void GoldfishAddressSpaceBlockProvider::closeHandle(address_space_handle_t handle)
+{
+    HostAddressSpaceDevice::get()->close(handle);
 }
 
 GoldfishAddressSpaceBlock::GoldfishAddressSpaceBlock()
@@ -174,6 +179,17 @@ void GoldfishAddressSpaceBlock::release()
     m_offset = 0;
     m_size = 0;
 }
+
+int GoldfishAddressSpaceBlock::memoryMap(void *addr,
+                                         size_t,
+                                         address_space_handle_t,
+                                         uint64_t,
+                                         void** dst) {
+    *dst = addr;
+    return 0;
+}
+
+void GoldfishAddressSpaceBlock::memoryUnmap(void *ptr, size_t size) {}
 
 GoldfishAddressSpaceHostMemoryAllocator::GoldfishAddressSpaceHostMemoryAllocator()
   : m_provider(GoldfishAddressSpaceBlockProvider::SUBDEVICE_TYPE_HOST_MEMORY_ALLOCATOR_ID) {}

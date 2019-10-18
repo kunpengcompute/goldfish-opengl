@@ -45,13 +45,9 @@ class HostAddressSpaceDevice;
 
 class GoldfishAddressSpaceBlockProvider {
 public:
-#ifdef __Fuchsia__
-    GoldfishAddressSpaceBlockProvider();
-#else
     static const uint64_t SUBDEVICE_TYPE_NO_SUBDEVICE_ID = -1;
     static const uint64_t SUBDEVICE_TYPE_HOST_MEMORY_ALLOCATOR_ID = 5;
     GoldfishAddressSpaceBlockProvider(uint64_t subdevice);
-#endif  // __Fuchsia__
     ~GoldfishAddressSpaceBlockProvider();
 
 private:
@@ -61,6 +57,7 @@ private:
     bool is_opened() const;
     void close();
     address_space_handle_t release();
+    static void closeHandle(address_space_handle_t handle);
 
 #ifdef __Fuchsia__
     fuchsia::hardware::goldfish::address::space::DeviceSyncPtr m_device;
@@ -86,6 +83,8 @@ public:
     void *guestPtr() const;
     void replace(GoldfishAddressSpaceBlock *other);
     void release();
+    static int memoryMap(void *addr, size_t len, address_space_handle_t fd, uint64_t off, void** dst);
+    static void memoryUnmap(void *ptr, size_t size);
 
 private:
     void destroy();
@@ -114,6 +113,7 @@ public:
 
     bool is_opened() const;
     address_space_handle_t release() { return m_provider.release(); }
+    static void closeHandle(address_space_handle_t handle) { GoldfishAddressSpaceBlockProvider::closeHandle(handle); }
 
 private:
     GoldfishAddressSpaceBlockProvider m_provider;

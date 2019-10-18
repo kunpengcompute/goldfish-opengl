@@ -72,6 +72,7 @@ GL2Encoder::GL2Encoder(IOStream *stream, ChecksumCalculator *protocol)
 {
     m_currMajorVersion = 2;
     m_currMinorVersion = 0;
+    m_hasAsyncUnmapBuffer = false;
     m_initialized = false;
     m_noHostError = false;
     m_state = NULL;
@@ -101,6 +102,7 @@ GL2Encoder::GL2Encoder(IOStream *stream, ChecksumCalculator *protocol)
     m_ssbo_offset_align = 0;
     m_ubo_offset_align = 0;
 
+    m_drawCallFlushInterval = 800;
     m_drawCallFlushCount = 0;
     m_primitiveRestartEnabled = false;
     m_primitiveRestartIndex = 0;
@@ -1302,11 +1304,7 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count, bool hasClient
 }
 
 void GL2Encoder::flushDrawCall() {
-    // This used to be every other draw call, but
-    // now that we are using real GPU buffers on host,
-    // set this to every 200 draw calls
-    // (tuned on z840 linux NVIDIA Quadro K2200)
-    if (m_drawCallFlushCount % 200 == 0) {
+    if (m_drawCallFlushCount % m_drawCallFlushInterval == 0) {
         m_stream->flush();
     }
     m_drawCallFlushCount++;
@@ -1463,6 +1461,7 @@ void GL2Encoder::s_glDrawArraysNullAEMU(void *self, GLenum mode, GLint first, GL
         ctx->sendVertexAttributes(0, count, false);
         ctx->m_glDrawArraysNullAEMU_enc(ctx, mode, first, count);
     }
+    ctx->flushDrawCall();
 }
 
 void GL2Encoder::s_glDrawElementsNullAEMU(void *self, GLenum mode, GLsizei count, GLenum type, const void *indices)
@@ -2955,11 +2954,16 @@ void* GL2Encoder::s_glMapBufferRangeAEMUImpl(GL2Encoder* ctx, GLenum target,
                                              GLbitfield access, BufferData* buf) {
     char* bits = (char*)buf->m_fixedBuffer.ptr() + offset;
 
-    ctx->glMapBufferRangeAEMU(
-            ctx, target,
-            offset, length,
-            access,
-            bits);
+    if ((access & GL_MAP_READ_BIT) ||
+        ((access & GL_MAP_WRITE_BIT) &&
+        (!(access & GL_MAP_INVALIDATE_RANGE_BIT) &&
+         !(access & GL_MAP_INVALIDATE_BUFFER_BIT)))) {
+        ctx->glMapBufferRangeAEMU(
+                ctx, target,
+                offset, length,
+                access,
+                bits);
+    }
 
     return bits;
 }
@@ -3071,13 +3075,25 @@ GLboolean GL2Encoder::s_glUnmapBuffer(void* self, GLenum target) {
             goldfish_dma_guest_paddr(&buf->dma_buffer.get()),
             &host_res);
     } else {
-        ctx->glUnmapBufferAEMU(
-                ctx, target,
-                buf->m_mappedOffset,
-                buf->m_mappedLength,
-                buf->m_mappedAccess,
-                (void*)((char*)buf->m_fixedBuffer.ptr() + buf->m_mappedOffset),
-                &host_res);
+        if (ctx->m_hasAsyncUnmapBuffer) {
+            ctx->glUnmapBufferAsyncAEMU(
+                    ctx, target,
+                    buf->m_mappedOffset,
+                    buf->m_mappedLength,
+                    buf->m_mappedAccess,
+                    (void*)((char*)buf->m_fixedBuffer.ptr() + buf->m_mappedOffset),
+                    &host_res);
+        } else {
+            if (buf->m_mappedAccess & GL_MAP_WRITE_BIT) {
+                ctx->glUnmapBufferAEMU(
+                        ctx, target,
+                        buf->m_mappedOffset,
+                        buf->m_mappedLength,
+                        buf->m_mappedAccess,
+                        (void*)((char*)buf->m_fixedBuffer.ptr() + buf->m_mappedOffset),
+                        &host_res);
+            }
+        }
     }
 
     buf->m_mapped = false;
@@ -3109,12 +3125,21 @@ void GL2Encoder::s_glFlushMappedBufferRange(void* self, GLenum target, GLintptr 
 
     buf->m_indexRangeCache.invalidateRange(totalOffset, length);
 
-    ctx->glFlushMappedBufferRangeAEMU(
-            ctx, target,
-            totalOffset,
-            length,
-            buf->m_mappedAccess,
-            (void*)((char*)buf->m_fixedBuffer.ptr() + totalOffset));
+    if (ctx->m_hasAsyncUnmapBuffer) {
+        ctx->glFlushMappedBufferRangeAEMU2(
+                ctx, target,
+                totalOffset,
+                length,
+                buf->m_mappedAccess,
+                (void*)((char*)buf->m_fixedBuffer.ptr() + totalOffset));
+    } else {
+        ctx->glFlushMappedBufferRangeAEMU(
+                ctx, target,
+                totalOffset,
+                length,
+                buf->m_mappedAccess,
+                (void*)((char*)buf->m_fixedBuffer.ptr() + totalOffset));
+    }
 }
 
 void GL2Encoder::s_glCompressedTexImage2D(void* self, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid* data) {
