@@ -38,7 +38,7 @@ void zx_event_create(int, zx_handle_t*) { }
 #ifdef VK_USE_PLATFORM_FUCHSIA
 
 #include <cutils/native_handle.h>
-#include <fuchsia/hardware/goldfish/control/cpp/fidl.h>
+#include <fuchsia/hardware/goldfish/cpp/fidl.h>
 #include <fuchsia/sysmem/cpp/fidl.h>
 #include <lib/fdio/directory.h>
 #include <lib/fdio/fd.h>
@@ -890,10 +890,15 @@ public:
 
         std::vector<const char*> allowedExtensionNames = {
             "VK_KHR_maintenance1",
+            "VK_KHR_maintenance2",
+            "VK_KHR_maintenance3",
             "VK_KHR_get_memory_requirements2",
             "VK_KHR_dedicated_allocation",
             "VK_KHR_bind_memory2",
             "VK_KHR_sampler_ycbcr_conversion",
+            "VK_KHR_shader_float16_int8",
+            "VK_AMD_gpu_shader_half_float",
+            "VK_NV_shader_subgroup_partitioned",
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
             "VK_KHR_external_semaphore",
             "VK_KHR_external_semaphore_fd",
@@ -902,8 +907,6 @@ public:
             "VK_KHR_external_fence",
             "VK_KHR_external_fence_fd",
 #endif
-            // "VK_KHR_maintenance2",
-            // "VK_KHR_maintenance3",
             // TODO:
             // VK_KHR_external_memory_capabilities
         };
@@ -1836,7 +1839,7 @@ public:
             ALOGD("%s: Import AHardwareBulffer", __func__);
             const native_handle_t *handle =
                 AHardwareBuffer_getNativeHandle(ahw);
-            const cb_handle_t* cb_handle = cb_handle_t::from_native_handle(handle);
+            const cb_handle_t* cb_handle = cb_handle_t::from(handle);
             importCbInfo.colorBuffer = cb_handle->hostHandle;
             vk_append_struct(&structChainIter, &importCbInfo);
         }
@@ -1938,7 +1941,7 @@ public:
                     std::move(vmo_copy),
                     imageCreateInfo.extent.width,
                     imageCreateInfo.extent.height,
-                    fuchsia::hardware::goldfish::control::FormatType::BGRA,
+                    fuchsia::hardware::goldfish::ColorBufferFormatType::BGRA,
                     &status2);
                 if (status != ZX_OK || status2 != ZX_OK) {
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
@@ -2359,7 +2362,7 @@ public:
                     std::move(vmo),
                     localCreateInfo.extent.width,
                     localCreateInfo.extent.height,
-                    fuchsia::hardware::goldfish::control::FormatType::BGRA,
+                    fuchsia::hardware::goldfish::ColorBufferFormatType::BGRA,
                     &status2);
                 if (status != ZX_OK || (status2 != ZX_OK && status2 != ZX_ERR_ALREADY_EXISTS)) {
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
@@ -3463,9 +3466,7 @@ public:
             return;
         }
 
-        const cb_handle_t* cb_handle =
-            cb_handle_t::from_raw_pointer(nativeInfo->handle);
-
+        const cb_handle_t* cb_handle = cb_handle_t::from(nativeInfo->handle);
         if (!cb_handle) return;
 
         VkNativeBufferANDROID* nativeInfoOut =
@@ -3991,7 +3992,7 @@ private:
     int mSyncDeviceFd = -1;
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
-    fuchsia::hardware::goldfish::control::DeviceSyncPtr mControlDevice;
+    fuchsia::hardware::goldfish::ControlDeviceSyncPtr mControlDevice;
     fuchsia::sysmem::AllocatorSyncPtr mSysmemAllocator;
 #endif
 

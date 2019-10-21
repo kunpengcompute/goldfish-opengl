@@ -34,6 +34,8 @@ public:
     GL2Encoder(IOStream*, ChecksumCalculator*) { }
     void setContextAccessor(gl2_client_context_t *()) { }
     void setNoHostError(bool) { }
+    void setDrawCallFlushInterval(uint32_t) { }
+    void setHasAsyncUnmapBuffer(int) { }
 };
 #else
 #include "GLEncoder.h"
@@ -110,12 +112,12 @@ class GoldfishGralloc : public Gralloc
 public:
     uint32_t getHostHandle(native_handle_t const* handle)
     {
-        return cb_handle_t::from_native_handle(handle)->hostHandle;
+        return cb_handle_t::from(handle)->hostHandle;
     }
 
     int getFormat(native_handle_t const* handle)
     {
-        return cb_handle_t::from_native_handle(handle)->format;
+        return cb_handle_t::from(handle)->format;
     }
 };
 
@@ -185,6 +187,12 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             break;
         }
         case HOST_CONNECTION_TCP: {
+#ifdef __Fuchsia__
+            ALOGE("Fuchsia doesn't support HOST_CONNECTION_TCP!!!\n");
+            delete con;
+            return NULL;
+            break;
+#else
             TcpStream *stream = new TcpStream(STREAM_BUFFER_SIZE);
             if (!stream) {
                 ALOGE("Failed to create TcpStream for host connection!!!\n");
@@ -203,6 +211,7 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             con->m_grallocHelper = &m_goldfishGralloc;
             con->m_processPipe = &m_goldfishProcessPipe;
             break;
+#endif
         }
 #ifdef VIRTIO_GPU
         case HOST_CONNECTION_VIRTIO_GPU: {
