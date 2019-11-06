@@ -34,6 +34,8 @@ public:
     GL2Encoder(IOStream*, ChecksumCalculator*) { }
     void setContextAccessor(gl2_client_context_t *()) { }
     void setNoHostError(bool) { }
+    void setDrawCallFlushInterval(uint32_t) { }
+    void setHasAsyncUnmapBuffer(int) { }
 };
 #else
 #include "GLEncoder.h"
@@ -42,6 +44,7 @@ public:
 
 #ifdef GOLDFISH_VULKAN
 #include "VkEncoder.h"
+#include "AddressSpaceStream.h"
 #else
 namespace goldfish_vk {
 struct VkEncoder {
@@ -49,6 +52,12 @@ struct VkEncoder {
     int placeholder;
 };
 } // namespace goldfish_vk
+class QemuPipeStream;
+typedef QemuPipeStream AddressSpaceStream;
+AddressSpaceStream* createAddressSpaceStream(size_t bufSize) {
+    ALOGE("%s: FATAL: Trying to create ASG stream in unsupported build\n", __func__);
+    abort();
+}
 #endif
 
 using goldfish_vk::VkEncoder;
@@ -110,12 +119,12 @@ class GoldfishGralloc : public Gralloc
 public:
     uint32_t getHostHandle(native_handle_t const* handle)
     {
-        return cb_handle_t::from_native_handle(handle)->hostHandle;
+        return cb_handle_t::from(handle)->hostHandle;
     }
 
     int getFormat(native_handle_t const* handle)
     {
-        return cb_handle_t::from_native_handle(handle)->format;
+        return cb_handle_t::from(handle)->format;
     }
 };
 
@@ -160,11 +169,22 @@ HostConnection* HostConnection::connect(HostConnection* con) {
     if (!con) return con;
 
     const enum HostConnectionType connType = getConnectionTypeFromProperty();
+    // const enum HostConnectionType connType = HOST_CONNECTION_VIRTIO_GPU;
 
     switch (connType) {
-        default:
-        case HOST_CONNECTION_ADDRESS_SPACE: // Not implemented yet
-            ALOGE("Trying to use address space graphics device, not implemented yet\n");
+        case HOST_CONNECTION_ADDRESS_SPACE: {
+            AddressSpaceStream *stream = createAddressSpaceStream(STREAM_BUFFER_SIZE);
+            if (!stream) {
+                ALOGE("Failed to create AddressSpaceStream for host connection!!!\n");
+                delete con;
+                return NULL;
+            }
+            con->m_connectionType = HOST_CONNECTION_ADDRESS_SPACE;
+            con->m_stream = stream;
+            con->m_grallocHelper = &m_goldfishGralloc;
+            con->m_processPipe = &m_goldfishProcessPipe;
+            break;
+        }
         case HOST_CONNECTION_QEMU_PIPE: {
             QemuPipeStream *stream = new QemuPipeStream(STREAM_BUFFER_SIZE);
             if (!stream) {
@@ -185,6 +205,12 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             break;
         }
         case HOST_CONNECTION_TCP: {
+#ifdef __Fuchsia__
+            ALOGE("Fuchsia doesn't support HOST_CONNECTION_TCP!!!\n");
+            delete con;
+            return NULL;
+            break;
+#else
             TcpStream *stream = new TcpStream(STREAM_BUFFER_SIZE);
             if (!stream) {
                 ALOGE("Failed to create TcpStream for host connection!!!\n");
@@ -203,6 +229,7 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             con->m_grallocHelper = &m_goldfishGralloc;
             con->m_processPipe = &m_goldfishProcessPipe;
             break;
+#endif
         }
 #ifdef VIRTIO_GPU
         case HOST_CONNECTION_VIRTIO_GPU: {
@@ -224,6 +251,9 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             con->m_processPipe = stream->getProcessPipe();
             break;
         }
+#else
+        default:
+            break;
 #endif
     }
 
@@ -235,6 +265,8 @@ HostConnection* HostConnection::connect(HostConnection* con) {
 
     ALOGD("HostConnection::get() New Host Connection established %p, tid %d\n",
           con, getCurrentThreadId());
+
+    // ALOGD("Address space echo latency check done\n");
     return con;
 }
 
@@ -330,7 +362,6 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetDeferredVulkanCommandsSupport(m_rcEnc);
         queryAndSetVulkanNullOptionalStringsSupport(m_rcEnc);
         queryAndSetVulkanCreateResourcesWithRequirementsSupport(m_rcEnc);
-        queryAndSetYUV420888toNV21(m_rcEnc);
         queryAndSetYUVCache(m_rcEnc);
         queryAndSetAsyncUnmapBuffer(m_rcEnc);
         if (m_processPipe) {
@@ -425,7 +456,9 @@ void HostConnection::queryAndSetSyncImpl(ExtendedRCEncoderContext *rcEnc) {
 #if PLATFORM_SDK_VERSION <= 16 || (!defined(__i386__) && !defined(__x86_64__))
     rcEnc->setSyncImpl(SYNC_IMPL_NONE);
 #else
-    if (glExtensions.find(kRCNativeSyncV3) != std::string::npos) {
+    if (glExtensions.find(kRCNativeSyncV4) != std::string::npos) {
+        rcEnc->setSyncImpl(SYNC_IMPL_NATIVE_SYNC_V4);
+    } else if (glExtensions.find(kRCNativeSyncV3) != std::string::npos) {
         rcEnc->setSyncImpl(SYNC_IMPL_NATIVE_SYNC_V3);
     } else if (glExtensions.find(kRCNativeSyncV2) != std::string::npos) {
         rcEnc->setSyncImpl(SYNC_IMPL_NATIVE_SYNC_V2);
@@ -504,13 +537,6 @@ void HostConnection::queryAndSetVulkanCreateResourcesWithRequirementsSupport(Ext
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kVulkanCreateResourcesWithRequirements) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkanCreateResourcesWithRequirements = true;
-    }
-}
-
-void HostConnection::queryAndSetYUV420888toNV21(ExtendedRCEncoderContext* rcEnc) {
-    std::string glExtensions = queryGLExtensions(rcEnc);
-    if (glExtensions.find(kYUV420888toNV21) != std::string::npos) {
-        rcEnc->featureInfo()->hasYUV420888toNV21 = true;
     }
 }
 

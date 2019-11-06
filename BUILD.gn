@@ -5,8 +5,8 @@ shared_library("libvulkan_goldfish") {
     "android-emu/android/base/Pool.cpp",
     "android-emu/android/base/Pool.h",
     "android-emu/android/base/ring_buffer.c",
-    "android-emu/android/base/SubAllocator.cpp",
-    "android-emu/android/base/SubAllocator.h",
+    "android-emu/android/base/AndroidSubAllocator.cpp",
+    "android-emu/android/base/AndroidSubAllocator.h",
     "android-emu/android/base/files/MemStream.cpp",
     "android-emu/android/base/files/MemStream.h",
     "android-emu/android/base/files/Stream.cpp",
@@ -36,6 +36,7 @@ shared_library("libvulkan_goldfish") {
     "shared/OpenglCodecCommon/goldfish_address_space.h",
     "shared/OpenglCodecCommon/goldfish_dma.cpp",
     "shared/OpenglCodecCommon/goldfish_dma.h",
+    "system/OpenglSystemCommon/AddressSpaceStream.cpp",
     "system/OpenglSystemCommon/HostConnection.cpp",
     "system/OpenglSystemCommon/HostConnection.h",
     "system/OpenglSystemCommon/ProcessPipe.cpp",
@@ -92,6 +93,14 @@ shared_library("libvulkan_goldfish") {
     "PAGE_SIZE=4096",
   ]
 
+  cflags_c = [
+    "-Wno-missing-field-initializers",
+    "-Wno-newline-eof",
+    "-Wno-unused-function",
+    "-Wno-unused-value",
+    "-Wno-unused-variable",
+  ]
+
   cflags_cc = [
     "-Wno-missing-field-initializers",
     "-Wno-newline-eof",
@@ -106,6 +115,7 @@ shared_library("libvulkan_goldfish") {
     sources -= [ "system/OpenglSystemCommon/QemuPipeStream.cpp" ]
     sources += [
       "fuchsia/port.cc",
+      "fuchsia/service_connector.cc",
       "system/OpenglSystemCommon/QemuPipeStreamFuchsia.cpp",
     ]
 
@@ -119,12 +129,10 @@ shared_library("libvulkan_goldfish") {
     ]
 
     deps = [
-      "//zircon/system/fidl/fuchsia-hardware-goldfish-address-space",
-      "//zircon/system/fidl/fuchsia-hardware-goldfish-control",
-      "//zircon/system/fidl/fuchsia-hardware-goldfish-pipe",
+      "//sdk/fidl/fuchsia.hardware.goldfish",
       "//zircon/system/fidl/fuchsia-sysmem",
-      "//zircon/public/lib/fdio",
       "//zircon/public/lib/trace",
+      "//zircon/public/lib/zx",
     ]
 
     defines += [

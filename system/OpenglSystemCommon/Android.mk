@@ -3,15 +3,18 @@ LOCAL_PATH := $(call my-dir)
 $(call emugl-begin-shared-library,libOpenglSystemCommon)
 $(call emugl-import,libGLESv1_enc libGLESv2_enc lib_renderControl_enc)
 
-ifeq (true,$(BUILD_EMULATOR_VULKAN))
-$(call emugl-import,libvulkan_enc)
-endif
-
 LOCAL_SRC_FILES := \
     FormatConversions.cpp \
     HostConnection.cpp \
     QemuPipeStream.cpp \
     ProcessPipe.cpp    \
+
+ifeq (true,$(BUILD_EMULATOR_VULKAN))
+$(call emugl-import,libvulkan_enc)
+
+LOCAL_SRC_FILES += AddressSpaceStream.cpp
+
+endif
 
 LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
 
@@ -26,18 +29,16 @@ ifeq (true,$(BUILD_EMULATOR_VULKAN))
 
 LOCAL_HEADER_LIBRARIES += vulkan_headers
 
+LOCAL_CFLAGS += -DVIRTIO_GPU
+LOCAL_SRC_FILES += VirtioGpuStream.cpp
+LOCAL_C_INCLUDES += external/libdrm external/minigbm/cros_gralloc
+LOCAL_SHARED_LIBRARIES += libdrm
+
 endif
 
 LOCAL_SRC_FILES += \
     ThreadInfo.cpp \
 
-endif
-
-ifneq ($(filter virgl, $(BOARD_GPU_DRIVERS)),)
-LOCAL_CFLAGS += -DVIRTIO_GPU
-LOCAL_SRC_FILES += VirtioGpuStream.cpp
-LOCAL_C_INCLUDES += external/libdrm external/minigbm/cros_gralloc
-LOCAL_SHARED_LIBRARIES += libdrm
 endif
 
 ifdef IS_AT_LEAST_OPD1
