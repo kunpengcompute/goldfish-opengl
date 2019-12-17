@@ -43,11 +43,16 @@ class HostAddressSpaceDevice;
     typedef int address_space_handle_t;
 #endif
 
+enum GoldfishAddressSpaceSubdeviceType {
+    NoSubdevice = -1,
+    Graphics = 0,
+    Media = 1,
+    HostMemoryAllocator = 5,
+};
+
 class GoldfishAddressSpaceBlockProvider {
 public:
-    static const uint64_t SUBDEVICE_TYPE_NO_SUBDEVICE_ID = -1;
-    static const uint64_t SUBDEVICE_TYPE_HOST_MEMORY_ALLOCATOR_ID = 5;
-    GoldfishAddressSpaceBlockProvider(uint64_t subdevice);
+    GoldfishAddressSpaceBlockProvider(GoldfishAddressSpaceSubdeviceType subdevice);
     ~GoldfishAddressSpaceBlockProvider();
 
 private:
@@ -61,6 +66,7 @@ private:
 
 #ifdef __Fuchsia__
     fuchsia::hardware::goldfish::AddressSpaceDeviceSyncPtr m_device;
+    fuchsia::hardware::goldfish::AddressSpaceChildDriverSyncPtr m_child_driver;
 #else // __Fuchsia__
     address_space_handle_t m_handle;
 #endif // !__Fuchsia__
@@ -92,7 +98,7 @@ private:
     GoldfishAddressSpaceBlock &operator=(const GoldfishAddressSpaceBlock &);
 
 #ifdef __Fuchsia__
-    fuchsia::hardware::goldfish::AddressSpaceDeviceSyncPtr* m_device;
+    fuchsia::hardware::goldfish::AddressSpaceChildDriverSyncPtr* m_driver;
     uint32_t  m_vmo;
 #else // __Fuchsia__
     address_space_handle_t m_handle;
@@ -155,6 +161,7 @@ void* goldfish_address_space_map(
     address_space_handle_t, uint64_t offset, uint64_t size, uint64_t pgoff = 0);
 void goldfish_address_space_unmap(void* ptr, uint64_t size);
 
+bool goldfish_address_space_set_subdevice_type(address_space_handle_t, GoldfishAddressSpaceSubdeviceType type, address_space_handle_t*);
 bool goldfish_address_space_ping(address_space_handle_t, struct goldfish_address_space_ping*);
 
 #endif  // #ifndef ANDROID_INCLUDE_HARDWARE_GOLDFISH_ADDRESS_SPACE_H

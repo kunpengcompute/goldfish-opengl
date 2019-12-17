@@ -71,6 +71,7 @@ using goldfish_vk::VkEncoder;
 
 #ifdef VIRTIO_GPU
 #include "VirtioGpuStream.h"
+#include "VirtioGpuPipeStream.h"
 #endif
 
 #undef LOG_TAG
@@ -85,6 +86,9 @@ using goldfish_vk::VkEncoder;
 #define STREAM_PORT_NUM     22468
 
 static HostConnectionType getConnectionTypeFromProperty() {
+#ifdef __Fuchsia__
+    return HOST_CONNECTION_ADDRESS_SPACE;
+#else
     char transportValue[PROPERTY_VALUE_MAX] = "";
     property_get("ro.kernel.qemu.gltransport", transportValue, "");
 
@@ -95,8 +99,10 @@ static HostConnectionType getConnectionTypeFromProperty() {
     if (!strcmp("pipe", transportValue)) return HOST_CONNECTION_QEMU_PIPE;
     if (!strcmp("virtio-gpu", transportValue)) return HOST_CONNECTION_VIRTIO_GPU;
     if (!strcmp("asg", transportValue)) return HOST_CONNECTION_ADDRESS_SPACE;
+    if (!strcmp("virtio-gpu-pipe", transportValue)) return HOST_CONNECTION_VIRTIO_GPU_PIPE;
 
     return HOST_CONNECTION_QEMU_PIPE;
+#endif
 }
 
 static uint32_t getDrawCallFlushIntervalFromProperty() {
@@ -249,6 +255,25 @@ HostConnection* HostConnection::connect(HostConnection* con) {
             con->m_stream = stream;
             con->m_grallocHelper = stream->getGralloc();
             con->m_processPipe = stream->getProcessPipe();
+            break;
+        }
+        case HOST_CONNECTION_VIRTIO_GPU_PIPE: {
+            VirtioGpuPipeStream *stream = new VirtioGpuPipeStream(STREAM_BUFFER_SIZE);
+            if (!stream) {
+                ALOGE("Failed to create VirtioGpu for host connection!!!\n");
+                delete con;
+                return NULL;
+            }
+            if (stream->connect() < 0) {
+                ALOGE("Failed to connect to host (VirtioGpu)!!!\n");
+                delete stream;
+                delete con;
+                return NULL;
+            }
+            con->m_connectionType = HOST_CONNECTION_VIRTIO_GPU_PIPE;
+            con->m_stream = stream;
+            con->m_grallocHelper = &m_goldfishGralloc;
+            con->m_processPipe = &m_goldfishProcessPipe;
             break;
         }
 #else
