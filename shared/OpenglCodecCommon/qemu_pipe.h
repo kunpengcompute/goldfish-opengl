@@ -22,6 +22,10 @@
 
 #ifdef HOST_BUILD
 
+#ifndef QEMU_PIPE_RETRY
+#define QEMU_PIPE_RETRY TEMP_FAILURE_RETRY
+#endif
+
 typedef void* QEMU_PIPE_HANDLE;
 
 #define QEMU_PIPE_INVALID_HANDLE NULL
@@ -190,7 +194,7 @@ qemu_pipe_read_fully(QEMU_PIPE_HANDLE pipe, void* buffer, ssize_t len) {
     char* p = (char*)buffer;
 
     while (len > 0) {
-      ssize_t n = TEMP_FAILURE_RETRY(qemu_pipe_read(pipe, p, len));
+      ssize_t n = QEMU_PIPE_RETRY(qemu_pipe_read(pipe, p, len));
       if (n < 0) return n;
 
       p += n;
@@ -205,7 +209,7 @@ qemu_pipe_write_fully(QEMU_PIPE_HANDLE pipe, const void* buffer, ssize_t len) {
     const char* p = (const char*)buffer;
 
     while (len > 0) {
-      ssize_t n = TEMP_FAILURE_RETRY(qemu_pipe_write(pipe, p, len));
+      ssize_t n = QEMU_PIPE_RETRY(qemu_pipe_write(pipe, p, len));
       if (n < 0) return n;
 
       p += n;
