@@ -17,26 +17,31 @@
 #include <cutils/native_handle.h>
 #include <android/hardware/graphics/allocator/2.0/IAllocator.h>
 #include <android/hardware/graphics/mapper/2.0/IMapper.h>
+#include <log/log.h>
 
 #include "cbmanager.h"
+#include "debug.h"
 
 namespace android {
 namespace {
-using ::android::hardware::hidl_handle;
-using ::android::hardware::hidl_vec;
-using PixelFormat10 = ::android::hardware::graphics::common::V1_0::PixelFormat;
-using ::android::hardware::graphics::common::V1_0::BufferUsage;
+using hardware::hidl_handle;
+using hardware::hidl_vec;
 
-namespace IMapper2ns = ::android::hardware::graphics::mapper::V2_0;
-namespace IAllocator2ns = ::android::hardware::graphics::allocator::V2_0;
+namespace IMapper2ns = hardware::graphics::mapper::V2_0;
+namespace IAllocator2ns = hardware::graphics::allocator::V2_0;
 
-class CbManagerHidlV3Impl : public CbManager::CbManagerImpl {
+class CbManagerHidlV2Impl : public CbManager::CbManagerImpl {
 public:
-    CbManagerHidlV3Impl(::android::sp<IMapper2ns::IMapper> mapper,
-                        ::android::sp<IAllocator2ns::IAllocator> allocator)
+    typedef CbManager::BufferUsage BufferUsage;
+    typedef CbManager::PixelFormat PixelFormat;
+    typedef hardware::hidl_bitfield<BufferUsage> BufferUsageBits;
+
+    CbManagerHidlV2Impl(sp<IMapper2ns::IMapper> mapper,
+                        sp<IAllocator2ns::IAllocator> allocator)
       : mMapper(mapper), mAllocator(allocator) {}
 
-    const cb_handle_t* allocateBuffer(int width, int height, int format) {
+    const cb_handle_t* allocateBuffer(int width, int height,
+                                      PixelFormat format, BufferUsageBits usage) {
         using IMapper2ns::Error;
         using IMapper2ns::BufferDescriptor;
 
@@ -44,9 +49,8 @@ public:
         descriptor_info.width = width;
         descriptor_info.height = height;
         descriptor_info.layerCount = 1;
-        descriptor_info.format = static_cast<PixelFormat10>(format);
-        descriptor_info.usage =
-            BufferUsage::COMPOSER_OVERLAY | BufferUsage::GPU_RENDER_TARGET;
+        descriptor_info.format = format;
+        descriptor_info.usage = usage;
         Error hidl_err = Error::NONE;
 
         BufferDescriptor descriptor;
@@ -57,19 +61,20 @@ public:
             descriptor = _descriptor;
         });
         if (hidl_err != Error::NONE) {
-          return nullptr;
+            RETURN_ERROR(nullptr);
         }
 
         hidl_handle raw_handle = nullptr;
         mAllocator->allocate(descriptor, 1,
                              [&](const Error &_error,
-                                 uint32_t /*_stride*/,
+                                 uint32_t _stride,
                                  const hidl_vec<hidl_handle> &_buffers) {
             hidl_err = _error;
+            (void)_stride;
             raw_handle = _buffers[0];
         });
         if (hidl_err != Error::NONE) {
-            return nullptr;
+            RETURN_ERROR(nullptr);
         }
 
         const cb_handle_t *buf = nullptr;
@@ -79,10 +84,10 @@ public:
             buf = cb_handle_t::from(_buf);
         });
         if (hidl_err != Error::NONE) {
-          return nullptr;
+            RETURN_ERROR(nullptr);
         }
 
-        return buf;
+        RETURN(buf);
     }
 
     void freeBuffer(const cb_handle_t* _h) {
@@ -96,24 +101,26 @@ public:
     }
 
 private:
-    const ::android::sp<IMapper2ns::IMapper> mMapper;
-    const ::android::sp<IAllocator2ns::IAllocator> mAllocator;
+    const sp<IMapper2ns::IMapper> mMapper;
+    const sp<IAllocator2ns::IAllocator> mAllocator;
 };
 
 std::unique_ptr<CbManager::CbManagerImpl> buildHidlImpl() {
-    {
-        ::android::sp<IMapper2ns::IMapper> mapper =
-            IMapper2ns::IMapper::getService();
-        ::android::sp<IAllocator2ns::IAllocator> allocator =
-            IAllocator2ns::IAllocator::getService();
-        if (mapper && allocator) {
-            return std::make_unique<CbManagerHidlV3Impl>(mapper, allocator);
-        }
+    sp<IMapper2ns::IMapper> mapper =
+        IMapper2ns::IMapper::getService();
+    if (!mapper) {
+        ALOGE("%s:%d: no IMapper implementation found", __func__, __LINE__);
+        RETURN_ERROR(nullptr);
     }
 
-    ALOGE("%s:%d: no IMapper and IAllocator implementations found",
-          __func__, __LINE__);
-    return nullptr;
+    sp<IAllocator2ns::IAllocator> allocator =
+        IAllocator2ns::IAllocator::getService();
+    if (!allocator) {
+        ALOGE("%s:%d: no IAllocator implementation found", __func__, __LINE__);
+        RETURN_ERROR(nullptr);
+    }
+
+    return std::make_unique<CbManagerHidlV2Impl>(mapper, allocator);
 }
 
 }  // namespace
