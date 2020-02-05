@@ -133,7 +133,7 @@ static uint32_t getDrawCallFlushIntervalFromProperty() {
 
 static GrallocType getGrallocTypeFromProperty() {
     char prop[PROPERTY_VALUE_MAX] = "";
-    property_get("ro.boot.hardware.gralloc", prop, "");
+    property_get("ro.hardware.gralloc", prop, "");
 
     bool isValid = prop[0] != '\0';
 
@@ -610,6 +610,7 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetDeferredVulkanCommandsSupport(m_rcEnc);
         queryAndSetVulkanNullOptionalStringsSupport(m_rcEnc);
         queryAndSetVulkanCreateResourcesWithRequirementsSupport(m_rcEnc);
+        queryAndSetVulkanIgnoredHandles(m_rcEnc);
         queryAndSetYUVCache(m_rcEnc);
         queryAndSetAsyncUnmapBuffer(m_rcEnc);
         if (m_processPipe) {
@@ -785,6 +786,13 @@ void HostConnection::queryAndSetVulkanCreateResourcesWithRequirementsSupport(Ext
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kVulkanCreateResourcesWithRequirements) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkanCreateResourcesWithRequirements = true;
+    }
+}
+
+void HostConnection::queryAndSetVulkanIgnoredHandles(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kVulkanIgnoredHandles) != std::string::npos) {
+        rcEnc->featureInfo()->hasVulkanIgnoredHandles = true;
     }
 }
 
