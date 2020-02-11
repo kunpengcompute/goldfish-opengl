@@ -26,15 +26,16 @@
 // capability, and we will use a fence fd to synchronize buffer swaps.
 enum SyncImpl {
     SYNC_IMPL_NONE = 0,
-    SYNC_IMPL_NATIVE_SYNC_V2 = 1,
-    SYNC_IMPL_NATIVE_SYNC_V3 = 2,
+    SYNC_IMPL_NATIVE_SYNC_V2 = 1, // ANDROID_native_fence_sync
+    SYNC_IMPL_NATIVE_SYNC_V3 = 2, // KHR_wait_sync
+    SYNC_IMPL_NATIVE_SYNC_V4 = 3, // Correct eglGetSyncAttribKHR
 };
 
-// Interface:
-// Use the highest of v2 or v3 that show up, making us
-// SYNC_IMPL_NATIVE_SYNC_V2 or SYNC_IMPL_NATIVE_SYNC_V3.
+// Interface for native sync:
+// Use the highest that shows up
 static const char kRCNativeSyncV2[] = "ANDROID_EMU_native_sync_v2";
 static const char kRCNativeSyncV3[] = "ANDROID_EMU_native_sync_v3";
+static const char kRCNativeSyncV4[] = "ANDROID_EMU_native_sync_v4";
 
 // DMA for OpenGL
 enum DmaImpl {
@@ -87,6 +88,9 @@ static const char kVulkanNullOptionalStrings[] = "ANDROID_EMU_vulkan_null_option
 // Vulkan create resources with requirements
 static const char kVulkanCreateResourcesWithRequirements[] = "ANDROID_EMU_vulkan_create_resources_with_requirements";
 
+// Vulkan ignored handles
+static const char kVulkanIgnoredHandles[] = "ANDROID_EMU_vulkan_ignored_handles";
+
 // YUV host cache
 static const char kYUVCache[] = "ANDROID_EMU_YUV_Cache";
 
@@ -106,6 +110,7 @@ struct EmulatorFeatureInfo {
         hasDeferredVulkanCommands(false),
         hasVulkanNullOptionalStrings(false),
         hasVulkanCreateResourcesWithRequirements(false),
+        hasVulkanIgnoredHandles(false),
         hasYUVCache (false),
         hasAsyncUnmapBuffer (false) { }
 
@@ -118,8 +123,23 @@ struct EmulatorFeatureInfo {
     bool hasDeferredVulkanCommands;
     bool hasVulkanNullOptionalStrings;
     bool hasVulkanCreateResourcesWithRequirements;
+    bool hasVulkanIgnoredHandles;
     bool hasYUVCache;
     bool hasAsyncUnmapBuffer;
+};
+
+enum HostConnectionType {
+    HOST_CONNECTION_TCP = 0,
+    HOST_CONNECTION_QEMU_PIPE = 1,
+    HOST_CONNECTION_VIRTIO_GPU = 2,
+    HOST_CONNECTION_ADDRESS_SPACE = 3,
+    HOST_CONNECTION_VIRTIO_GPU_PIPE = 4,
+};
+
+enum GrallocType {
+    GRALLOC_TYPE_RANCHU = 0,
+    GRALLOC_TYPE_MINIGBM = 1,
+    GRALLOC_TYPE_DYN_ALLOC_MINIGBM = 2,
 };
 
 #endif // __COMMON_EMULATOR_FEATURE_INFO_H

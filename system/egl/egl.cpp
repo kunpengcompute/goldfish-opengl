@@ -675,7 +675,7 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
         return EGL_FALSE;
     }
 
-    rcColorBuffer = rcEnc->rcCreateColorBuffer(rcEnc, getWidth(), getHeight(), pixelFormat);
+    rcColorBuffer = grallocHelper->createColorBuffer(rcEnc, getWidth(), getHeight(), pixelFormat);
     if (!rcColorBuffer) {
         ALOGE("rcCreateColorBuffer returned 0");
         return EGL_FALSE;
@@ -2258,9 +2258,22 @@ EGLBoolean eglGetSyncAttribKHR(EGLDisplay dpy, EGLSyncKHR eglsync,
     case EGL_SYNC_TYPE_KHR:
         *value = sync->type;
         return EGL_TRUE;
-    case EGL_SYNC_STATUS_KHR:
-        *value = sync->status;
-        return EGL_TRUE;
+    case EGL_SYNC_STATUS_KHR: {
+        if (sync->status == EGL_SIGNALED_KHR) {
+            *value = sync->status;
+            return EGL_TRUE;
+        } else {
+            // ask the host again
+            DEFINE_HOST_CONNECTION;
+            if (rcEnc->hasNativeSyncV4()) {
+                if (rcEnc->rcIsSyncSignaled(rcEnc, sync->handle)) {
+                    sync->status = EGL_SIGNALED_KHR;
+                }
+            }
+            *value = sync->status;
+            return EGL_TRUE;
+        }
+    }
     case EGL_SYNC_CONDITION_KHR:
         *value = EGL_SYNC_PRIOR_COMMANDS_COMPLETE_KHR;
         return EGL_TRUE;

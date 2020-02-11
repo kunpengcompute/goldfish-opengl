@@ -33,8 +33,10 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
+
 #include <cutils/native_handle.h>
 
+#include "cbmanager.h"
 #include "MiniFence.h"
 #include "HostConnection.h"
 
@@ -137,20 +139,6 @@ private:
             sp<MiniFence> mFence;
     };
 
-    class GrallocModule {
-    public:
-        GrallocModule();
-        ~GrallocModule();
-        framebuffer_device_t* getFb() { return mFbDev; }
-        uint32_t getTargetCb();
-    private:
-        const hw_module_t* mHw = nullptr;
-        const gralloc_module_t* mGralloc = nullptr;
-        alloc_device_t* mAllocDev = nullptr;
-        framebuffer_device_t* mFbDev = nullptr;
-        buffer_handle_t mHandle = nullptr;
-    };
-
     typedef struct compose_layer {
         uint32_t cbHandle;
         hwc2_composition_t composeMode;
@@ -216,6 +204,7 @@ private:
     class Display {
     public:
         Display(EmuHWC2& device, HWC2::DisplayType type);
+        ~Display();
         hwc2_display_t getId() const {return mId;}
 
         // HWC2 Display functions
@@ -267,11 +256,14 @@ private:
         HWC2::Error setDisplayBrightness(float brightness);
 
         // Read configs from PRIMARY Display
-        int populatePrimaryConfigs();
+        int populatePrimaryConfigs(int width, int height, int dpiX, int dpiY);
         HWC2::Error populateSecondaryConfigs(uint32_t width, uint32_t height,
                  uint32_t dpi);
 
     private:
+        void post(HostConnection *hostCon, ExtendedRCEncoderContext *rcEnc,
+                  buffer_handle_t h);
+
         class Config {
         public:
             Config(Display& display)
@@ -379,12 +371,11 @@ private:
         // called. To prevent a bad state from crashing us during a dump
         // call, all public calls into Display must acquire this mutex.
         mutable std::mutex mStateMutex;
-        std::unique_ptr<GrallocModule> mGralloc;
         std::unique_ptr<ComposeMsg> mComposeMsg;
         std::unique_ptr<ComposeMsg_v2> mComposeMsg_v2;
         int mSyncDeviceFd;
-
-   };
+        const native_handle_t* mTargetCb;
+    };
 
     template<typename MF, MF memFunc, typename ...Args>
     static int32_t displayHook(hwc2_device_t* device, hwc2_display_t displayId,
@@ -472,6 +463,11 @@ private:
     std::tuple<Layer*, HWC2::Error> getLayer(hwc2_display_t displayId,
             hwc2_layer_t layerId);
 
+    HWC2::Error initDisplayParameters();
+    const native_handle_t* allocateDisplayColorBuffer();
+    void freeDisplayColorBuffer(const native_handle_t* h);
+
+    CbManager mCbManager;
     std::unordered_set<HWC2::Capability> mCapabilities;
 
     // These are potentially accessed from multiple threads, and are protected
@@ -488,6 +484,10 @@ private:
     std::map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
     std::unordered_map<hwc2_layer_t, std::shared_ptr<Layer>> mLayers;
 
+    int mDisplayWidth;
+    int mDisplayHeight;
+    int mDisplayDpiX;
+    int mDisplayDpiY;
 };
 
 }

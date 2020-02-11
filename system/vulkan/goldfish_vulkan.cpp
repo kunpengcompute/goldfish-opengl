@@ -18,7 +18,15 @@
 #include <errno.h>
 #include <string.h>
 #ifdef VK_USE_PLATFORM_FUCHSIA
+#include <fuchsia/logger/llcpp/fidl.h>
+#include <lib/syslog/global.h>
+#include <lib/zx/channel.h>
+#include <lib/zx/socket.h>
+#include <lib/zxio/zxio.h>
+#include <lib/zxio/inception.h>
 #include <unistd.h>
+
+#include "services/service_connector.h"
 #endif
 
 #include "HostConnection.h"
@@ -662,8 +670,30 @@ int OpenDevice(const hw_module_t* /*module*/,
 
 class VulkanDevice {
 public:
-    VulkanDevice() : mHostSupportsGoldfish(access(QEMU_PIPE_PATH, F_OK) != -1) {
+    VulkanDevice() : mHostSupportsGoldfish(IsAccessible(QEMU_PIPE_PATH)) {
+        InitLogger();
         goldfish_vk::ResourceTracker::get();
+    }
+
+    static void InitLogger();
+
+    static bool IsAccessible(const char* name) {
+        zx_handle_t handle = GetConnectToServiceFunction()(name);
+        if (handle == ZX_HANDLE_INVALID)
+            return false;
+
+        zxio_storage_t io_storage;
+        zx_status_t status = zxio_remote_init(&io_storage, handle, ZX_HANDLE_INVALID);
+        if (status != ZX_OK)
+            return false;
+
+        zxio_node_attr_t attr;
+        status = zxio_attr_get(&io_storage.io, &attr);
+        zxio_close(&io_storage.io);
+        if (status != ZX_OK)
+            return false;
+
+        return true;
     }
 
     static VulkanDevice& GetInstance() {
@@ -682,6 +712,32 @@ private:
     const bool mHostSupportsGoldfish;
 };
 
+void VulkanDevice::InitLogger() {
+   zx_handle_t channel = GetConnectToServiceFunction()("/svc/fuchsia.logger.LogSink");
+   if (channel == ZX_HANDLE_INVALID)
+      return;
+
+  zx::socket local_socket, remote_socket;
+  zx_status_t status = zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
+  if (status != ZX_OK)
+    return;
+
+  auto result = llcpp::fuchsia::logger::LogSink::Call::Connect(
+      zx::unowned_channel(channel), std::move(remote_socket));
+  zx_handle_close(channel);
+
+  if (result.status() != ZX_OK)
+    return;
+
+  fx_logger_config_t config = {.min_severity = FX_LOG_INFO,
+                               .console_fd = -1,
+                               .log_service_channel = local_socket.release(),
+                               .tags = nullptr,
+                               .num_tags = 0};
+
+  fx_log_init_with_config(&config);
+}
+
 extern "C" __attribute__((visibility("default"))) PFN_vkVoidFunction
 vk_icdGetInstanceProcAddr(VkInstance instance, const char* name) {
     return VulkanDevice::GetInstance().GetInstanceProcAddr(instance, name);
@@ -691,6 +747,34 @@ extern "C" __attribute__((visibility("default"))) VkResult
 vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t* pSupportedVersion) {
     *pSupportedVersion = std::min(*pSupportedVersion, 3u);
     return VK_SUCCESS;
+}
+
+typedef VkResult(VKAPI_PTR *PFN_vkConnectToServiceAddr)(const char *pName, uint32_t handle);
+
+namespace {
+
+PFN_vkConnectToServiceAddr g_vulkan_connector;
+
+zx_handle_t LocalConnectToServiceFunction(const char* pName) {
+    zx::channel remote_endpoint, local_endpoint;
+    zx_status_t status;
+    if ((status = zx::channel::create(0, &remote_endpoint, &local_endpoint)) != ZX_OK) {
+        ALOGE("zx::channel::create failed: %d", status);
+        return ZX_HANDLE_INVALID;
+    }
+    if ((status = g_vulkan_connector(pName, remote_endpoint.release())) != ZX_OK) {
+        ALOGE("vulkan_connector failed: %d", status);
+        return ZX_HANDLE_INVALID;
+    }
+    return local_endpoint.release();
+}
+
+}
+
+extern "C" __attribute__((visibility("default"))) void
+vk_icdInitializeConnectToServiceCallback(PFN_vkConnectToServiceAddr callback) {
+    g_vulkan_connector = callback;
+    SetConnectToServiceFunction(&LocalConnectToServiceFunction);
 }
 
 #endif

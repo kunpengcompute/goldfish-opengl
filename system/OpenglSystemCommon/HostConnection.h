@@ -54,6 +54,7 @@ public:
         m_featureInfo.hostComposition = hostComposition; }
     bool hasNativeSync() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V2; }
     bool hasNativeSyncV3() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V3; }
+    bool hasNativeSyncV4() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V4; }
     bool hasHostCompositionV1() const {
         return m_featureInfo.hostComposition == HOST_COMPOSITION_V1; }
     bool hasHostCompositionV2() const {
@@ -113,26 +114,23 @@ private:
 // Abstraction for gralloc handle conversion
 class Gralloc {
 public:
+    virtual uint32_t createColorBuffer(
+        ExtendedRCEncoderContext* rcEnc, int width, int height, uint32_t glformat);
     virtual uint32_t getHostHandle(native_handle_t const* handle) = 0;
     virtual int getFormat(native_handle_t const* handle) = 0;
+    virtual size_t getAllocatedSize(native_handle_t const* handle) = 0;
     virtual ~Gralloc() {}
 };
 
 // Abstraction for process pipe helper
 class ProcessPipe {
 public:
-    virtual bool processPipeInit(renderControl_encoder_context_t *rcEnc) = 0;
+    virtual bool processPipeInit(HostConnectionType connType, renderControl_encoder_context_t *rcEnc) = 0;
     virtual ~ProcessPipe() {}
 };
 
 struct EGLThreadInfo;
 
-enum HostConnectionType {
-    HOST_CONNECTION_TCP = 0,
-    HOST_CONNECTION_QEMU_PIPE = 1,
-    HOST_CONNECTION_VIRTIO_GPU = 2,
-    HOST_CONNECTION_ADDRESS_SPACE = 3,
-};
 
 class HostConnection
 {
@@ -202,11 +200,13 @@ private:
     void queryAndSetDeferredVulkanCommandsSupport(ExtendedRCEncoderContext *rcEnc);
     void queryAndSetVulkanNullOptionalStringsSupport(ExtendedRCEncoderContext *rcEnc);
     void queryAndSetVulkanCreateResourcesWithRequirementsSupport(ExtendedRCEncoderContext *rcEnc);
+    void queryAndSetVulkanIgnoredHandles(ExtendedRCEncoderContext *rcEnc);
     void queryAndSetYUVCache(ExtendedRCEncoderContext *mrcEnc);
     void queryAndSetAsyncUnmapBuffer(ExtendedRCEncoderContext *rcEnc);
 
 private:
     HostConnectionType m_connectionType;
+    GrallocType m_grallocType;
     IOStream *m_stream;
     GLEncoder   *m_glEnc;
     GL2Encoder  *m_gl2Enc;

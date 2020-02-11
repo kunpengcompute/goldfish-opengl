@@ -38,17 +38,15 @@ void zx_event_create(int, zx_handle_t*) { }
 #ifdef VK_USE_PLATFORM_FUCHSIA
 
 #include <cutils/native_handle.h>
-#include <fuchsia/hardware/goldfish/control/cpp/fidl.h>
+#include <fuchsia/hardware/goldfish/cpp/fidl.h>
 #include <fuchsia/sysmem/cpp/fidl.h>
-#include <lib/fdio/directory.h>
-#include <lib/fdio/fd.h>
-#include <lib/fdio/fdio.h>
-#include <lib/fdio/io.h>
 #include <lib/zx/channel.h>
 #include <lib/zx/vmo.h>
 #include <zircon/process.h>
 #include <zircon/syscalls.h>
 #include <zircon/syscalls/object.h>
+
+#include "services/service_connector.h"
 
 struct AHardwareBuffer;
 
@@ -63,6 +61,7 @@ uint64_t getAndroidHardwareBufferUsageFromVkUsage(
 }
 
 VkResult importAndroidHardwareBuffer(
+    Gralloc *grallocHelper,
     const VkImportAndroidHardwareBufferInfoANDROID* info,
     struct AHardwareBuffer **importOut) {
   return VK_SUCCESS;
@@ -87,6 +86,7 @@ struct HostVisibleMemoryVirtualizationInfo;
 }
 
 VkResult getAndroidHardwareBufferPropertiesANDROID(
+    Gralloc *grallocHelper,
     const goldfish_vk::HostVisibleMemoryVirtualizationInfo*,
     VkDevice,
     const AHardwareBuffer*,
@@ -103,7 +103,6 @@ VkResult getMemoryAndroidHardwareBufferANDROID(struct AHardwareBuffer **) { retu
 #include "android/base/AlignedBuf.h"
 #include "android/base/synchronization/AndroidLock.h"
 
-#include "gralloc_cb.h"
 #include "goldfish_address_space.h"
 #include "goldfish_vk_private_defs.h"
 #include "vk_format_info.h"
@@ -271,6 +270,9 @@ public:
         VkDeviceSize currentBackingSize = 0;
         bool baseRequirementsKnown = false;
         VkMemoryRequirements baseRequirements;
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        bool isSysmemBackedMemory = false;
+#endif
     };
 
     struct VkBuffer_Info {
@@ -594,36 +596,31 @@ public:
         if (mFeatureInfo->hasDirectMem) {
             mGoldfishAddressSpaceBlockProvider.reset(
                 new GoldfishAddressSpaceBlockProvider(
-                    GoldfishAddressSpaceBlockProvider::SUBDEVICE_TYPE_NO_SUBDEVICE_ID));
+                    GoldfishAddressSpaceSubdeviceType::NoSubdevice));
         }
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         if (mFeatureInfo->hasVulkan) {
-            int fd = open("/dev/class/goldfish-control/000", O_RDWR);
-            if (fd < 0) {
+            zx::channel channel(GetConnectToServiceFunction()("/dev/class/goldfish-control/000"));
+            if (!channel) {
                 ALOGE("failed to open control device");
-                abort();
-            }
-            zx::channel channel;
-            zx_status_t status = fdio_get_service_handle(fd, channel.reset_and_get_address());
-            if (status != ZX_OK) {
-                ALOGE("failed to get control service handle, status %d", status);
                 abort();
             }
             mControlDevice.Bind(std::move(channel));
 
-            status = fdio_service_connect(
-                "/svc/fuchsia.sysmem.Allocator",
-                mSysmemAllocator.NewRequest().TakeChannel().release());
-            if (status != ZX_OK) {
-                ALOGE("failed to get sysmem connection, status %d", status);
-                abort();
+            zx::channel sysmem_channel(GetConnectToServiceFunction()("/svc/fuchsia.sysmem.Allocator"));
+            if (!sysmem_channel) {
+                ALOGE("failed to open sysmem connection");
             }
+            mSysmemAllocator.Bind(std::move(sysmem_channel));
         }
 #endif
 
         if (mFeatureInfo->hasVulkanNullOptionalStrings) {
             mStreamFeatureBits |= VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT;
+        }
+        if (mFeatureInfo->hasVulkanIgnoredHandles) {
+            mStreamFeatureBits |= VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT;
         }
     }
 
@@ -890,10 +887,15 @@ public:
 
         std::vector<const char*> allowedExtensionNames = {
             "VK_KHR_maintenance1",
+            "VK_KHR_maintenance2",
+            "VK_KHR_maintenance3",
             "VK_KHR_get_memory_requirements2",
             "VK_KHR_dedicated_allocation",
             "VK_KHR_bind_memory2",
             "VK_KHR_sampler_ycbcr_conversion",
+            "VK_KHR_shader_float16_int8",
+            "VK_AMD_gpu_shader_half_float",
+            "VK_NV_shader_subgroup_partitioned",
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
             "VK_KHR_external_semaphore",
             "VK_KHR_external_semaphore_fd",
@@ -902,8 +904,6 @@ public:
             "VK_KHR_external_fence",
             "VK_KHR_external_fence_fd",
 #endif
-            // "VK_KHR_maintenance2",
-            // "VK_KHR_maintenance3",
             // TODO:
             // VK_KHR_external_memory_capabilities
         };
@@ -1244,7 +1244,10 @@ public:
         VkDevice device,
         const AHardwareBuffer* buffer,
         VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
+        auto grallocHelper =
+            mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper();
         return getAndroidHardwareBufferPropertiesANDROID(
+            grallocHelper,
             &mHostVisibleMemoryVirtInfo,
             device, buffer, pProperties);
     }
@@ -1829,15 +1832,15 @@ public:
             ahw = importAhbInfoPtr->buffer;
             // We still need to acquire the AHardwareBuffer.
             importAndroidHardwareBuffer(
+                mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper(),
                 importAhbInfoPtr, nullptr);
         }
 
         if (ahw) {
-            ALOGD("%s: Import AHardwareBulffer", __func__);
-            const native_handle_t *handle =
-                AHardwareBuffer_getNativeHandle(ahw);
-            const cb_handle_t* cb_handle = cb_handle_t::from(handle);
-            importCbInfo.colorBuffer = cb_handle->hostHandle;
+            ALOGD("%s: Import AHardwareBuffer", __func__);
+            importCbInfo.colorBuffer =
+                mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper()->
+                    getHostHandle(AHardwareBuffer_getNativeHandle(ahw));
             vk_append_struct(&structChainIter, &importCbInfo);
         }
 
@@ -1938,7 +1941,7 @@ public:
                     std::move(vmo_copy),
                     imageCreateInfo.extent.width,
                     imageCreateInfo.extent.height,
-                    fuchsia::hardware::goldfish::control::FormatType::BGRA,
+                    fuchsia::hardware::goldfish::ColorBufferFormatType::BGRA,
                     &status2);
                 if (status != ZX_OK || status2 != ZX_OK) {
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
@@ -2210,6 +2213,8 @@ public:
         }
 
         transformExternalResourceMemoryRequirementsForGuest(reqs);
+
+        setMemoryRequirementsForSysmemBackedImage(image, reqs);
     }
 
     void transformBufferMemoryRequirementsForGuestLocked(
@@ -2249,6 +2254,8 @@ public:
         }
 
         transformExternalResourceMemoryRequirementsForGuest(&reqs2->memoryRequirements);
+
+        setMemoryRequirementsForSysmemBackedImage(image, &reqs2->memoryRequirements);
 
         VkMemoryDedicatedRequirements* dedicatedReqs =
             vk_find_struct<VkMemoryDedicatedRequirements>(reqs2);
@@ -2336,6 +2343,7 @@ public:
 #ifdef VK_USE_PLATFORM_FUCHSIA
         const VkBufferCollectionImageCreateInfoFUCHSIA* extBufferCollectionPtr =
             vk_find_struct<VkBufferCollectionImageCreateInfoFUCHSIA>(pCreateInfo);
+        bool isSysmemBackedMemory = false;
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<fuchsia::sysmem::BufferCollectionSyncPtr*>(
                 extBufferCollectionPtr->collection);
@@ -2359,12 +2367,13 @@ public:
                     std::move(vmo),
                     localCreateInfo.extent.width,
                     localCreateInfo.extent.height,
-                    fuchsia::hardware::goldfish::control::FormatType::BGRA,
+                    fuchsia::hardware::goldfish::ColorBufferFormatType::BGRA,
                     &status2);
                 if (status != ZX_OK || (status2 != ZX_OK && status2 != ZX_ERR_ALREADY_EXISTS)) {
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
                 }
             }
+            isSysmemBackedMemory = true;
         }
 #endif
 
@@ -2399,11 +2408,16 @@ public:
             info.externalCreateInfo = *extImgCiPtr;
         }
 
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        if (isSysmemBackedMemory) {
+            info.isSysmemBackedMemory = true;
+        }
+#endif
+
         if (info.baseRequirementsKnown) {
             transformImageMemoryRequirementsForGuestLocked(*pImage, &memReqs);
             info.baseRequirements = memReqs;
         }
-
         return res;
     }
 
@@ -2503,7 +2517,7 @@ public:
         const VkAllocationCallbacks* pAllocator) {
         VkEncoder* enc = (VkEncoder*)context;
         if (ycbcrConversion != VK_YCBCR_CONVERSION_DO_NOTHING) {
-            enc->vkDestroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+            enc->vkDestroySamplerYcbcrConversionKHR(device, ycbcrConversion, pAllocator);
         }
     }
 
@@ -2898,6 +2912,24 @@ public:
         enc->vkDestroyImage(device, image, pAllocator);
     }
 
+    void setMemoryRequirementsForSysmemBackedImage(
+        VkImage image, VkMemoryRequirements *pMemoryRequirements) {
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        auto it = info_VkImage.find(image);
+        if (it == info_VkImage.end()) return;
+        auto& info = it->second;
+        if (info.isSysmemBackedMemory) {
+            auto width = info.createInfo.extent.width;
+            auto height = info.createInfo.extent.height;
+            pMemoryRequirements->size = width * height * 4;
+        }
+#else
+        // Bypass "unused parameter" checks.
+        (void)image;
+        (void)pMemoryRequirements;
+#endif
+    }
+
     void on_vkGetImageMemoryRequirements(
         void *context, VkDevice device, VkImage image,
         VkMemoryRequirements *pMemoryRequirements) {
@@ -2925,6 +2957,7 @@ public:
 
         transformImageMemoryRequirementsForGuestLocked(
             image, pMemoryRequirements);
+
         info.baseRequirementsKnown = true;
         info.baseRequirements = *pMemoryRequirements;
     }
@@ -3463,8 +3496,7 @@ public:
             return;
         }
 
-        const cb_handle_t* cb_handle = cb_handle_t::from(nativeInfo->handle);
-        if (!cb_handle) return;
+        if (!nativeInfo->handle) return;
 
         VkNativeBufferANDROID* nativeInfoOut =
             reinterpret_cast<VkNativeBufferANDROID*>(
@@ -3476,10 +3508,14 @@ public:
             abort();
         }
 
-        *(uint32_t*)(nativeInfoOut->handle) = cb_handle->hostHandle;
+        *(uint32_t*)(nativeInfoOut->handle) =
+            mThreadingCallbacks.hostConnectionGetFunc()->
+                grallocHelper()->getHostHandle(
+                    (const native_handle_t*)nativeInfo->handle);
     }
 
     void unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int*) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
         if (fd != -1) {
             // Implicit Synchronization
             sync_wait(fd, 3000);
@@ -3496,6 +3532,7 @@ public:
             // Therefore, assume contract where we need to close fd in this driver
             close(fd);
         }
+#endif
     }
 
     // Action of vkMapMemoryIntoAddressSpaceGOOGLE:
@@ -3989,7 +4026,7 @@ private:
     int mSyncDeviceFd = -1;
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
-    fuchsia::hardware::goldfish::control::DeviceSyncPtr mControlDevice;
+    fuchsia::hardware::goldfish::ControlDeviceSyncPtr mControlDevice;
     fuchsia::sysmem::AllocatorSyncPtr mSysmemAllocator;
 #endif
 

@@ -16,9 +16,15 @@
 #ifndef ANDROID_INCLUDE_HARDWARE_QEMU_PIPE_H
 #define ANDROID_INCLUDE_HARDWARE_QEMU_PIPE_H
 
+#include <sys/types.h>
+#include <stdint.h>
+#include <errno.h>
+
 #ifdef HOST_BUILD
 
-#include <sys/types.h>
+#ifndef QEMU_PIPE_RETRY
+#define QEMU_PIPE_RETRY TEMP_FAILURE_RETRY
+#endif
 
 typedef void* QEMU_PIPE_HANDLE;
 
@@ -55,16 +61,6 @@ typedef int QEMU_PIPE_HANDLE;
 #define QEMU_PIPE_PATH "/dev/qemu_pipe"
 #endif
 
-#ifndef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(exp) ({         \
-    __typeof__(exp) _rc;                   \
-    do {                                   \
-        _rc = (exp);                       \
-    } while (_rc == -1 && errno == EINTR); \
-    _rc; })
-#include <stdint.h>
-#endif
-
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
 #else
@@ -80,23 +76,10 @@ typedef int QEMU_PIPE_HANDLE;
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 #ifndef D
 #  define  D(...)   do{}while(0)
 #endif
-
-static bool WriteFully(QEMU_PIPE_HANDLE fd, const void* data, size_t byte_count) {
-  const uint8_t* p = (const uint8_t*)(data);
-  size_t remaining = byte_count;
-  while (remaining > 0) {
-    ssize_t n = QEMU_PIPE_RETRY(write(fd, p, remaining));
-    if (n == -1) return false;
-    p += n;
-    remaining -= n;
-  }
-  return true;
-}
 
 /* Try to open a new Qemu fast-pipe. This function returns a file descriptor
  * that can be used to communicate with a named service managed by the
@@ -120,8 +103,12 @@ static bool WriteFully(QEMU_PIPE_HANDLE fd, const void* data, size_t byte_count)
  * except for a few special cases (e.g. GSM modem), where EBUSY will be
  * returned if more than one client tries to connect to it.
  */
+
+static __inline__ ssize_t
+qemu_pipe_write_fully(QEMU_PIPE_HANDLE pipe, const void* buffer, ssize_t len);
+
 static __inline__ QEMU_PIPE_HANDLE
-qemu_pipe_open(const char* pipeName) {
+qemu_pipe_open_ns(const char* ns, const char* pipeName, int flags) {
     char  buff[256];
     int   buffLen;
     QEMU_PIPE_HANDLE   fd;
@@ -131,11 +118,15 @@ qemu_pipe_open(const char* pipeName) {
         return -1;
     }
 
-    snprintf(buff, sizeof buff, "pipe:%s", pipeName);
+    if (ns) {
+        buffLen = snprintf(buff, sizeof(buff), "pipe:%s:%s", ns, pipeName);
+    } else {
+        buffLen = snprintf(buff, sizeof(buff), "pipe:%s", pipeName);
+    }
 
-    fd = QEMU_PIPE_RETRY(open(QEMU_PIPE_PATH, O_RDWR | O_NONBLOCK));
+    fd = QEMU_PIPE_RETRY(open(QEMU_PIPE_PATH, flags));
     if (fd < 0 && errno == ENOENT) {
-        fd = QEMU_PIPE_RETRY(open("/dev/goldfish_pipe", O_RDWR | O_NONBLOCK));
+        fd = QEMU_PIPE_RETRY(open("/dev/goldfish_pipe", flags));
     }
     if (fd < 0) {
         D("%s: Could not open " QEMU_PIPE_PATH ": %s", __FUNCTION__, strerror(errno));
@@ -143,14 +134,17 @@ qemu_pipe_open(const char* pipeName) {
         return -1;
     }
 
-    buffLen = strlen(buff);
-
-    if (!WriteFully(fd, buff, buffLen + 1)) {
+    if (qemu_pipe_write_fully(fd, buff, buffLen + 1)) {
         D("%s: Could not connect to %s pipe service: %s", __FUNCTION__, pipeName, strerror(errno));
         return -1;
     }
 
     return fd;
+}
+
+static __inline__ QEMU_PIPE_HANDLE
+qemu_pipe_open(const char* pipeName) {
+    return qemu_pipe_open_ns(NULL, pipeName, O_RDWR | O_NONBLOCK);
 }
 
 static __inline__ void
@@ -183,6 +177,46 @@ qemu_pipe_print_error(QEMU_PIPE_HANDLE pipe) {
     ALOGE("pipe error: fd %d errno %d", pipe, errno);
 }
 
+
 #endif // !HOST_BUILD
+
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(exp) ({         \
+    __typeof__(exp) _rc;                   \
+    do {                                   \
+        _rc = (exp);                       \
+    } while (_rc == -1 && errno == EINTR); \
+    _rc; })
+#endif
+
+static __inline__ ssize_t
+qemu_pipe_read_fully(QEMU_PIPE_HANDLE pipe, void* buffer, ssize_t len) {
+    char* p = (char*)buffer;
+
+    while (len > 0) {
+      ssize_t n = QEMU_PIPE_RETRY(qemu_pipe_read(pipe, p, len));
+      if (n < 0) return n;
+
+      p += n;
+      len -= n;
+    }
+
+    return 0;
+}
+
+static __inline__ ssize_t
+qemu_pipe_write_fully(QEMU_PIPE_HANDLE pipe, const void* buffer, ssize_t len) {
+    const char* p = (const char*)buffer;
+
+    while (len > 0) {
+      ssize_t n = QEMU_PIPE_RETRY(qemu_pipe_write(pipe, p, len));
+      if (n < 0) return n;
+
+      p += n;
+      len -= n;
+    }
+
+    return 0;
+}
 
 #endif /* ANDROID_INCLUDE_HARDWARE_QEMU_PIPE_H */
