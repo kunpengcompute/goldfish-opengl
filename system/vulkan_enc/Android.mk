@@ -12,7 +12,7 @@ LOCAL_PATH := $(call my-dir)
 
 $(call emugl-begin-shared-library,libvulkan_enc)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
-$(call emugl-import,libOpenglCodecCommon$(GOLDFISH_OPENGL_LIB_SUFFIX) libandroidemu)
+$(call emugl-import,libOpenglCodecCommon$(GOLDFISH_OPENGL_LIB_SUFFIX) libandroidemu lib_renderControl_enc)
 
 # Vulkan include dir
 ifeq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
@@ -26,10 +26,14 @@ ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH) \
     $(LOCAL_PATH)/../vulkan_enc \
+    external/libdrm \
+    external/minigbm/cros_gralloc \
 
 LOCAL_HEADER_LIBRARIES += \
     hwvulkan_headers \
     vulkan_headers \
+
+LOCAL_SHARED_LIBRARIES += libdrm
 
 endif
 

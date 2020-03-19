@@ -13,13 +13,15 @@
 // limitations under the License.
 #include "qemu_pipe.h"
 
-#include "android/emulation/hostpipe/HostGoldfishPipe.h"
+#include "android/emulation/hostdevices/HostGoldfishPipe.h"
 
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
 #else
 #include <log/log.h>
 #endif
+
+#include <errno.h>
 
 using android::HostGoldfishPipeDevice;
 

@@ -18,11 +18,15 @@
 
 #define VIRTUAL_HOST_VISIBLE_HEAP_SIZE 512ULL * (1048576ULL)
 
+struct EmulatorFeatureInfo;
+
 namespace android {
 namespace base {
+namespace guest {
 
 class SubAllocator;
 
+} // namespace guest
 } // namespace base
 } // namespace android
 
@@ -35,6 +39,7 @@ struct HostVisibleMemoryVirtualizationInfo {
     bool memoryPropertiesSupported;
     bool directMemSupported;
     bool virtualizationSupported;
+    bool virtioGpuNextSupported;
 
     VkPhysicalDevice physicalDevice;
 
@@ -56,7 +61,7 @@ bool canFitVirtualHostVisibleMemoryInfo(
 void initHostVisibleMemoryVirtualizationInfo(
     VkPhysicalDevice physicalDevice,
     const VkPhysicalDeviceMemoryProperties* memoryProperties,
-    bool directMemSupported,
+    const EmulatorFeatureInfo* featureInfo,
     HostVisibleMemoryVirtualizationInfo* info_out);
 
 bool isHostVisibleMemoryTypeIndexForGuest(
@@ -81,7 +86,7 @@ struct HostMemAlloc {
     VkDeviceSize allocSize = 0;
     VkDeviceSize mappedSize = 0;
     uint8_t* mappedPtr = nullptr;
-    android::base::SubAllocator* subAlloc = nullptr;
+    android::base::guest::SubAllocator* subAlloc = nullptr;
 };
 
 VkResult finishHostMemAllocInit(
@@ -106,7 +111,7 @@ struct SubAlloc {
 
     VkDeviceMemory baseMemory = VK_NULL_HANDLE;
     VkDeviceSize baseOffset = 0;
-    android::base::SubAllocator* subAlloc = nullptr;
+    android::base::guest::SubAllocator* subAlloc = nullptr;
     VkDeviceMemory subMemory = VK_NULL_HANDLE;
 };
 
@@ -117,5 +122,5 @@ void subAllocHostMemory(
 
 void subFreeHostMemory(SubAlloc* toFree);
 
-bool canSubAlloc(android::base::SubAllocator* subAlloc, VkDeviceSize size);
+bool canSubAlloc(android::base::guest::SubAllocator* subAlloc, VkDeviceSize size);
 } // namespace goldfish_vk

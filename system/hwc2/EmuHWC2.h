@@ -27,12 +27,16 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <numeric>
+#include <sstream>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
 
-#include "gralloc_cb.h"
+#include <cutils/native_handle.h>
+
+#include "cbmanager.h"
 #include "MiniFence.h"
 #include "HostConnection.h"
 
@@ -42,6 +46,7 @@ class EmuHWC2 : public hwc2_device_t {
 public:
     EmuHWC2();
     int populatePrimary();
+    int populateSecondaryDisplays();
 
 private:
     static inline EmuHWC2* getHWC2(hwc2_device_t* device) {
@@ -134,20 +139,6 @@ private:
             sp<MiniFence> mFence;
     };
 
-    class GrallocModule {
-    public:
-        GrallocModule();
-        ~GrallocModule();
-        framebuffer_device_t* getFb() { return mFbDev; }
-        uint32_t getTargetCb();
-    private:
-        const hw_module_t* mHw = nullptr;
-        const gralloc_module_t* mGralloc = nullptr;
-        alloc_device_t* mAllocDev = nullptr;
-        framebuffer_device_t* mFbDev = nullptr;
-        buffer_handle_t mHandle = nullptr;
-    };
-
     typedef struct compose_layer {
         uint32_t cbHandle;
         hwc2_composition_t composeMode;
@@ -164,6 +155,13 @@ private:
         uint32_t numLayers;
         struct compose_layer layer[0];
     } ComposeDevice;
+    typedef struct compose_device_v2 {
+        uint32_t version;
+        uint32_t displayId;
+        uint32_t targetHandle;
+        uint32_t numLayers;
+        struct compose_layer layer[0];
+    } ComposeDevice_v2;
 
     class ComposeMsg {
     public:
@@ -184,9 +182,29 @@ private:
         ComposeDevice* mComposeDevice;
     };
 
+    class ComposeMsg_v2 {
+    public:
+        ComposeMsg_v2(uint32_t layerCnt = 0) :
+          mData(sizeof(ComposeDevice_v2) + layerCnt * sizeof(ComposeLayer))
+        {
+            mComposeDevice = reinterpret_cast<ComposeDevice_v2*>(mData.data());
+            mLayerCnt = layerCnt;
+        }
+
+        ComposeDevice_v2* get() { return mComposeDevice; }
+
+        uint32_t getLayerCnt() { return mLayerCnt; }
+
+    private:
+        std::vector<uint8_t> mData;
+        uint32_t mLayerCnt;
+        ComposeDevice_v2* mComposeDevice;
+    };
+
     class Display {
     public:
         Display(EmuHWC2& device, HWC2::DisplayType type);
+        ~Display();
         hwc2_display_t getId() const {return mId;}
 
         // HWC2 Display functions
@@ -229,11 +247,23 @@ private:
         HWC2::Error updateLayerZ(hwc2_layer_t layerId, uint32_t z);
         HWC2::Error getClientTargetSupport(uint32_t width, uint32_t height,
                  int32_t format, int32_t dataspace);
+        // 2.3 required functions
+        HWC2::Error getDisplayIdentificationData(uint8_t* outPort,
+                 uint32_t* outDataSize, uint8_t* outData);
+        HWC2::Error getDisplayCapabilities(uint32_t* outNumCapabilities,
+                 uint32_t* outCapabilities);
+        HWC2::Error getDisplayBrightnessSupport(bool *out_support);
+        HWC2::Error setDisplayBrightness(float brightness);
 
         // Read configs from PRIMARY Display
-        int populatePrimaryConfigs();
+        int populatePrimaryConfigs(int width, int height, int dpiX, int dpiY);
+        HWC2::Error populateSecondaryConfigs(uint32_t width, uint32_t height,
+                 uint32_t dpi);
 
     private:
+        void post(HostConnection *hostCon, ExtendedRCEncoderContext *rcEnc,
+                  buffer_handle_t h);
+
         class Config {
         public:
             Config(Display& display)
@@ -315,6 +345,8 @@ private:
         // Display ID generator.
         static std::atomic<hwc2_display_t> sNextId;
         const hwc2_display_t mId;
+        // emulator side displayId
+        uint32_t mHostDisplayId;
         std::string mName;
         HWC2::DisplayType mType;
         HWC2::PowerMode mPowerMode;
@@ -339,11 +371,11 @@ private:
         // called. To prevent a bad state from crashing us during a dump
         // call, all public calls into Display must acquire this mutex.
         mutable std::mutex mStateMutex;
-        std::unique_ptr<GrallocModule> mGralloc;
         std::unique_ptr<ComposeMsg> mComposeMsg;
+        std::unique_ptr<ComposeMsg_v2> mComposeMsg_v2;
         int mSyncDeviceFd;
-
-   };
+        const native_handle_t* mTargetCb;
+    };
 
     template<typename MF, MF memFunc, typename ...Args>
     static int32_t displayHook(hwc2_device_t* device, hwc2_display_t displayId,
@@ -431,6 +463,11 @@ private:
     std::tuple<Layer*, HWC2::Error> getLayer(hwc2_display_t displayId,
             hwc2_layer_t layerId);
 
+    HWC2::Error initDisplayParameters();
+    const native_handle_t* allocateDisplayColorBuffer();
+    void freeDisplayColorBuffer(const native_handle_t* h);
+
+    CbManager mCbManager;
     std::unordered_set<HWC2::Capability> mCapabilities;
 
     // These are potentially accessed from multiple threads, and are protected
@@ -443,9 +480,14 @@ private:
     };
     std::unordered_map<HWC2::Callback, CallbackInfo> mCallbacks;
 
-    std::unordered_map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
+    // use map so displays can be pluged in by order of ID, 0, 1, 2, 3, etc.
+    std::map<hwc2_display_t, std::shared_ptr<Display>> mDisplays;
     std::unordered_map<hwc2_layer_t, std::shared_ptr<Layer>> mLayers;
 
+    int mDisplayWidth;
+    int mDisplayHeight;
+    int mDisplayDpiX;
+    int mDisplayDpiY;
 };
 
 }

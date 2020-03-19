@@ -18,6 +18,8 @@
 #include <inttypes.h>
 
 // format conversions and helper functions
+bool gralloc_is_yuv_format(int format); // e.g. HAL_PIXEL_FORMAT_YCbCr_420_888
+
 void get_yv12_offsets(int width, int height,
                       uint32_t* yStride_out,
                       uint32_t* cStride_out,
@@ -39,7 +41,7 @@ void yv12_to_rgb888(char* dest, char* src, int width, int height,
                     int left, int top, int right, int bottom);
 void yuv420p_to_rgb888(char* dest, char* src, int width, int height,
                        int left, int top, int right, int bottom);
-void copy_rgb_buffer_from_unlocked(char* _dst, char* raw_data,
+void copy_rgb_buffer_from_unlocked(char* _dst, const char* raw_data,
                                    int unlockedWidth,
                                    int width, int height, int top, int left,
                                    int bpp);

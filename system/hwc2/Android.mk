@@ -27,9 +27,11 @@ emulator_hwcomposer_shared_libraries := \
     libhardware \
     libsync \
     libui \
+    android.hardware.graphics.mapper@2.0 \
 
 emulator_hwcomposer_cflags += \
-    -DLOG_TAG=\"hwc2\"
+    -DLOG_TAG=\"hwc2\" \
+    -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION) \
 
 emulator_hwcomposer_c_includes += \
     system/core/libsync \
@@ -51,6 +53,7 @@ include $(CLEAR_VARS)
 LOCAL_VENDOR_MODULE := true
 LOCAL_SHARED_LIBRARIES := $(emulator_hwcomposer_shared_libraries)
 LOCAL_SHARED_LIBRARIES += libOpenglSystemCommon lib_renderControl_enc
+LOCAL_SHARED_LIBRARIES += libcbmanager
 LOCAL_SRC_FILES := $(emulator_hwcomposer2_src_files)
 LOCAL_C_INCLUDES := $(emulator_hwcomposer_c_includes)
 LOCAL_MODULE_RELATIVE_PATH := $(emulator_hwcomposer_relative_path)

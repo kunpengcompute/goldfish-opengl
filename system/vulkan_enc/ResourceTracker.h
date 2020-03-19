@@ -26,7 +26,11 @@
 
 struct EmulatorFeatureInfo;
 
+class HostConnection;
+
 namespace goldfish_vk {
+
+class VkEncoder;
 
 class ResourceTracker {
 public:
@@ -37,6 +41,14 @@ public:
     VulkanHandleMapping* unwrapMapping();
     VulkanHandleMapping* destroyMapping();
     VulkanHandleMapping* defaultMapping();
+
+    using HostConnectionGetFunc = HostConnection* (*)();
+    using VkEncoderGetFunc = VkEncoder* (*)(HostConnection*);
+
+    struct ThreadingCallbacks {
+        HostConnectionGetFunc hostConnectionGetFunc = 0;
+        VkEncoderGetFunc vkEncoderGetFunc = 0;
+    };
 
 #define HANDLE_REGISTER_DECL(type) \
     void register_##type(type); \
@@ -203,6 +215,10 @@ public:
         void* context, VkResult input_result,
         VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 
+    VkResult on_vkQueueWaitIdle(
+        void* context, VkResult input_result,
+        VkQueue queue);
+
     void unwrap_VkNativeBufferANDROID(
         const VkImageCreateInfo* pCreateInfo,
         VkImageCreateInfo* local_pCreateInfo);
@@ -269,12 +285,83 @@ public:
         const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion);
+    void on_vkDestroySamplerYcbcrConversion(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator);
     VkResult on_vkCreateSamplerYcbcrConversionKHR(
         void* context, VkResult input_result,
         VkDevice device,
         const VkSamplerYcbcrConversionCreateInfo* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkSamplerYcbcrConversion* pYcbcrConversion);
+    void on_vkDestroySamplerYcbcrConversionKHR(
+        void* context,
+        VkDevice device,
+        VkSamplerYcbcrConversion ycbcrConversion,
+        const VkAllocationCallbacks* pAllocator);
+
+    VkResult on_vkCreateSampler(
+        void* context, VkResult input_result,
+        VkDevice device,
+        const VkSamplerCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkSampler* pSampler);
+
+    void on_vkGetPhysicalDeviceExternalFenceProperties(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
+        VkExternalFenceProperties* pExternalFenceProperties);
+
+    void on_vkGetPhysicalDeviceExternalFencePropertiesKHR(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo,
+        VkExternalFenceProperties* pExternalFenceProperties);
+
+    VkResult on_vkCreateFence(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkFenceCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator, VkFence* pFence);
+
+    void on_vkDestroyFence(
+        void* context,
+        VkDevice device,
+        VkFence fence,
+        const VkAllocationCallbacks* pAllocator);
+
+    VkResult on_vkResetFences(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        uint32_t fenceCount,
+        const VkFence* pFences);
+
+    VkResult on_vkImportFenceFdKHR(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkImportFenceFdInfoKHR* pImportFenceFdInfo);
+
+    VkResult on_vkGetFenceFdKHR(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkFenceGetFdInfoKHR* pGetFdInfo,
+        int* pFd);
+
+    VkResult on_vkWaitForFences(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        uint32_t fenceCount,
+        const VkFence* pFences,
+        VkBool32 waitAll,
+        uint64_t timeout);
 
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
         void* context,
@@ -322,6 +409,8 @@ public:
         const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
         VkImageFormatProperties2* pImageFormatProperties);
 
+    uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* current);
+
     VkResult on_vkBeginCommandBuffer(
         void* context, VkResult input_result,
         VkCommandBuffer commandBuffer,
@@ -347,8 +436,10 @@ public:
     VkDeviceSize getNonCoherentExtendedSize(VkDevice device, VkDeviceSize basicSize) const;
     bool isValidMemoryRange(const VkMappedMemoryRange& range) const;
     void setupFeatures(const EmulatorFeatureInfo* features);
+    void setThreadingCallbacks(const ThreadingCallbacks& callbacks);
     bool hostSupportsVulkan() const;
     bool usingDirectMapping() const;
+    uint32_t getStreamFeatures() const;
     uint32_t getApiVersionFromInstance(VkInstance instance) const;
     uint32_t getApiVersionFromDevice(VkDevice device) const;
     bool hasInstanceExtension(VkInstance instance, const std::string& name) const;

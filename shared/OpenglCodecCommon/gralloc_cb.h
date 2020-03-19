@@ -17,123 +17,112 @@
 #ifndef __GRALLOC_CB_H__
 #define __GRALLOC_CB_H__
 
-#include <hardware/hardware.h>
-#include <hardware/gralloc.h>
 #include <cutils/native_handle.h>
-
 #include "qemu_pipe.h"
 
-#define BUFFER_HANDLE_MAGIC ((int)0xabfabfab)
-#define CB_HANDLE_NUM_INTS(nfds) (int)((sizeof(cb_handle_t) - (nfds)*sizeof(int)) / sizeof(int))
+const uint32_t CB_HANDLE_MAGIC_MASK = 0xFFFFFFF0;
+const uint32_t CB_HANDLE_MAGIC_BASE = 0xABFABFA0;
 
-// Tell the emulator which gralloc formats
-// need special handling.
-enum EmulatorFrameworkFormat {
-    FRAMEWORK_FORMAT_GL_COMPATIBLE = 0,
-    FRAMEWORK_FORMAT_YV12 = 1,
-    FRAMEWORK_FORMAT_YUV_420_888 = 2,              // (Y+)(U+)(V+)
-};
+#define CB_HANDLE_NUM_INTS(nfd) \
+    ((sizeof(*this)-sizeof(native_handle_t)-nfd*sizeof(int32_t))/sizeof(int32_t))
 
-//
-// Our buffer handle structure
-//
-struct cb_handle_t : public native_handle {
-
-    cb_handle_t(int p_fd, int p_ashmemSize, int p_usage,
-                int p_width, int p_height, int p_frameworkFormat,
-                int p_format, int p_glFormat, int p_glType,
-                EmulatorFrameworkFormat p_emuFrameworkFormat) :
-        fd(p_fd),
-        magic(BUFFER_HANDLE_MAGIC),
-        usage(p_usage),
-        width(p_width),
-        height(p_height),
-        frameworkFormat(p_frameworkFormat),
-        format(p_format),
-        glFormat(p_glFormat),
-        glType(p_glType),
-        ashmemSize(p_ashmemSize),
-        ashmemBase(0),
-        ashmemBasePid(0),
-        mappedPid(0),
-        lockedLeft(0),
-        lockedTop(0),
-        lockedWidth(0),
-        lockedHeight(0),
-        hostHandle(0),
-        emuFrameworkFormat(p_emuFrameworkFormat)
-    {
-        refcount_pipe_fd = QEMU_PIPE_INVALID_HANDLE;
+struct cb_handle_t : public native_handle_t {
+    cb_handle_t(int32_t p_bufferFd,
+                QEMU_PIPE_HANDLE p_hostHandleRefCountFd,
+                uint32_t p_magic,
+                uint32_t p_hostHandle,
+                int32_t p_usage,
+                int32_t p_width,
+                int32_t p_height,
+                int32_t p_format,
+                int32_t p_glFormat,
+                int32_t p_glType,
+                uint32_t p_bufSize,
+                void* p_bufPtr,
+                uint64_t p_mmapedOffset)
+        : bufferFd(p_bufferFd),
+          hostHandleRefCountFd(p_hostHandleRefCountFd),
+          magic(p_magic),
+          hostHandle(p_hostHandle),
+          usage(p_usage),
+          width(p_width),
+          height(p_height),
+          format(p_format),
+          glFormat(p_glFormat),
+          glType(p_glType),
+          bufferSize(p_bufSize),
+          mmapedOffsetLo(static_cast<uint32_t>(p_mmapedOffset)),
+          mmapedOffsetHi(static_cast<uint32_t>(p_mmapedOffset >> 32)),
+          lockedLeft(0),
+          lockedTop(0),
+          lockedWidth(0),
+          lockedHeight(0) {
         version = sizeof(native_handle);
-        numFds = 0;
-        numInts = CB_HANDLE_NUM_INTS(numFds);
+        numFds = ((bufferFd >= 0) ? 1 : 0) + (qemu_pipe_valid(hostHandleRefCountFd) ? 1 : 0);
+        numInts = 0; // has to be overwritten in children classes
+        setBufferPtr(p_bufPtr);
     }
 
-    ~cb_handle_t() {
-        magic = 0;
+    void* getBufferPtr() const {
+        const uint64_t addr = (uint64_t(bufferPtrHi) << 32) | bufferPtrLo;
+        return reinterpret_cast<void*>(static_cast<uintptr_t>(addr));
     }
 
-    void setFd(int p_fd) {
-        if (p_fd >= 0) {
-            numFds++;
-        }
-        fd = p_fd;
-        numInts = CB_HANDLE_NUM_INTS(numFds);
+    void setBufferPtr(void* ptr) {
+        const uint64_t addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(ptr));
+        bufferPtrLo = uint32_t(addr);
+        bufferPtrHi = uint32_t(addr >> 32);
     }
 
-    bool hasRefcountPipe() {
-        return qemu_pipe_valid(refcount_pipe_fd);
+    uint64_t getMmapedOffset() const {
+        return (uint64_t(mmapedOffsetHi) << 32) | mmapedOffsetLo;
     }
 
-    void setRefcountPipeFd(QEMU_PIPE_HANDLE fd) {
-        if (qemu_pipe_valid(fd)) {
-            numFds++;
-        }
-        refcount_pipe_fd = fd;
-        numInts = CB_HANDLE_NUM_INTS(numFds);
+    uint32_t allocatedSize() const {
+        return getBufferPtr() ? bufferSize : 0;
     }
 
-    static bool validate(const cb_handle_t* hnd) {
-        return (hnd &&
-                hnd->version == sizeof(native_handle) &&
-                hnd->magic == BUFFER_HANDLE_MAGIC &&
-                hnd->numInts == CB_HANDLE_NUM_INTS(hnd->numFds));
+    bool isValid() const {
+        return (version == sizeof(native_handle))
+               && (magic & CB_HANDLE_MAGIC_MASK) == CB_HANDLE_MAGIC_BASE;
     }
 
-    bool canBePosted() {
-        return (0 != (usage & GRALLOC_USAGE_HW_FB));
+    static cb_handle_t* from(void* p) {
+        if (!p) { return NULL; }
+        cb_handle_t* cb = static_cast<cb_handle_t*>(p);
+        return cb->isValid() ? cb : NULL;
     }
 
-    // file-descriptors
-    int fd;  // ashmem fd (-1 of ashmem region did not allocated, i.e. no SW access needed)
-    QEMU_PIPE_HANDLE refcount_pipe_fd; // goldfish pipe service for gralloc refcounting fd.
+    static const cb_handle_t* from(const void* p) {
+        return from(const_cast<void*>(p));
+    }
+
+    static cb_handle_t* from_unconst(const void* p) {
+        return from(const_cast<void*>(p));
+    }
+
+    // fds
+    int32_t bufferFd;       // underlying buffer file handle
+    QEMU_PIPE_HANDLE hostHandleRefCountFd; // guest side refcounter to hostHandle
 
     // ints
-    int magic;              // magic number in order to validate a pointer to be a cb_handle_t
-    int usage;              // usage bits the buffer was created with
-    int width;              // buffer width
-    int height;             // buffer height
-    int frameworkFormat;    // format requested by the Android framework
-    int format;             // real internal pixel format format
-    int glFormat;           // OpenGL format enum used for host h/w color buffer
-    int glType;             // OpenGL type enum used when uploading to host
-    int ashmemSize;         // ashmem region size for the buffer (0 unless is HW_FB buffer or
-                            //                                    s/w access is needed)
-    union {
-        intptr_t ashmemBase;    // CPU address of the mapped ashmem region
-        uint64_t padding;       // enforce same size on 32-bit/64-bit
-    } __attribute__((aligned(8)));
-
-    int ashmemBasePid;      // process id which mapped the ashmem region
-    int mappedPid;          // process id which succeeded gralloc_register call
-    int lockedLeft;         // region of buffer locked for s/w write
-    int lockedTop;
-    int lockedWidth;
-    int lockedHeight;
-    uint32_t hostHandle;
-
-    EmulatorFrameworkFormat emuFrameworkFormat;
+    uint32_t magic;         // magic number in order to validate a pointer
+    uint32_t hostHandle;    // the host reference to this buffer
+    int32_t  usage;         // usage bits the buffer was created with
+    int32_t  width;         // buffer width
+    int32_t  height;        // buffer height
+    int32_t  format;        // real internal pixel format format
+    int32_t  glFormat;      // OpenGL format enum used for host h/w color buffer
+    int32_t  glType;        // OpenGL type enum used when uploading to host
+    uint32_t bufferSize;    // buffer size and location
+    uint32_t bufferPtrLo;
+    uint32_t bufferPtrHi;
+    uint32_t mmapedOffsetLo;
+    uint32_t mmapedOffsetHi;
+    int32_t  lockedLeft;    // region of buffer locked for s/w write
+    int32_t  lockedTop;
+    int32_t  lockedWidth;
+    int32_t  lockedHeight;
 };
-
 
 #endif //__GRALLOC_CB_H__

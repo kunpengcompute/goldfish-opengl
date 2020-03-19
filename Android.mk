@@ -150,6 +150,12 @@ include $(GOLDFISH_OPENGL_PATH)/system/GLESv2/Android.mk
 
 include $(GOLDFISH_OPENGL_PATH)/system/gralloc/Android.mk
 
+ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
+include $(GOLDFISH_OPENGL_PATH)/system/hals/Android.mk
+endif
+
+include $(GOLDFISH_OPENGL_PATH)/system/cbmanager/Android.mk
+
 include $(GOLDFISH_OPENGL_PATH)/system/egl/Android.mk
 
 ifeq (true,$(BUILD_EMULATOR_VULKAN)) # Vulkan libs
@@ -159,6 +165,11 @@ endif
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -gt 28 -o $(IS_AT_LEAST_QPR1) = true && echo isApi29OrHigher),isApi29OrHigher)
     # HWC2 enabled after P
     include $(GOLDFISH_OPENGL_PATH)/system/hwc2/Android.mk
+    # hardware codecs enabled after P
+    include $(GOLDFISH_OPENGL_PATH)/system/codecs/omx/common/Android.mk
+    include $(GOLDFISH_OPENGL_PATH)/system/codecs/omx/plugin/Android.mk
+    include $(GOLDFISH_OPENGL_PATH)/system/codecs/omx/avcdec/Android.mk
+    include $(GOLDFISH_OPENGL_PATH)/system/codecs/omx/vpxdec/Android.mk
 endif
 
 endif
