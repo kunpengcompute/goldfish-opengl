@@ -88,11 +88,19 @@ static const char kVulkanNullOptionalStrings[] = "ANDROID_EMU_vulkan_null_option
 // Vulkan create resources with requirements
 static const char kVulkanCreateResourcesWithRequirements[] = "ANDROID_EMU_vulkan_create_resources_with_requirements";
 
+// Vulkan ignored handles
+static const char kVulkanIgnoredHandles[] = "ANDROID_EMU_vulkan_ignored_handles";
+
 // YUV host cache
 static const char kYUVCache[] = "ANDROID_EMU_YUV_Cache";
 
 // GL protocol v2
 static const char kAsyncUnmapBuffer[] = "ANDROID_EMU_async_unmap_buffer";
+
+// virtio-gpu-next
+static const char kVirtioGpuNext[] = "ANDROID_EMU_virtio_gpu_next";
+
+static const char kHasSharedSlotsHostMemoryAllocator[] = "ANDROID_EMU_has_shared_slots_host_memory_allocator";
 
 // Struct describing available emulator features
 struct EmulatorFeatureInfo {
@@ -107,8 +115,12 @@ struct EmulatorFeatureInfo {
         hasDeferredVulkanCommands(false),
         hasVulkanNullOptionalStrings(false),
         hasVulkanCreateResourcesWithRequirements(false),
+        hasVulkanIgnoredHandles(false),
         hasYUVCache (false),
-        hasAsyncUnmapBuffer (false) { }
+        hasAsyncUnmapBuffer (false),
+        hasVirtioGpuNext (false),
+        hasSharedSlotsHostMemoryAllocator(false)
+    { }
 
     SyncImpl syncImpl;
     DmaImpl dmaImpl;
@@ -119,8 +131,25 @@ struct EmulatorFeatureInfo {
     bool hasDeferredVulkanCommands;
     bool hasVulkanNullOptionalStrings;
     bool hasVulkanCreateResourcesWithRequirements;
+    bool hasVulkanIgnoredHandles;
     bool hasYUVCache;
     bool hasAsyncUnmapBuffer;
+    bool hasVirtioGpuNext;
+    bool hasSharedSlotsHostMemoryAllocator;
+};
+
+enum HostConnectionType {
+    HOST_CONNECTION_TCP = 0,
+    HOST_CONNECTION_QEMU_PIPE = 1,
+    HOST_CONNECTION_VIRTIO_GPU = 2,
+    HOST_CONNECTION_ADDRESS_SPACE = 3,
+    HOST_CONNECTION_VIRTIO_GPU_PIPE = 4,
+};
+
+enum GrallocType {
+    GRALLOC_TYPE_RANCHU = 0,
+    GRALLOC_TYPE_MINIGBM = 1,
+    GRALLOC_TYPE_DYN_ALLOC_MINIGBM = 2,
 };
 
 #endif // __COMMON_EMULATOR_FEATURE_INFO_H

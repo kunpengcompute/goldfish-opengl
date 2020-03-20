@@ -32,7 +32,8 @@ public:
 
     explicit VirtioGpuPipeStream(size_t bufsize = 10000);
     ~VirtioGpuPipeStream();
-    int connect(void);
+    int connect(const char* serviceName = 0);
+    uint64_t initProcessPipe();
 
     virtual void *allocBuffer(size_t minSize);
     virtual int commitBuffer(size_t size);
@@ -42,13 +43,14 @@ public:
     virtual const unsigned char *read( void *buf, size_t *inout_len);
 
     bool valid() { return m_fd >= 0; }
+    int getRendernodeFd() { return m_fd; }
     int recv(void *buf, size_t len);
 
     virtual int writeFully(const void *buf, size_t len);
 
     int getSocket() const;
 private:
-    // sync
+    // sync. Also resets the write position.
     void wait();
 
     // transfer to/from host ops
@@ -66,6 +68,8 @@ private:
     unsigned char *m_buf;
     size_t m_read;
     size_t m_readLeft;
+
+    size_t m_writtenPos;
 
     VirtioGpuPipeStream(int sock, size_t bufSize);
 };

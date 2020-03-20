@@ -22,6 +22,17 @@
 #include "MediaH264Decoder.h"
 #include <sys/time.h>
 
+#include <vector>
+#include <map>
+
+#include "gralloc_cb.h"
+#include <utils/RefBase.h>
+#include <utils/threads.h>
+#include <utils/Vector.h>
+#include <utils/List.h>
+#include <ui/GraphicBuffer.h>
+
+
 namespace android {
 
 /** Number of entries in the time-stamp array */
@@ -44,7 +55,7 @@ namespace android {
 
 struct GoldfishAVCDec : public GoldfishVideoDecoderOMXComponent {
     GoldfishAVCDec(const char *name, const OMX_CALLBACKTYPE *callbacks,
-            OMX_PTR appData, OMX_COMPONENTTYPE **component);
+            OMX_PTR appData, OMX_COMPONENTTYPE **component, RenderMode renderMode);
 
 protected:
     virtual ~GoldfishAVCDec();
@@ -53,23 +64,29 @@ protected:
     virtual void onPortFlushCompleted(OMX_U32 portIndex);
     virtual void onReset();
     virtual int getColorAspectPreference();
+
+    virtual OMX_ERRORTYPE internalGetParameter(OMX_INDEXTYPE index, OMX_PTR params);
+
+    virtual OMX_ERRORTYPE internalSetParameter(OMX_INDEXTYPE index, const OMX_PTR params);
+
+    virtual OMX_ERRORTYPE getExtensionIndex(const char *name, OMX_INDEXTYPE *index);
+
 private:
     // Number of input and output buffers
     enum {
         kNumBuffers = 8
     };
 
+    RenderMode  mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
+    bool mEnableAndroidNativeBuffers = false;
+    std::map<void*, sp<ANativeWindowBuffer>> mNWBuffers;
+
+    int getHostColorBufferId(void* header);
+
     size_t mNumCores;            // Number of cores to be uesd by the codec
 
     nsecs_t mTimeStart;   // Time at the start of decode()
     nsecs_t mTimeEnd;     // Time at the end of decode()
-
-    // Status of entries in the timestamp array
-    bool mTimeStampsValid[MAX_TIME_STAMPS];
-
-    // Timestamp array - Since codec does not take 64 bit timestamps,
-    // they are maintained in the plugin
-    OMX_S64 mTimeStamps[MAX_TIME_STAMPS];
 
 #ifdef FILE_DUMP_ENABLE
     char mInFile[200];
@@ -96,15 +113,19 @@ private:
     status_t resetPlugin();
 
 
+    void readAndDiscardAllHostBuffers();
+
     bool setDecodeArgs(
             OMX_BUFFERHEADERTYPE *inHeader,
-            OMX_BUFFERHEADERTYPE *outHeader,
-            size_t timeStampIx);
+            OMX_BUFFERHEADERTYPE *outHeader);
 
-    bool getVUIParams();
+    bool getVUIParams(h264_image_t& img);
+
+    void copyImageData( OMX_BUFFERHEADERTYPE *outHeader, h264_image_t & img);
 
     std::unique_ptr<MediaH264Decoder> mContext;
-    uint64_t mCurrentTs = 0;
+    std::vector<uint8_t> mCsd0;
+    std::vector<uint8_t> mCsd1;
     uint64_t mConsumedBytes = 0;
     uint8_t* mInPBuffer = nullptr;
     uint8_t* mOutHeaderBuf = nullptr;

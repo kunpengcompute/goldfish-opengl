@@ -76,6 +76,8 @@
 
 #define GOLDFISH_OFFSET_UNIT 8
 
+#define OMX_COLOR_FormatYUV420Planar 19
+
 #ifdef GOLDFISH_HIDL_GRALLOC
 static const bool isHidlGralloc = true;
 #else
@@ -195,7 +197,11 @@ struct gralloc_memregions_t {
 #define INITIAL_DMA_REGION_SIZE 4096
 struct gralloc_dmaregion_t {
     gralloc_dmaregion_t(ExtendedRCEncoderContext *rcEnc)
-      : sz(INITIAL_DMA_REGION_SIZE), refcount(0), bigbufCount(0) {
+      : host_memory_allocator(
+            rcEnc->featureInfo_const()->hasSharedSlotsHostMemoryAllocator),
+        sz(INITIAL_DMA_REGION_SIZE),
+        refcount(0),
+        bigbufCount(0) {
         memset(&goldfish_dma, 0, sizeof(goldfish_dma));
         pthread_mutex_init(&lock, NULL);
 
@@ -591,6 +597,12 @@ static int gralloc_get_buffer_format(const int frameworkFormat, const int usage)
     } else if (frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
         ALOGW("gralloc_alloc: Requested YCbCr_420_888, taking experimental path. "
               "usage=%x", usage);
+    } else if (frameworkFormat == OMX_COLOR_FormatYUV420Planar &&
+               (usage & GOLDFISH_GRALLOC_USAGE_GPU_DATA_BUFFER)) {
+        ALOGW("gralloc_alloc: Requested OMX_COLOR_FormatYUV420Planar, given "
+              "YCbCr_420_888, taking experimental path. "
+              "usage=%x", usage);
+        return HAL_PIXEL_FORMAT_YCbCr_420_888;
     }
 #endif // PLATFORM_SDK_VERSION >= 17
 
@@ -1527,13 +1539,13 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         lock: gralloc_lock,
         unlock: gralloc_unlock,
         perform: NULL,
-#if PLATFORM_SDK_VERSION >= 29 // For Q and later
-        validateBufferSize: NULL,
-        getTransportSize: NULL,
-#endif // PLATFORM_SDK_VERSION >= 29
 #if PLATFORM_SDK_VERSION >= 18
         lock_ycbcr: gralloc_lock_ycbcr,
 #endif // PLATFORM_SDK_VERSION >= 18
+#if PLATFORM_SDK_VERSION >= 29 // For Q and later
+        getTransportSize: NULL,
+        validateBufferSize: NULL,
+#endif // PLATFORM_SDK_VERSION >= 29
     }
 };
 
@@ -1562,13 +1574,39 @@ fallback_init(void)
     char  prop[PROPERTY_VALUE_MAX];
     void* module;
 
+    // cuttlefish case: no fallback (if we use sw rendering,
+    // we are not using this lib anyway (would use minigbm))
+    property_get("ro.boot.hardware", prop, "");
+
+    bool isValid = prop[0] != '\0';
+
+    if (isValid && !strcmp(prop, "cutf_cvm")) {
+        return;
+    }
+
     // qemu.gles=0 -> no GLES 2.x support (only 1.x through software).
     // qemu.gles=1 -> host-side GPU emulation through EmuGL
     // qemu.gles=2 -> guest-side GPU emulation.
-    property_get("ro.kernel.qemu.gles", prop, "0");
-    if (atoi(prop) == 1) {
-        return;
+    property_get("ro.kernel.qemu.gles", prop, "999");
+
+    bool useFallback = false;
+    switch (atoi(prop)) {
+        case 0:
+            useFallback = true;
+            break;
+        case 1:
+            useFallback = false;
+            break;
+        case 2:
+            useFallback = true;
+            break;
+        default:
+            useFallback = false;
+            break;
     }
+
+    if (!useFallback) return;
+
     ALOGD("Emulator without host-side GPU emulation detected. "
           "Loading gralloc.default.so from %s...",
           kGrallocDefaultVendorPath);

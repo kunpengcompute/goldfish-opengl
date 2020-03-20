@@ -66,6 +66,8 @@
         return (X); \
     } while (false)
 
+#define OMX_COLOR_FormatYUV420Planar 19
+
 namespace {
 
 const char GOLDFISH_GRALLOC_MODULE_NAME[] = "Graphics Memory Allocator Module";
@@ -495,7 +497,14 @@ private:
             }
 
             RETURN_ERROR_CODE(-EINVAL);
-        } else  {
+        } else if (frameworkFormat == OMX_COLOR_FormatYUV420Planar &&
+               (usage & GOLDFISH_GRALLOC_USAGE_GPU_DATA_BUFFER)) {
+            ALOGW("gralloc_alloc: Requested OMX_COLOR_FormatYUV420Planar, given "
+              "YCbCr_420_888, taking experimental path. "
+              "usage=%x", usage);
+            return HAL_PIXEL_FORMAT_YCbCr_420_888;
+        }
+        else  {
             return frameworkFormat;
         }
     }
@@ -774,7 +783,7 @@ struct cb_handle_30_t : public cb_handle_t {
 class goldfish_address_space_host_malloc_buffer_manager_t : public buffer_manager_t {
 public:
     goldfish_address_space_host_malloc_buffer_manager_t(goldfish_gralloc30_module_t* gr): m_gr(gr) {
-        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator;
+        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator(false);
         CRASH_IF(!host_memory_allocator.is_opened(),
                  "GoldfishAddressSpaceHostMemoryAllocator failed to open");
 
@@ -795,7 +804,11 @@ public:
                      int glFormat, int glType,
                      size_t bufferSize,
                      buffer_handle_t* pHandle) override {
-        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator;
+        const HostConnectionSession conn = m_gr->getHostConnectionSession();
+        ExtendedRCEncoderContext *const rcEnc = conn.getRcEncoder();
+
+        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator(
+            rcEnc->featureInfo_const()->hasSharedSlotsHostMemoryAllocator);
         if (!host_memory_allocator.is_opened()) { RETURN_ERROR_CODE(-EIO); }
 
         GoldfishAddressSpaceBlock bufferBits;
@@ -809,9 +822,6 @@ public:
 
             const GLenum allocFormat =
                 (HAL_PIXEL_FORMAT_RGBX_8888 == format) ? GL_RGB : glFormat;
-
-            const HostConnectionSession conn = m_gr->getHostConnectionSession();
-            ExtendedRCEncoderContext *const rcEnc = conn.getRcEncoder();
 
             hostHandle = rcEnc->rcCreateColorBufferDMA(
                 rcEnc,

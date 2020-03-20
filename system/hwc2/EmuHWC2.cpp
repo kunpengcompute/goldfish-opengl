@@ -389,12 +389,17 @@ Error EmuHWC2::registerCallback(Callback descriptor,
     return Error::None;
 }
 
-const cb_handle_t* EmuHWC2::allocateDisplayColorBuffer() {
-    return mCbManager.allocateBuffer(mDisplayWidth, mDisplayHeight,
-                                     HAL_PIXEL_FORMAT_RGBA_8888);
+const native_handle_t* EmuHWC2::allocateDisplayColorBuffer() {
+    typedef CbManager::BufferUsage BufferUsage;
+
+    return mCbManager.allocateBuffer(
+        mDisplayWidth,
+        mDisplayHeight,
+        CbManager::PixelFormat::RGBA_8888,
+        (BufferUsage::COMPOSER_OVERLAY | BufferUsage::GPU_RENDER_TARGET));
 }
 
-void EmuHWC2::freeDisplayColorBuffer(const cb_handle_t* h) {
+void EmuHWC2::freeDisplayColorBuffer(const native_handle_t* h) {
     mCbManager.freeBuffer(h);
 }
 
@@ -749,9 +754,11 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
         mReleaseFences.clear();
 
         if (numLayer == 0) {
-            ALOGVV("No layers, exit");
-            post(hostCon, rcEnc, mClientTarget.getBuffer());
-            *outRetireFence = mClientTarget.getFence();
+            ALOGW("No layers, exit, buffer %p", mClientTarget.getBuffer());
+            if (mClientTarget.getBuffer()) {
+                post(hostCon, rcEnc, mClientTarget.getBuffer());
+                *outRetireFence = mClientTarget.getFence();
+            }
             return Error::None;
         }
 
@@ -802,10 +809,10 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
                     ALOGV("%s: acquire fence not set for layer %u",
                           __FUNCTION__, (uint32_t)layer->getId());
                 }
-                const cb_handle_t *cb =
-                    cb_handle_t::from(layer->getLayerBuffer().getBuffer());
+                const native_handle_t *cb =
+                    layer->getLayerBuffer().getBuffer();
                 if (cb != nullptr) {
-                    l->cbHandle = cb->hostHandle;
+                    l->cbHandle = hostCon->grallocHelper()->getHostHandle(cb);
                 }
                 else {
                     ALOGE("%s null buffer for layer %d", __FUNCTION__,
@@ -833,12 +840,12 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
         }
         if (hostCompositionV1) {
             p->version = 1;
-            p->targetHandle = mTargetCb->hostHandle;
+            p->targetHandle = hostCon->grallocHelper()->getHostHandle(mTargetCb);
             p->numLayers = numLayer;
         } else {
             p2->version = 2;
             p2->displayId = mHostDisplayId;
-            p2->targetHandle = mTargetCb->hostHandle;
+            p2->targetHandle = hostCon->grallocHelper()->getHostHandle(mTargetCb);
             p2->numLayers = numLayer;
         }
 
@@ -913,9 +920,6 @@ Error EmuHWC2::Display::setClientTarget(buffer_handle_t target,
         int32_t acquireFence, int32_t /*dataspace*/, hwc_region_t /*damage*/) {
     ALOGVV("%s", __FUNCTION__);
 
-    const cb_handle_t *cb = cb_handle_t::from(target);
-    ALOGV("%s: display(%u) buffer handle %p cb %d, acquireFence %d", __FUNCTION__,
-          (uint32_t)mId, target, cb->hostHandle, acquireFence);
     std::unique_lock<std::mutex> lock(mStateMutex);
     mClientTarget.setBuffer(target);
     mClientTarget.setFence(acquireFence);
@@ -1300,11 +1304,11 @@ int EmuHWC2::Display::populatePrimaryConfigs(int width, int height, int dpiX, in
 void EmuHWC2::Display::post(HostConnection *hostCon,
                             ExtendedRCEncoderContext *rcEnc,
                             buffer_handle_t h) {
-    const cb_handle_t* cb = cb_handle_t::from(h);
-    assert(cb && "cb_handle_t::from(h) failed");
+    assert(cb && "native_handle_t::from(h) failed");
 
     hostCon->lock();
-    rcEnc->rcFBPost(rcEnc, cb->hostHandle);
+    rcEnc->rcFBPost(rcEnc, hostCon->grallocHelper()->getHostHandle(h));
+    hostCon->flush();
     hostCon->unlock();
 }
 
@@ -1391,7 +1395,6 @@ std::string EmuHWC2::Display::Config::toString() const {
     return output;
 }
 
-
 // VsyncThread function
 bool EmuHWC2::Display::VsyncThread::threadLoop() {
     struct timespec rt;
@@ -1405,18 +1408,37 @@ bool EmuHWC2::Display::VsyncThread::threadLoop() {
     int sent = 0;
     int lastSent = 0;
     bool vsyncEnabled = false;
+
     struct timespec wait_time;
     wait_time.tv_sec = 0;
     wait_time.tv_nsec = mDisplay.mVsyncPeriod;
+    const int64_t kOneRefreshNs = mDisplay.mVsyncPeriod;
+    const int64_t kOneSecondNs = 1000ULL * 1000ULL * 1000ULL;
+    int64_t lastTimeNs = -1;
+    int64_t phasedWaitNs = 0;
+    int64_t currentNs = 0;
 
     while (true) {
-        int err = nanosleep(&wait_time, NULL);
-        if (err == -1) {
-            if (errno == EINTR) {
-                break;
-            }
-            ALOGE("%s: error in vsync thread: %s", __FUNCTION__, strerror(errno));
+        clock_gettime(CLOCK_MONOTONIC, &rt);
+        currentNs = rt.tv_nsec + rt.tv_sec * kOneSecondNs;
+
+        if (lastTimeNs < 0) {
+            phasedWaitNs = currentNs + kOneRefreshNs;
+        } else {
+            phasedWaitNs = kOneRefreshNs *
+                (( currentNs - lastTimeNs) / kOneRefreshNs + 1) +
+                lastTimeNs;
         }
+
+        wait_time.tv_sec = phasedWaitNs / kOneSecondNs;
+        wait_time.tv_nsec = phasedWaitNs - wait_time.tv_sec * kOneSecondNs;
+
+        int ret;
+        do {
+            ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &wait_time, NULL);
+        } while (ret == -1 && errno == EINTR);
+
+        lastTimeNs = phasedWaitNs;
 
         std::unique_lock<std::mutex> lock(mDisplay.mStateMutex);
         vsyncEnabled = (mDisplay.mVsyncEnabled == Vsync::Enable);
@@ -1426,20 +1448,13 @@ bool EmuHWC2::Display::VsyncThread::threadLoop() {
             continue;
         }
 
-        if (clock_gettime(CLOCK_MONOTONIC, &rt) == -1) {
-            ALOGE("%s: error in vsync thread clock_gettime: %s",
-                 __FUNCTION__, strerror(errno));
-        }
-
-        int64_t timestamp = int64_t(rt.tv_sec) * 1e9 + rt.tv_nsec;
-
         lock.lock();
         const auto& callbackInfo = mDisplay.mDevice.mCallbacks[Callback::Vsync];
         auto vsync = reinterpret_cast<HWC2_PFN_VSYNC>(callbackInfo.pointer);
         lock.unlock();
 
         if (vsync) {
-            vsync(callbackInfo.data, mDisplay.mId, timestamp);
+            vsync(callbackInfo.data, mDisplay.mId, lastTimeNs);
         }
 
         if (rt.tv_sec - lastLogged >= logInterval) {
@@ -1652,11 +1667,11 @@ int EmuHWC2::populateSecondaryDisplays() {
         return -1;
     }
     while (!values.empty()) {
-        uint64_t physicalId = values[0];
+        // uint64_t physicalId = values[0];
         uint32_t width = values[1];
         uint32_t height = values[2];
         uint32_t dpi = values[3];
-        uint32_t flags = values[4];
+        // uint32_t flags = values[4];
         values.erase(values.begin(), values.begin() + 5);
 
         Error ret = Error::None;

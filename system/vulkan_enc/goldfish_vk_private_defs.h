@@ -17,6 +17,7 @@
 #include <vulkan/vulkan.h>
 
 #ifdef __cplusplus
+#include <algorithm>
 extern "C" {
 #endif
 
@@ -113,6 +114,10 @@ typedef struct {
 
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterImageColorBufferGOOGLE)(VkDevice device, VkImage image, uint32_t colorBuffer);
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterBufferColorBufferGOOGLE)(VkDevice device, VkBuffer image, uint32_t colorBuffer);
+
+#define VK_GOOGLE_address_space_info 1
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetMemoryHostAddressInfoGOOGLE)(VkDevice device, VkDeviceMemory memory, uint64_t* pAddress, uint64_t* pSize);
 
 #define VK_ANDROID_external_memory_android_hardware_buffer 1
 struct AHardwareBuffer;
@@ -534,9 +539,20 @@ typedef struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
 
 // VulkanStream features
 #define VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT (1 << 0)
+#define VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT (1 << 1)
 
 #define VK_YCBCR_CONVERSION_DO_NOTHING ((VkSamplerYcbcrConversion)0x1111111111111111)
 
 #ifdef __cplusplus
 } // extern "C"
+#endif
+
+#ifdef __cplusplus
+
+template<class T, typename F>
+bool arrayany(const T* arr, uint32_t begin, uint32_t end, const F& func) {
+    const T* e = arr + end;
+    return std::find_if(arr + begin, e, func) != e;
+}
+
 #endif

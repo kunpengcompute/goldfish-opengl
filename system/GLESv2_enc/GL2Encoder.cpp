@@ -1745,8 +1745,15 @@ void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, cons
     std::vector<std::string> orig_sources;
     if (length) {
         for (int i = 0; i < count; i++) {
-            orig_sources.push_back(std::string((const char*)(string[i]),
-                                               (const char*)(string[i]) + length[i]));
+            // Each element in the length array may contain the length of the corresponding
+            // string (the null character is not counted as part of the string length) or a
+            // value less than 0 to indicate that the string is null terminated.
+            if (length[i] >= 0) {
+                orig_sources.push_back(std::string((const char*)(string[i]),
+                                                   (const char*)(string[i]) + length[i]));
+            } else {
+                orig_sources.push_back(std::string((const char*)(string[i])));
+            }
         }
     } else {
         for (int i = 0; i < count; i++) {

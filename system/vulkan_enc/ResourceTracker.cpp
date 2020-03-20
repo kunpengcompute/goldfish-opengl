@@ -33,6 +33,13 @@ void zx_event_create(int, zx_handle_t*) { }
 
 #include "AndroidHardwareBuffer.h"
 
+#ifndef HOST_BUILD
+#include <drm/virtgpu_drm.h>
+#include <xf86drm.h>
+#endif
+
+#include "VirtioGpuNext.h"
+
 #endif // VK_USE_PLATFORM_ANDROID_KHR
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
@@ -61,6 +68,7 @@ uint64_t getAndroidHardwareBufferUsageFromVkUsage(
 }
 
 VkResult importAndroidHardwareBuffer(
+    Gralloc *grallocHelper,
     const VkImportAndroidHardwareBufferInfoANDROID* info,
     struct AHardwareBuffer **importOut) {
   return VK_SUCCESS;
@@ -85,6 +93,7 @@ struct HostVisibleMemoryVirtualizationInfo;
 }
 
 VkResult getAndroidHardwareBufferPropertiesANDROID(
+    Gralloc *grallocHelper,
     const goldfish_vk::HostVisibleMemoryVirtualizationInfo*,
     VkDevice,
     const AHardwareBuffer*,
@@ -101,7 +110,6 @@ VkResult getMemoryAndroidHardwareBufferANDROID(struct AHardwareBuffer **) { retu
 #include "android/base/AlignedBuf.h"
 #include "android/base/synchronization/AndroidLock.h"
 
-#include "gralloc_cb.h"
 #include "goldfish_address_space.h"
 #include "goldfish_vk_private_defs.h"
 #include "vk_format_info.h"
@@ -239,6 +247,11 @@ public:
         std::set<std::string> enabledExtensions;
     };
 
+    struct VirtioGpuHostmemResourceInfo {
+        uint32_t resourceId = 0;
+        int primeFd = -1;
+    };
+
     struct VkDeviceMemory_Info {
         VkDeviceSize allocationSize = 0;
         VkDeviceSize mappedSize = 0;
@@ -248,6 +261,7 @@ public:
         bool directMapped = false;
         GoldfishAddressSpaceBlock*
             goldfishAddressSpaceBlock = nullptr;
+        VirtioGpuHostmemResourceInfo resInfo;
         SubAlloc subAlloc;
         AHardwareBuffer* ahw = nullptr;
         zx_handle_t vmoHandle = ZX_HANDLE_INVALID;
@@ -269,6 +283,9 @@ public:
         VkDeviceSize currentBackingSize = 0;
         bool baseRequirementsKnown = false;
         VkMemoryRequirements baseRequirements;
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        bool isSysmemBackedMemory = false;
+#endif
     };
 
     struct VkBuffer_Info {
@@ -483,7 +500,7 @@ public:
         info.memProps = memProps;
         initHostVisibleMemoryVirtualizationInfo(
             physdev, &memProps,
-            mFeatureInfo->hasDirectMem,
+            mFeatureInfo.get(),
             &mHostVisibleMemoryVirtInfo);
         info.apiVersion = props.apiVersion;
 
@@ -615,6 +632,16 @@ public:
         if (mFeatureInfo->hasVulkanNullOptionalStrings) {
             mStreamFeatureBits |= VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT;
         }
+        if (mFeatureInfo->hasVulkanIgnoredHandles) {
+            mStreamFeatureBits |= VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT;
+        }
+
+#if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
+        if (mFeatureInfo->hasVirtioGpuNext) {
+            ALOGD("%s: has virtio-gpu-next; create hostmem rendernode\n", __func__);
+            mRendernodeFd = drmOpenRender(128 /* RENDERNODE_MINOR */);
+        }
+#endif
     }
 
     void setThreadingCallbacks(const ResourceTracker::ThreadingCallbacks& callbacks) {
@@ -856,9 +883,11 @@ public:
             return VK_SUCCESS;
         } else {
             auto actualExtensionCount = (uint32_t)filteredExts.size();
-            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+            if (*pPropertyCount > actualExtensionCount) {
+              *pPropertyCount = actualExtensionCount;
+            }
 
-            for (uint32_t i = 0; i < toWrite; ++i) {
+            for (uint32_t i = 0; i < *pPropertyCount; ++i) {
                 pProperties[i] = filteredExts[i];
             }
 
@@ -1024,9 +1053,11 @@ public:
             return VK_SUCCESS;
         } else {
             auto actualExtensionCount = (uint32_t)filteredExts.size();
-            auto toWrite = actualExtensionCount < *pPropertyCount ? actualExtensionCount : *pPropertyCount;
+            if (*pPropertyCount > actualExtensionCount) {
+              *pPropertyCount = actualExtensionCount;
+            }
 
-            for (uint32_t i = 0; i < toWrite; ++i) {
+            for (uint32_t i = 0; i < *pPropertyCount; ++i) {
                 pProperties[i] = filteredExts[i];
             }
 
@@ -1138,7 +1169,7 @@ public:
         initHostVisibleMemoryVirtualizationInfo(
             physdev,
             out,
-            mFeatureInfo->hasDirectMem,
+            mFeatureInfo.get(),
             &mHostVisibleMemoryVirtInfo);
 
         if (mHostVisibleMemoryVirtInfo.virtualizationSupported) {
@@ -1154,7 +1185,7 @@ public:
         initHostVisibleMemoryVirtualizationInfo(
             physdev,
             &out->memoryProperties,
-            mFeatureInfo->hasDirectMem,
+            mFeatureInfo.get(),
             &mHostVisibleMemoryVirtInfo);
 
         if (mHostVisibleMemoryVirtInfo.virtualizationSupported) {
@@ -1237,7 +1268,10 @@ public:
         VkDevice device,
         const AHardwareBuffer* buffer,
         VkAndroidHardwareBufferPropertiesANDROID* pProperties) {
+        auto grallocHelper =
+            mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper();
         return getAndroidHardwareBufferPropertiesANDROID(
+            grallocHelper,
             &mHostVisibleMemoryVirtInfo,
             device, buffer, pProperties);
     }
@@ -1621,11 +1655,67 @@ public:
 
             uint64_t directMappedAddr = 0;
 
-            mLock.unlock();
-            VkResult directMapResult =
-                enc->vkMapMemoryIntoAddressSpaceGOOGLE(
-                    device, hostMemAlloc.memory, &directMappedAddr);
-            mLock.lock();
+
+            VkResult directMapResult = VK_SUCCESS;
+            if (mFeatureInfo->hasDirectMem) {
+                mLock.unlock();
+                directMapResult =
+                    enc->vkMapMemoryIntoAddressSpaceGOOGLE(
+                            device, hostMemAlloc.memory, &directMappedAddr);
+                mLock.lock();
+            } else if (mFeatureInfo->hasVirtioGpuNext) {
+#if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
+                uint64_t hvaSizeId[3];
+
+                mLock.unlock();
+                enc->vkGetMemoryHostAddressInfoGOOGLE(
+                        device, hostMemAlloc.memory,
+                        &hvaSizeId[0], &hvaSizeId[1], &hvaSizeId[2]);
+                ALOGD("%s: hvaOff, size: 0x%llx 0x%llx id: 0x%llx\n", __func__,
+                        (unsigned long long)hvaSizeId[0],
+                        (unsigned long long)hvaSizeId[1],
+                        (unsigned long long)hvaSizeId[2]);
+                mLock.lock();
+
+                struct drm_virtgpu_resource_create_v2 drm_rc_v2 = { 0 };
+                drm_rc_v2.args = (uint64_t)&hvaSizeId[2];
+                drm_rc_v2.args_size = sizeof(uint64_t);
+                drm_rc_v2.size = hvaSizeId[1];
+                drm_rc_v2.flags = VIRTGPU_RESOURCE_TYPE_HOST;
+
+                int res = drmIoctl(
+                    mRendernodeFd, DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_V2, &drm_rc_v2);
+
+                if (res) {
+                    ALOGE("%s: Failed to resource create v2: sterror: %s errno: %d\n", __func__,
+                            strerror(errno), errno);
+                    abort();
+                }
+
+                struct drm_virtgpu_map map_info = {
+                    .handle = drm_rc_v2.bo_handle,
+                };
+
+                res = drmIoctl(mRendernodeFd, DRM_IOCTL_VIRTGPU_MAP, &map_info);
+                if (res) {
+                    ALOGE("%s: Failed to virtgpu map: sterror: %s errno: %d\n", __func__,
+                            strerror(errno), errno);
+                    abort();
+                }
+
+                directMappedAddr = (uint64_t)(uintptr_t)
+                    mmap64(0, hvaSizeId[1], PROT_WRITE, MAP_SHARED, mRendernodeFd, map_info.offset);
+
+                if (!directMappedAddr) {
+                    ALOGE("%s: mmap of virtio gpu resource failed\n", __func__);
+                    abort();
+                }
+
+                // add the host's page offset
+                directMappedAddr += (uint64_t)(uintptr_t)(hvaSizeId[0]) & (PAGE_SIZE - 1);
+				directMapResult = VK_SUCCESS;
+#endif // VK_USE_PLATFORM_ANDROID_KHR
+            }
 
             if (directMapResult != VK_SUCCESS) {
                 hostMemAlloc.initialized = true;
@@ -1822,15 +1912,15 @@ public:
             ahw = importAhbInfoPtr->buffer;
             // We still need to acquire the AHardwareBuffer.
             importAndroidHardwareBuffer(
+                mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper(),
                 importAhbInfoPtr, nullptr);
         }
 
         if (ahw) {
-            ALOGD("%s: Import AHardwareBulffer", __func__);
-            const native_handle_t *handle =
-                AHardwareBuffer_getNativeHandle(ahw);
-            const cb_handle_t* cb_handle = cb_handle_t::from(handle);
-            importCbInfo.colorBuffer = cb_handle->hostHandle;
+            ALOGD("%s: Import AHardwareBuffer", __func__);
+            importCbInfo.colorBuffer =
+                mThreadingCallbacks.hostConnectionGetFunc()->grallocHelper()->
+                    getHostHandle(AHardwareBuffer_getNativeHandle(ahw));
             vk_append_struct(&structChainIter, &importCbInfo);
         }
 
@@ -2199,10 +2289,10 @@ public:
         if (!info.external ||
             !info.externalCreateInfo.handleTypes) {
             transformNonExternalResourceMemoryRequirementsForGuest(reqs);
-            return;
+        } else {
+            transformExternalResourceMemoryRequirementsForGuest(reqs);
         }
-
-        transformExternalResourceMemoryRequirementsForGuest(reqs);
+        setMemoryRequirementsForSysmemBackedImage(image, reqs);
     }
 
     void transformBufferMemoryRequirementsForGuestLocked(
@@ -2238,10 +2328,13 @@ public:
             !info.externalCreateInfo.handleTypes) {
             transformNonExternalResourceMemoryRequirementsForGuest(
                 &reqs2->memoryRequirements);
+            setMemoryRequirementsForSysmemBackedImage(image, &reqs2->memoryRequirements);
             return;
         }
 
         transformExternalResourceMemoryRequirementsForGuest(&reqs2->memoryRequirements);
+
+        setMemoryRequirementsForSysmemBackedImage(image, &reqs2->memoryRequirements);
 
         VkMemoryDedicatedRequirements* dedicatedReqs =
             vk_find_struct<VkMemoryDedicatedRequirements>(reqs2);
@@ -2329,6 +2422,7 @@ public:
 #ifdef VK_USE_PLATFORM_FUCHSIA
         const VkBufferCollectionImageCreateInfoFUCHSIA* extBufferCollectionPtr =
             vk_find_struct<VkBufferCollectionImageCreateInfoFUCHSIA>(pCreateInfo);
+        bool isSysmemBackedMemory = false;
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<fuchsia::sysmem::BufferCollectionSyncPtr*>(
                 extBufferCollectionPtr->collection);
@@ -2358,6 +2452,7 @@ public:
                     ALOGE("CreateColorBuffer failed: %d:%d", status, status2);
                 }
             }
+            isSysmemBackedMemory = true;
         }
 #endif
 
@@ -2392,11 +2487,16 @@ public:
             info.externalCreateInfo = *extImgCiPtr;
         }
 
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        if (isSysmemBackedMemory) {
+            info.isSysmemBackedMemory = true;
+        }
+#endif
+
         if (info.baseRequirementsKnown) {
             transformImageMemoryRequirementsForGuestLocked(*pImage, &memReqs);
             info.baseRequirements = memReqs;
         }
-
         return res;
     }
 
@@ -2891,6 +2991,24 @@ public:
         enc->vkDestroyImage(device, image, pAllocator);
     }
 
+    void setMemoryRequirementsForSysmemBackedImage(
+        VkImage image, VkMemoryRequirements *pMemoryRequirements) {
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        auto it = info_VkImage.find(image);
+        if (it == info_VkImage.end()) return;
+        auto& info = it->second;
+        if (info.isSysmemBackedMemory) {
+            auto width = info.createInfo.extent.width;
+            auto height = info.createInfo.extent.height;
+            pMemoryRequirements->size = width * height * 4;
+        }
+#else
+        // Bypass "unused parameter" checks.
+        (void)image;
+        (void)pMemoryRequirements;
+#endif
+    }
+
     void on_vkGetImageMemoryRequirements(
         void *context, VkDevice device, VkImage image,
         VkMemoryRequirements *pMemoryRequirements) {
@@ -2918,6 +3036,7 @@ public:
 
         transformImageMemoryRequirementsForGuestLocked(
             image, pMemoryRequirements);
+
         info.baseRequirementsKnown = true;
         info.baseRequirements = *pMemoryRequirements;
     }
@@ -3456,8 +3575,7 @@ public:
             return;
         }
 
-        const cb_handle_t* cb_handle = cb_handle_t::from(nativeInfo->handle);
-        if (!cb_handle) return;
+        if (!nativeInfo->handle) return;
 
         VkNativeBufferANDROID* nativeInfoOut =
             reinterpret_cast<VkNativeBufferANDROID*>(
@@ -3469,10 +3587,14 @@ public:
             abort();
         }
 
-        *(uint32_t*)(nativeInfoOut->handle) = cb_handle->hostHandle;
+        *(uint32_t*)(nativeInfoOut->handle) =
+            mThreadingCallbacks.hostConnectionGetFunc()->
+                grallocHelper()->getHostHandle(
+                    (const native_handle_t*)nativeInfo->handle);
     }
 
     void unwrap_vkAcquireImageANDROID_nativeFenceFd(int fd, int*) {
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
         if (fd != -1) {
             // Implicit Synchronization
             sync_wait(fd, 3000);
@@ -3489,6 +3611,7 @@ public:
             // Therefore, assume contract where we need to close fd in this driver
             close(fd);
         }
+#endif
     }
 
     // Action of vkMapMemoryIntoAddressSpaceGOOGLE:
@@ -3980,6 +4103,9 @@ private:
     std::vector<VkExtensionProperties> mHostDeviceExtensions;
 
     int mSyncDeviceFd = -1;
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+    int mRendernodeFd = -1;
+#endif
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
     fuchsia::hardware::goldfish::ControlDeviceSyncPtr mControlDevice;
