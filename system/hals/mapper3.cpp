@@ -23,6 +23,8 @@
 #include "FormatConversions.h"
 #include "debug.h"
 
+const int kOMX_COLOR_FormatYUV420Planar = 19;
+
 using ::android::hardware::hidl_handle;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::Return;
@@ -77,7 +79,7 @@ int waitHidlFence(const hidl_handle& hidlHandle, const char* logname) {
 class GoldfishMapper : public IMapper3 {
 public:
     GoldfishMapper() : m_hostConn(HostConnection::createUnique()) {
-        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator;
+        GoldfishAddressSpaceHostMemoryAllocator host_memory_allocator(false);
         CRASH_IF(!host_memory_allocator.is_opened(),
                  "GoldfishAddressSpaceHostMemoryAllocator failed to open");
 
@@ -86,6 +88,8 @@ public:
                  "hostMalloc failed");
 
         m_physAddrToOffset = bufferBits.physAddr() - bufferBits.offset();
+
+        host_memory_allocator.hostFree(&bufferBits);
     }
 
     Return<void> importBuffer(const hidl_handle& hh,
@@ -575,6 +579,10 @@ private:  // **** impl ****
             RETURN(usageSwRead);
 
         default:
+            if (static_cast<int>(descriptor.format) == kOMX_COLOR_FormatYUV420Planar) {
+                return (usage & BufferUsage::GPU_DATA_BUFFER) != 0;
+            }
+
             RETURN(false);
         }
     }
