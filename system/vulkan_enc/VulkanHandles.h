@@ -30,9 +30,6 @@
     f(VkBufferView) \
     f(VkImageView) \
     f(VkShaderModule) \
-    f(VkDescriptorPool) \
-    f(VkDescriptorSetLayout) \
-    f(VkDescriptorSet) \
     f(VkSampler) \
     f(VkPipeline) \
     f(VkPipelineCache) \
@@ -60,6 +57,9 @@
     f(VkSemaphore) \
     f(VkDescriptorUpdateTemplate) \
     f(VkFence) \
+    f(VkDescriptorPool) \
+    f(VkDescriptorSet) \
+    f(VkDescriptorSetLayout) \
     GOLDFISH_VK_LIST_TRIVIAL_NON_DISPATCHABLE_HANDLE_TYPES(f) \
 
 #define GOLDFISH_VK_LIST_HANDLE_TYPES(f) \
