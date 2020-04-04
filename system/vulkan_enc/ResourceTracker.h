@@ -363,6 +363,58 @@ public:
         VkBool32 waitAll,
         uint64_t timeout);
 
+    VkResult on_vkCreateDescriptorPool(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkDescriptorPoolCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDescriptorPool* pDescriptorPool);
+
+    void on_vkDestroyDescriptorPool(
+        void* context,
+        VkDevice device,
+        VkDescriptorPool descriptorPool,
+        const VkAllocationCallbacks* pAllocator);
+
+    VkResult on_vkResetDescriptorPool(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        VkDescriptorPool descriptorPool,
+        VkDescriptorPoolResetFlags flags);
+
+    VkResult on_vkAllocateDescriptorSets(
+        void* context,
+        VkResult input_result,
+        VkDevice                                    device,
+        const VkDescriptorSetAllocateInfo*          pAllocateInfo,
+        VkDescriptorSet*                            pDescriptorSets);
+
+    VkResult on_vkFreeDescriptorSets(
+        void* context,
+        VkResult input_result,
+        VkDevice                                    device,
+        VkDescriptorPool                            descriptorPool,
+        uint32_t                                    descriptorSetCount,
+        const VkDescriptorSet*                      pDescriptorSets);
+
+    VkResult on_vkCreateDescriptorSetLayout(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDescriptorSetLayout* pSetLayout);
+
+    void on_vkUpdateDescriptorSets(
+        void* context,
+        VkDevice device,
+        uint32_t descriptorWriteCount,
+        const VkWriteDescriptorSet* pDescriptorWrites,
+        uint32_t descriptorCopyCount,
+        const VkCopyDescriptorSet* pDescriptorCopies);
+
     VkResult on_vkMapMemoryIntoAddressSpaceGOOGLE_pre(
         void* context,
         VkResult input_result,
