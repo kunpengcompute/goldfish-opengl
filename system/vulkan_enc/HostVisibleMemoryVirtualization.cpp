@@ -250,6 +250,7 @@ VkResult finishHostMemAllocInit(
 }
 
 void destroyHostMemAlloc(
+    bool freeMemorySyncSupported,
     VkEncoder* enc,
     VkDevice device,
     HostMemAlloc* toDestroy) {
@@ -257,7 +258,12 @@ void destroyHostMemAlloc(
     if (toDestroy->initResult != VK_SUCCESS) return;
     if (!toDestroy->initialized) return;
 
-    enc->vkFreeMemory(device, toDestroy->memory, nullptr);
+    if (freeMemorySyncSupported) {
+        enc->vkFreeMemorySyncGOOGLE(device, toDestroy->memory, nullptr);
+    } else {
+        enc->vkFreeMemory(device, toDestroy->memory, nullptr);
+    }
+
     delete toDestroy->subAlloc;
 }
 
@@ -302,5 +308,16 @@ bool canSubAlloc(android::base::guest::SubAllocator* subAlloc, VkDeviceSize size
     subAlloc->free(ptr);
     return true;
 }
+
+bool isNoFlagsMemoryTypeIndexForGuest(
+    const HostVisibleMemoryVirtualizationInfo* info,
+    uint32_t index) {
+    const auto& props =
+        info->virtualizationSupported ?
+        info->guestMemoryProperties :
+        info->hostMemoryProperties;
+    return props.memoryTypes[index].propertyFlags == 0;
+}
+
 
 } // namespace goldfish_vk
