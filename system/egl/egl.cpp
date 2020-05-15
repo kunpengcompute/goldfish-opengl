@@ -122,7 +122,7 @@ const char *  eglStrError(EGLint err)
 #endif //LOG_EGL_ERRORS
 
 #define VALIDATE_CONFIG(cfg,ret) \
-    if(((intptr_t)(cfg)<0)||((intptr_t)(cfg)>s_display.getNumConfigs())) { \
+    if (!s_display.isValidConfig(cfg)) { \
         RETURN_ERROR(ret,EGL_BAD_CONFIG); \
     }
 
@@ -410,7 +410,7 @@ EGLBoolean egl_window_surface_t::init()
     setNativeHeight(nativeHeight);
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
+    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)s_display.getIndexOfConfig(config),
             getWidth(), getHeight());
 
     if (!rcSurface) {
@@ -670,7 +670,7 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
 {
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
 
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
+    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)s_display.getIndexOfConfig(config),
             getWidth(), getHeight());
     if (!rcSurface) {
         ALOGE("rcCreateWindowSurface returned 0");
@@ -947,7 +947,7 @@ EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size,
 
     EGLint i;
     for (i = 0 ; i < numConfigs && i < config_size ; i++) {
-        *configs++ = (EGLConfig)(uintptr_t)i;
+        *configs++ = (EGLConfig)(uintptr_t)s_display.getConfigAtIndex(i);
     }
     *num_config = i;
     return EGL_TRUE;
@@ -1008,7 +1008,8 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
     if (configs!=NULL) {
         EGLint i=0;
         for (i=0;i<(*num_config);i++) {
-             *((uintptr_t*)configs+i) = *((uint32_t*)tempConfigs+i);
+            EGLConfig guestConfig = s_display.getConfigAtIndex(*((uint32_t*)tempConfigs+i));
+            configs[i] = guestConfig;
         }
     }
 
@@ -1616,7 +1617,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     if (majorVersion == 3 && minorVersion == 2) {
         rcMajorVersion = 4;
     }
-    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)config, rcShareCtx, rcMajorVersion);
+    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)s_display.getIndexOfConfig(config), rcShareCtx, rcMajorVersion);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);
@@ -1715,7 +1716,6 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     //Now make the local bind
     if (context) {
 
-        ALOGD("%s: %p: ver %d %d (tinfo %p)", __FUNCTION__, context, context->majorVersion, context->minorVersion, tInfo);
         // This is a nontrivial context.
         // The thread cannot be gralloc-only anymore.
         hostCon->setGrallocOnly(false);
@@ -1732,6 +1732,9 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
             context->getClientState();
 
         if (!hostCon->gl2Encoder()->isInitialized()) {
+            ALOGD("%s: %p: ver %d %d (tinfo %p) (first time)",
+                  __FUNCTION__,
+                  context, context->majorVersion, context->minorVersion, tInfo);
             s_display.gles2_iface()->init();
             hostCon->gl2Encoder()->setInitialized();
             ClientAPIExts::initClientFuncs(s_display.gles2_iface(), 1);
@@ -1835,6 +1838,9 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
         }
         else {
             if (!hostCon->glEncoder()->isInitialized()) {
+                ALOGD("%s: %p: ver %d %d (tinfo %p) (first time)",
+                      __FUNCTION__,
+                      context, context->majorVersion, context->minorVersion, tInfo);
                 s_display.gles_iface()->init();
                 hostCon->glEncoder()->setInitialized();
                 ClientAPIExts::initClientFuncs(s_display.gles_iface(), 0);
