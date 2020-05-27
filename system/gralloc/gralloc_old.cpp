@@ -23,12 +23,7 @@
 #include <sys/mman.h>
 #include <hardware/gralloc.h>
 
-#if PLATFORM_SDK_VERSION < 28
-#include "gralloc_cb.h"
-#else
-#include "../../shared/OpenglCodecCommon/gralloc_cb.h"
-#endif
-
+#include <gralloc_cb_bp.h>
 #include "gralloc_common.h"
 
 #include "goldfish_dma.h"
@@ -38,7 +33,7 @@
 #include "ProcessPipe.h"
 #include "ThreadInfo.h"
 #include "glUtils.h"
-#include "qemu_pipe.h"
+#include <qemu_pipe_bp.h>
 
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>

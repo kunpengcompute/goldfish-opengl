@@ -2,6 +2,15 @@ LOCAL_PATH := $(call my-dir)
 
 $(call emugl-begin-shared-library,libOpenglSystemCommon)
 $(call emugl-import,libGLESv1_enc libGLESv2_enc lib_renderControl_enc)
+ifeq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
+$(call emugl-import,libGoldfishAddressSpace$(GOLDFISH_OPENGL_LIB_SUFFIX))
+$(call emugl-import,libqemupipe$(GOLDFISH_OPENGL_LIB_SUFFIX))
+$(call emugl-import,libgralloc_cb$(GOLDFISH_OPENGL_LIB_SUFFIX))
+else
+$(call emugl-export,STATIC_LIBRARIES,libGoldfishAddressSpace)
+$(call emugl-export,STATIC_LIBRARIES,libqemupipe.ranchu)
+$(call emugl-export,HEADER_LIBRARIES,libgralloc_cb.ranchu)
+endif
 
 LOCAL_SRC_FILES := \
     FormatConversions.cpp \

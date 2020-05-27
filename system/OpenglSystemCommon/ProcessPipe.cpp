@@ -16,7 +16,8 @@
 
 #include "ProcessPipe.h"
 #include "renderControl_enc.h"
-#include "qemu_pipe.h"
+
+#include <qemu_pipe_bp.h>
 
 #if PLATFORM_SDK_VERSION < 26
 #include <cutils/log.h>
@@ -98,7 +99,7 @@ static void processPipeInitOnce() {
         ALOGE("%s: failed write confirm int", __FUNCTION__);
         return;
     }
-    status = pipe->Call(sizeof(confirmInt), 0, sizeof(sProcUID), 0, &status2, &actual);
+    status = pipe->DoCall(sizeof(confirmInt), 0, sizeof(sProcUID), 0, &status2, &actual);
     if (status != ZX_OK || status2 != ZX_OK) {
         ALOGD("%s: failed to get per-process ID: %d:%d", __FUNCTION__,
               status, status2);
