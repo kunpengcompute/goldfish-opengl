@@ -6,6 +6,12 @@ $(call emugl-begin-shared-library,libEGL_emulation)
 $(call emugl-import,libOpenglSystemCommon)
 $(call emugl-set-shared-library-subpath,egl)
 
+ifeq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
+$(call emugl-import,libqemupipe$(GOLDFISH_OPENGL_LIB_SUFFIX))
+else
+$(call emugl-export,STATIC_LIBRARIES,libqemupipe.ranchu)
+endif
+
 LOCAL_CFLAGS += -DLOG_TAG=\"EGL_emulation\" -DEGL_EGLEXT_PROTOTYPES -DWITH_GLES2
 LOCAL_CFLAGS += -Wno-gnu-designator
 
@@ -17,7 +23,12 @@ LOCAL_SRC_FILES := \
 ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 
 LOCAL_SHARED_LIBRARIES += libdl
-endif
+ifeq (true,$(BUILD_EMULATOR_VULKAN))
+LOCAL_CFLAGS += -DVIRTIO_GPU
+LOCAL_C_INCLUDES += external/libdrm
+LOCAL_SHARED_LIBRARIES += libdrm
+endif # BUILD_EMULATOR_VULKAN
+endif # GOLDFISH_OPENGL_BUILD_FOR_HOST
 
 ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 ifdef IS_AT_LEAST_OPM1

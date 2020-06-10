@@ -130,6 +130,9 @@ ifeq (true,$(GOLDFISH_OPENGL_SHOULD_BUILD))
 # Note that the build system will complain if you try to import a
 # module that hasn't been declared yet anyway.
 #
+include $(GOLDFISH_OPENGL_PATH)/shared/qemupipe/Android.mk
+include $(GOLDFISH_OPENGL_PATH)/shared/gralloc_cb/Android.mk
+include $(GOLDFISH_OPENGL_PATH)/shared/GoldfishAddressSpace/Android.mk
 include $(GOLDFISH_OPENGL_PATH)/shared/OpenglCodecCommon/Android.mk
 
 # Encoder shared libraries
@@ -153,8 +156,6 @@ include $(GOLDFISH_OPENGL_PATH)/system/gralloc/Android.mk
 ifneq (true,$(GOLDFISH_OPENGL_BUILD_FOR_HOST))
 include $(GOLDFISH_OPENGL_PATH)/system/hals/Android.mk
 endif
-
-include $(GOLDFISH_OPENGL_PATH)/system/cbmanager/Android.mk
 
 include $(GOLDFISH_OPENGL_PATH)/system/egl/Android.mk
 

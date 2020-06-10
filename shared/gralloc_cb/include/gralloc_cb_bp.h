@@ -18,7 +18,7 @@
 #define __GRALLOC_CB_H__
 
 #include <cutils/native_handle.h>
-#include "qemu_pipe.h"
+#include <qemu_pipe_types_bp.h>
 
 const uint32_t CB_HANDLE_MAGIC_MASK = 0xFFFFFFF0;
 const uint32_t CB_HANDLE_MAGIC_BASE = 0xABFABFA0;
