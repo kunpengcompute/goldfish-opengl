@@ -1356,6 +1356,13 @@ void deepcopy_VkPhysicalDevice8BitStorageFeaturesKHR(
     VkPhysicalDevice8BitStorageFeaturesKHR* to);
 
 #endif
+#ifdef VK_KHR_shader_float16_int8
+void deepcopy_VkPhysicalDeviceShaderFloat16Int8Features(
+    Pool* pool,
+    const VkPhysicalDeviceShaderFloat16Int8Features* from,
+    VkPhysicalDeviceShaderFloat16Int8Features* to);
+
+#endif
 #ifdef VK_ANDROID_native_buffer
 void deepcopy_VkNativeBufferANDROID(
     Pool* pool,
@@ -2036,6 +2043,8 @@ void deepcopy_VkImportPhysicalAddressGOOGLE(
 #ifdef VK_GOOGLE_address_space_info
 #endif
 #ifdef VK_GOOGLE_free_memory_sync
+#endif
+#ifdef VK_GOOGLE_async_queue_submit
 #endif
 
 } // namespace goldfish_vk

@@ -6245,6 +6245,32 @@ void transform_fromhost_VkPhysicalDevice8BitStorageFeaturesKHR(
 }
 
 #endif
+#ifdef VK_KHR_shader_float16_int8
+void transform_tohost_VkPhysicalDeviceShaderFloat16Int8Features(
+    ResourceTracker* resourceTracker,
+    VkPhysicalDeviceShaderFloat16Int8Features* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_tohost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+void transform_fromhost_VkPhysicalDeviceShaderFloat16Int8Features(
+    ResourceTracker* resourceTracker,
+    VkPhysicalDeviceShaderFloat16Int8Features* toTransform)
+{
+    (void)resourceTracker;
+    (void)toTransform;
+    if (toTransform->pNext)
+    {
+        transform_fromhost_extension_struct(resourceTracker, (void*)(toTransform->pNext));
+    }
+}
+
+#endif
 #ifdef VK_ANDROID_native_buffer
 void transform_tohost_VkNativeBufferANDROID(
     ResourceTracker* resourceTracker,
@@ -8975,6 +9001,8 @@ void transform_fromhost_VkImportPhysicalAddressGOOGLE(
 #endif
 #ifdef VK_GOOGLE_free_memory_sync
 #endif
+#ifdef VK_GOOGLE_async_queue_submit
+#endif
 void transform_tohost_extension_struct(
     ResourceTracker* resourceTracker,
     void* structExtension_out)
@@ -9294,6 +9322,13 @@ void transform_tohost_extension_struct(
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:
         {
             transform_tohost_VkPhysicalDevice8BitStorageFeaturesKHR(resourceTracker, reinterpret_cast<VkPhysicalDevice8BitStorageFeaturesKHR*>(structExtension_out));
+            break;
+        }
+#endif
+#ifdef VK_KHR_shader_float16_int8
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES:
+        {
+            transform_tohost_VkPhysicalDeviceShaderFloat16Int8Features(resourceTracker, reinterpret_cast<VkPhysicalDeviceShaderFloat16Int8Features*>(structExtension_out));
             break;
         }
 #endif
@@ -9967,6 +10002,13 @@ void transform_fromhost_extension_struct(
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:
         {
             transform_fromhost_VkPhysicalDevice8BitStorageFeaturesKHR(resourceTracker, reinterpret_cast<VkPhysicalDevice8BitStorageFeaturesKHR*>(structExtension_out));
+            break;
+        }
+#endif
+#ifdef VK_KHR_shader_float16_int8
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES:
+        {
+            transform_fromhost_VkPhysicalDeviceShaderFloat16Int8Features(resourceTracker, reinterpret_cast<VkPhysicalDeviceShaderFloat16Int8Features*>(structExtension_out));
             break;
         }
 #endif
