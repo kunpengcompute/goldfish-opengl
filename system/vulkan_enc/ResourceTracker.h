@@ -20,6 +20,7 @@
 
 #include "VulkanHandleMapping.h"
 #include "VulkanHandles.h"
+#include <functional>
 #include <memory>
 
 #include "goldfish_vk_transform_guest.h"
@@ -44,6 +45,7 @@ public:
 
     using HostConnectionGetFunc = HostConnection* (*)();
     using VkEncoderGetFunc = VkEncoder* (*)(HostConnection*);
+    using CleanupCallback = std::function<void()>;
 
     struct ThreadingCallbacks {
         HostConnectionGetFunc hostConnectionGetFunc = 0;
@@ -274,6 +276,12 @@ public:
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         const VkImageCreateInfo* pImageInfo);
+    VkResult on_vkSetBufferCollectionBufferConstraintsFUCHSIA(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo);
     VkResult on_vkGetBufferCollectionPropertiesFUCHSIA(
         void* context, VkResult input_result,
         VkDevice device,
@@ -474,7 +482,12 @@ public:
         const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
         VkImageFormatProperties2* pImageFormatProperties);
 
+    void registerEncoderCleanupCallback(const VkEncoder* encoder, void* handle, CleanupCallback callback);
+    void unregisterEncoderCleanupCallback(const VkEncoder* encoder, void* handle);
+    void onEncoderDeleted(const VkEncoder* encoder);
+
     uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* current);
+    uint32_t syncEncodersForQueue(VkQueue queue, VkEncoder* current);
 
     VkResult on_vkBeginCommandBuffer(
         void* context, VkResult input_result,
