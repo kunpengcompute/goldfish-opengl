@@ -205,7 +205,7 @@ private:
 
     class Display {
     public:
-        Display(EmuHWC2& device, HWC2::DisplayType type);
+        Display(EmuHWC2& device, HWC2::DisplayType type, int width, int height);
         ~Display();
         hwc2_display_t getId() const {return mId;}
 
@@ -260,7 +260,7 @@ private:
         // Read configs from PRIMARY Display
         int populatePrimaryConfigs(int width, int height, int dpiX, int dpiY);
         HWC2::Error populateSecondaryConfigs(uint32_t width, uint32_t height,
-                 uint32_t dpi);
+                 uint32_t dpi, uint32_t idx);
 
     private:
         void post(HostConnection *hostCon, ExtendedRCEncoderContext *rcEnc,
@@ -346,6 +346,7 @@ private:
         EmuHWC2& mDevice;
         // Display ID generator.
         static std::atomic<hwc2_display_t> sNextId;
+        static const uint32_t hostDisplayIdStart = 6;
         const hwc2_display_t mId;
         // emulator side displayId
         uint32_t mHostDisplayId;
@@ -466,7 +467,7 @@ private:
             hwc2_layer_t layerId);
 
     HWC2::Error initDisplayParameters();
-    const native_handle_t* allocateDisplayColorBuffer();
+    const native_handle_t* allocateDisplayColorBuffer(int width, int height);
     void freeDisplayColorBuffer(const native_handle_t* h);
 
     std::unordered_set<HWC2::Capability> mCapabilities;

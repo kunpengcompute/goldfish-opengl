@@ -13,8 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 #include "ThreadInfo.h"
 #include "cutils/threads.h"
+
+#ifdef GFXSTREAM
+
+thread_local EGLThreadInfo sEglThreadInfoThreadLocal;
+
+EGLThreadInfo *goldfish_get_egl_tls()
+{
+    return &sEglThreadInfoThreadLocal;
+}
+
+EGLThreadInfo* getEGLThreadInfo() {
+    return goldfish_get_egl_tls();
+}
+
+int32_t getCurrentThreadId() {
+    return (int32_t)gettid();
+}
+
+void setTlsDestructor(tlsDtorCallback func) {
+    getEGLThreadInfo()->dtor = func;
+}
+
+#else // GFXSTREAM
 
 #ifdef __BIONIC__
 #include <bionic/tls.h>
@@ -45,7 +69,6 @@ static void tlsDestruct(void *ptr)
 #endif
         ) {
         EGLThreadInfo *ti = (EGLThreadInfo *)ptr;
-        delete ti->hostConn;
         delete ti;
 #ifdef __ANDROID__
         ((void **)__get_tls())[TLS_SLOT_OPENGL] = NULL;
@@ -59,14 +82,14 @@ void setTlsDestructor(tlsDtorCallback func) {
 
 EGLThreadInfo *goldfish_get_egl_tls()
 {
-    EGLThreadInfo* ti = (EGLThreadInfo*)thread_store_get(&s_tls);
+   EGLThreadInfo* ti = (EGLThreadInfo*)thread_store_get(&s_tls);
 
-    if (ti) return ti;
+   if (ti) return ti;
 
-    ti = new EGLThreadInfo();
-    thread_store_set(&s_tls, ti, tlsDestruct);
+   ti = new EGLThreadInfo();
+   thread_store_set(&s_tls, ti, tlsDestruct);
 
-    return ti;
+   return ti;
 }
 
 EGLThreadInfo* getEGLThreadInfo() {
@@ -86,3 +109,5 @@ EGLThreadInfo* getEGLThreadInfo() {
 int32_t getCurrentThreadId() {
     return (int32_t)gettid();
 }
+
+#endif // !GFXSTREAM

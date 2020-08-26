@@ -134,6 +134,8 @@ namespace goldfish_vk {
 #endif
 #ifdef VK_KHR_8bit_storage
 #endif
+#ifdef VK_KHR_shader_float16_int8
+#endif
 #ifdef VK_ANDROID_native_buffer
 #endif
 #ifdef VK_EXT_debug_report
@@ -289,6 +291,8 @@ namespace goldfish_vk {
 #ifdef VK_GOOGLE_address_space_info
 #endif
 #ifdef VK_GOOGLE_free_memory_sync
+#endif
+#ifdef VK_GOOGLE_async_queue_submit
 #endif
 void* goldfish_vulkan_get_proc_address(const char* name);
 void* goldfish_vulkan_get_instance_proc_address(VkInstance instance, const char* name);

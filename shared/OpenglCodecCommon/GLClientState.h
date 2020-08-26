@@ -22,6 +22,10 @@
 #define GL_APIENTRYP
 #endif
 
+#ifdef GFXSTREAM
+#include "StateTrackingSupport.h"
+#endif
+
 #include "TextureSharedData.h"
 
 #include <GLES/gl.h>
@@ -240,11 +244,26 @@ public:
     bool bufferIdExists(GLuint id) const;
     void unBindBuffer(GLuint id);
 
+    void setBufferHostMapDirty(GLuint id, bool dirty);
+    bool isBufferHostMapDirty(GLuint id) const;
+
+    void setBoundPixelPackBufferDirtyForHostMap();
+    void setBoundTransformFeedbackBuffersDirtyForHostMap();
+    void setBoundShaderStorageBuffersDirtyForHostMap();
+    void setBoundAtomicCounterBuffersDirtyForHostMap();
+
     int bindBuffer(GLenum target, GLuint id);
     void bindIndexedBuffer(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size, GLintptr stride, GLintptr effectiveStride);
     int getMaxIndexedBufferBindings(GLenum target) const;
     bool isNonIndexedBindNoOp(GLenum target, GLuint buffer);
     bool isIndexedBindNoOp(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size, GLintptr stride, GLintptr effectiveStride);
+
+    void postDraw();
+    void postReadPixels();
+    void postDispatchCompute();
+
+    bool shouldSkipHostMapBuffer(GLenum target);
+    void onHostMappedBuffer(GLenum target);
 
     int getBuffer(GLenum target);
     GLuint getLastEncodedBufferBind(GLenum target);
@@ -253,8 +272,9 @@ public:
     size_t pixelDataSize(GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, int pack) const;
     size_t pboNeededDataSize(GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, int pack) const;
     size_t clearBufferNumElts(GLenum buffer) const;
-    void getPackingOffsets2D(GLsizei width, GLsizei height, GLenum format, GLenum type, int* startOffset, int* pixelRowSize, int* totalRowSize, int* skipRows) const;
-    void getUnpackingOffsets2D(GLsizei width, GLsizei height, GLenum format, GLenum type, int* startOffset, int* pixelRowSize, int* totalRowSize, int* skipRows) const;
+    void getPackingOffsets2D(GLsizei width, GLsizei height, GLenum format, GLenum type, int* bpp, int* startOffset, int* pixelRowSize, int* totalRowSize, int* skipRows) const;
+    void getUnpackingOffsets2D(GLsizei width, GLsizei height, GLenum format, GLenum type, int* bpp, int* startOffset, int* pixelRowSize, int* totalRowSize, int* skipRows) const;
+    void getUnpackingOffsets3D(GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, int* bpp, int* startOffset, int* pixelRowSize, int* totalRowSize, int* pixelImageSize, int* totalImageSize, int* skipRows, int* skipImages) const;
 
     void setCurrentProgram(GLint program) { m_currentProgram = program; }
     void setCurrentShaderProgram(GLint program) { m_currentShaderProgram = program; }
@@ -445,7 +465,12 @@ private:
     bool m_initialized;
     PixelStoreState m_pixelStore;
 
+#ifdef GFXSTREAM
+    PredicateMap<false> mBufferIds;
+    PredicateMap<true> mHostMappedBufferDirty;
+#else
     std::set<GLuint> mBufferIds;
+#endif
 
     // GL_ARRAY_BUFFER_BINDING is separate from VAO state
     GLuint m_arrayBuffer;

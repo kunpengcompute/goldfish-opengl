@@ -3300,6 +3300,20 @@ void handlemap_VkPhysicalDevice8BitStorageFeaturesKHR(
 }
 
 #endif
+#ifdef VK_KHR_shader_float16_int8
+void handlemap_VkPhysicalDeviceShaderFloat16Int8Features(
+    VulkanHandleMapping* handlemap,
+    VkPhysicalDeviceShaderFloat16Int8Features* toMap)
+{
+    (void)handlemap;
+    (void)toMap;
+    if (toMap->pNext)
+    {
+        handlemap_extension_struct(handlemap, (void*)(toMap->pNext));
+    }
+}
+
+#endif
 #ifdef VK_ANDROID_native_buffer
 void handlemap_VkNativeBufferANDROID(
     VulkanHandleMapping* handlemap,
@@ -4731,6 +4745,18 @@ void handlemap_VkImportColorBufferGOOGLE(
     }
 }
 
+void handlemap_VkImportBufferGOOGLE(
+    VulkanHandleMapping* handlemap,
+    VkImportBufferGOOGLE* toMap)
+{
+    (void)handlemap;
+    (void)toMap;
+    if (toMap->pNext)
+    {
+        handlemap_extension_struct(handlemap, (void*)(toMap->pNext));
+    }
+}
+
 void handlemap_VkImportPhysicalAddressGOOGLE(
     VulkanHandleMapping* handlemap,
     VkImportPhysicalAddressGOOGLE* toMap)
@@ -4753,6 +4779,8 @@ void handlemap_VkImportPhysicalAddressGOOGLE(
 #ifdef VK_GOOGLE_address_space_info
 #endif
 #ifdef VK_GOOGLE_free_memory_sync
+#endif
+#ifdef VK_GOOGLE_async_queue_submit
 #endif
 void handlemap_extension_struct(
     VulkanHandleMapping* handlemap,
@@ -5068,6 +5096,13 @@ void handlemap_extension_struct(
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:
         {
             handlemap_VkPhysicalDevice8BitStorageFeaturesKHR(handlemap, reinterpret_cast<VkPhysicalDevice8BitStorageFeaturesKHR*>(structExtension_out));
+            break;
+        }
+#endif
+#ifdef VK_KHR_shader_float16_int8
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES:
+        {
+            handlemap_VkPhysicalDeviceShaderFloat16Int8Features(handlemap, reinterpret_cast<VkPhysicalDeviceShaderFloat16Int8Features*>(structExtension_out));
             break;
         }
 #endif
@@ -5402,6 +5437,11 @@ void handlemap_extension_struct(
         case VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE:
         {
             handlemap_VkImportColorBufferGOOGLE(handlemap, reinterpret_cast<VkImportColorBufferGOOGLE*>(structExtension_out));
+            break;
+        }
+        case VK_STRUCTURE_TYPE_IMPORT_BUFFER_GOOGLE:
+        {
+            handlemap_VkImportBufferGOOGLE(handlemap, reinterpret_cast<VkImportBufferGOOGLE*>(structExtension_out));
             break;
         }
         case VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE:

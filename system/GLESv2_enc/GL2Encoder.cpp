@@ -372,6 +372,12 @@ GL2Encoder::GL2Encoder(IOStream *stream, ChecksumCalculator *protocol)
     OVERRIDE_CUSTOM(glReadnPixelsEXT);
     OVERRIDE_CUSTOM(glGetnUniformfvEXT);
     OVERRIDE_CUSTOM(glGetnUniformivEXT);
+
+    OVERRIDE(glInvalidateFramebuffer);
+    OVERRIDE(glInvalidateSubFramebuffer);
+
+    OVERRIDE(glDispatchCompute);
+    OVERRIDE(glDispatchComputeIndirect);
 }
 
 GL2Encoder::~GL2Encoder()
@@ -1335,6 +1341,8 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
     } else {
         ctx->m_glDrawArrays_enc(ctx, mode, first, count);
     }
+
+    ctx->m_state->postDraw();
 }
 
 
@@ -1425,6 +1433,8 @@ void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum
             ALOGE("glDrawElements: direct index & direct buffer data - will be implemented in later versions;\n");
         }
     }
+
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glDrawArraysNullAEMU(void *self, GLenum mode, GLint first, GLsizei count)
@@ -1448,6 +1458,7 @@ void GL2Encoder::s_glDrawArraysNullAEMU(void *self, GLenum mode, GLint first, GL
         ctx->m_glDrawArraysNullAEMU_enc(ctx, mode, first, count);
     }
     ctx->flushDrawCall();
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glDrawElementsNullAEMU(void *self, GLenum mode, GLsizei count, GLenum type, const void *indices)
@@ -1541,6 +1552,7 @@ void GL2Encoder::s_glDrawElementsNullAEMU(void *self, GLenum mode, GLsizei count
             ALOGE("glDrawElementsNullAEMU: direct index & direct buffer data - will be implemented in later versions;\n");
         }
     }
+    ctx->m_state->postDraw();
 }
 
 GLint * GL2Encoder::getCompressedTextureFormats()
@@ -1902,7 +1914,10 @@ void GL2Encoder::s_glGetShaderSource(void *self, GLuint shader, GLsizei bufsize,
                 break;
             }
         }
-        memcpy(source, returned.substr(0, bufsize - 1).c_str(), bufsize);
+        std::string ret = returned.substr(0, bufsize - 1);
+
+        size_t toCopy = bufsize < (ret.size() + 1) ? bufsize : ret.size() + 1;
+        memcpy(source, ret.c_str(), toCopy);
     }
 }
 
@@ -2944,11 +2959,17 @@ void* GL2Encoder::s_glMapBufferRangeAEMUImpl(GL2Encoder* ctx, GLenum target,
         ((access & GL_MAP_WRITE_BIT) &&
         (!(access & GL_MAP_INVALIDATE_RANGE_BIT) &&
          !(access & GL_MAP_INVALIDATE_BUFFER_BIT)))) {
+
+        if (ctx->m_state->shouldSkipHostMapBuffer(target))
+            return bits;
+
         ctx->glMapBufferRangeAEMU(
                 ctx, target,
                 offset, length,
                 access,
                 bits);
+
+        ctx->m_state->onHostMappedBuffer(target);
     }
 
     return bits;
@@ -4123,6 +4144,7 @@ void GL2Encoder::s_glDrawArraysInstanced(void* self, GLenum mode, GLint first, G
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(primcount < 0, GL_INVALID_VALUE);
 
     bool has_client_vertex_arrays = false;
     bool has_indirect_arrays = false;
@@ -4139,6 +4161,7 @@ void GL2Encoder::s_glDrawArraysInstanced(void* self, GLenum mode, GLint first, G
         ctx->m_glDrawArraysInstanced_enc(ctx, mode, first, count, primcount);
     }
     ctx->m_stream->flush();
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount)
@@ -4148,6 +4171,7 @@ void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei coun
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(primcount < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(!(type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_SHORT || type == GL_UNSIGNED_INT), GL_INVALID_ENUM);
     SET_ERROR_IF(ctx->m_state->getTransformFeedbackActiveUnpaused(), GL_INVALID_OPERATION);
 
@@ -4229,6 +4253,7 @@ void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei coun
             ALOGE("glDrawElements: direct index & direct buffer data - will be implemented in later versions;\n");
         }
     }
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glDrawRangeElements(void* self, GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void* indices)
@@ -4326,6 +4351,7 @@ void GL2Encoder::s_glDrawRangeElements(void* self, GLenum mode, GLuint start, GL
             ALOGE("glDrawElements: direct index & direct buffer data - will be implemented in later versions;\n");
         }
     }
+    ctx->m_state->postDraw();
 }
 
 const GLubyte* GL2Encoder::s_glGetStringi(void* self, GLenum name, GLuint index) {
@@ -4428,6 +4454,7 @@ GL_INVALID_OPERATION is generated if the readbuffer of the currently bound frame
                 ctx, x, y, width, height,
                 format, type, pixels);
     }
+    ctx->m_state->postReadPixels();
 }
 
 // Track enabled state for some things like:
@@ -5354,6 +5381,7 @@ void GL2Encoder::s_glDrawArraysIndirect(void* self, GLenum mode, const void* ind
         // This is purely for debug/dev purposes.
         ctx->glDrawArraysIndirectDataAEMU(ctx, mode, indirect, indirectStructSize);
     }
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glDrawElementsIndirect(void* self, GLenum mode, GLenum type, const void* indirect) {
@@ -5383,7 +5411,7 @@ void GL2Encoder::s_glDrawElementsIndirect(void* self, GLenum mode, GLenum type, 
         // This is purely for debug/dev purposes.
         ctx->glDrawElementsIndirectDataAEMU(ctx, mode, type, indirect, indirectStructSize);
     }
-
+    ctx->m_state->postDraw();
 }
 
 void GL2Encoder::s_glTexStorage2DMultisample(void* self, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) {
@@ -5419,6 +5447,7 @@ void GL2Encoder::s_glReadnPixelsEXT(void* self, GLint x, GLint y, GLsizei width,
     SET_ERROR_IF(bufSize < glesv2_enc::pixelDataSize(self, width, height, format,
         type, 1), GL_INVALID_OPERATION);
     s_glReadPixels(self, x, y, width, height, format, type, pixels);
+    ctx->m_state->postReadPixels();
 }
 
 void GL2Encoder::s_glGetnUniformfvEXT(void *self, GLuint program, GLint location,
@@ -5435,4 +5464,30 @@ void GL2Encoder::s_glGetnUniformivEXT(void *self, GLuint program, GLint location
     SET_ERROR_IF(bufSize < glSizeof(glesv2_enc::uniformType(self, program,
         location)), GL_INVALID_OPERATION);
     s_glGetUniformiv(self, program, location, params);
+}
+
+void GL2Encoder::s_glInvalidateFramebuffer(void* self, GLenum target, GLsizei numAttachments, const GLenum *attachments) {
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(numAttachments < 0, GL_INVALID_VALUE);
+    ctx->m_glInvalidateFramebuffer_enc(ctx, target, numAttachments, attachments);
+}
+
+void GL2Encoder::s_glInvalidateSubFramebuffer(void* self, GLenum target, GLsizei numAttachments, const GLenum *attachments, GLint x, GLint y, GLsizei width, GLsizei height) {
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(numAttachments < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(width < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(height < 0, GL_INVALID_VALUE);
+    ctx->m_glInvalidateSubFramebuffer_enc(ctx, target, numAttachments, attachments, x, y, width, height);
+}
+
+void GL2Encoder::s_glDispatchCompute(void* self, GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) {
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    ctx->m_glDispatchCompute_enc(ctx, num_groups_x, num_groups_y, num_groups_z);
+    ctx->m_state->postDispatchCompute();
+}
+
+void GL2Encoder::s_glDispatchComputeIndirect(void* self, GLintptr indirect) {
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    ctx->m_glDispatchComputeIndirect_enc(ctx, indirect);
+    ctx->m_state->postDispatchCompute();
 }

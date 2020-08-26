@@ -54,6 +54,10 @@ extern "C" {
 	void rcReadColorBufferYUV(uint32_t colorbuffer, GLint x, GLint y, GLint width, GLint height, void* pixels, uint32_t pixels_size);
 	int rcIsSyncSignaled(uint64_t sync);
 	void rcCreateColorBufferWithHandle(uint32_t width, uint32_t height, GLenum internalFormat, uint32_t handle);
+	uint32_t rcCreateBuffer(uint32_t size);
+	void rcCloseBuffer(uint32_t buffer);
+	GLint rcSetColorBufferVulkanMode2(uint32_t colorBuffer, uint32_t mode, uint32_t memoryProperty);
+	int rcMapGpaToBufferHandle(uint32_t bufferHandle, uint64_t gpa);
 };
 
 #ifndef GET_CONTEXT
@@ -354,5 +358,29 @@ void rcCreateColorBufferWithHandle(uint32_t width, uint32_t height, GLenum inter
 {
 	GET_CONTEXT;
 	ctx->rcCreateColorBufferWithHandle(ctx, width, height, internalFormat, handle);
+}
+
+uint32_t rcCreateBuffer(uint32_t size)
+{
+	GET_CONTEXT;
+	return ctx->rcCreateBuffer(ctx, size);
+}
+
+void rcCloseBuffer(uint32_t buffer)
+{
+	GET_CONTEXT;
+	ctx->rcCloseBuffer(ctx, buffer);
+}
+
+GLint rcSetColorBufferVulkanMode2(uint32_t colorBuffer, uint32_t mode, uint32_t memoryProperty)
+{
+	GET_CONTEXT;
+	return ctx->rcSetColorBufferVulkanMode2(ctx, colorBuffer, mode, memoryProperty);
+}
+
+int rcMapGpaToBufferHandle(uint32_t bufferHandle, uint64_t gpa)
+{
+	GET_CONTEXT;
+	return ctx->rcMapGpaToBufferHandle(ctx, bufferHandle, gpa);
 }
 

@@ -95,6 +95,7 @@ typedef VkResult (VKAPI_PTR *PFN_vkMapMemoryIntoAddressSpaceGOOGLE)(VkDevice dev
 #define VK_GOOGLE_COLOR_BUFFER_ENUM(type,id)    ((type)(1000000000 + (1000 * (VK_GOOGLE_COLOR_BUFFER_EXTENSION_NUMBER - 1)) + (id)))
 #define VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 0)
 #define VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 1)
+#define VK_STRUCTURE_TYPE_IMPORT_BUFFER_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 2)
 
 typedef struct {
     VkStructureType sType; // must be VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE
@@ -111,6 +112,12 @@ typedef struct {
     VkImageTiling tiling;
     uint32_t tilingParameter;
 } VkImportPhysicalAddressGOOGLE;
+
+typedef struct {
+    VkStructureType sType; // must be VK_STRUCTURE_TYPE_IMPORT_BUFFER_GOOGLE
+    const void* pNext;
+    uint32_t buffer;
+} VkImportBufferGOOGLE;
 
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterImageColorBufferGOOGLE)(VkDevice device, VkImage image, uint32_t colorBuffer);
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterBufferColorBufferGOOGLE)(VkDevice device, VkBuffer image, uint32_t colorBuffer);
@@ -470,6 +477,13 @@ typedef struct VkBufferCollectionImageCreateInfoFUCHSIA {
     uint32_t                     index;
 } VkBufferCollectionImageCreateInfoFUCHSIA;
 
+typedef struct VkBufferCollectionBufferCreateInfoFUCHSIA {
+    VkStructureType              sType;
+    const void*                  pNext;
+    VkBufferCollectionFUCHSIA    collection;
+    uint32_t                     index;
+} VkBufferCollectionBufferCreateInfoFUCHSIA;
+
 typedef struct VkBufferCollectionPropertiesFUCHSIA {
     VkStructureType    sType;
     void*              pNext;
@@ -481,12 +495,22 @@ typedef struct VkBufferCollectionPropertiesFUCHSIA {
     ((VkStructureType)1001004004)
 #define VK_STRUCTURE_TYPE_BUFFER_COLLECTION_IMAGE_CREATE_INFO_FUCHSIA \
     ((VkStructureType)1001004005)
+#define VK_STRUCTURE_TYPE_BUFFER_COLLECTION_BUFFER_CREATE_INFO_FUCHSIA \
+    ((VkStructureType)1001004008)
 #endif  // VK_FUCHSIA_buffer_collection
 
 #ifndef VK_FUCHSIA_external_memory
 #define VK_FUCHSIA_external_memory 1
 #define VK_FUCHSIA_EXTERNAL_MEMORY_SPEC_VERSION 1
 #define VK_FUCHSIA_EXTERNAL_MEMORY_EXTENSION_NAME "VK_FUCHSIA_external_memory"
+
+typedef struct VkBufferConstraintsInfoFUCHSIA {
+    VkStructureType sType;
+    const void* pNext;
+    const VkBufferCreateInfo* pBufferCreateInfo;
+    VkFormatFeatureFlags requiredFormatFeatures;
+    uint32_t minCount;
+} VkBufferConstraintsInfoFUCHSIA;
 
 typedef struct VkImportMemoryZirconHandleInfoFUCHSIA {
     VkStructureType                       sType;
@@ -508,6 +532,8 @@ typedef struct VkMemoryGetZirconHandleInfoFUCHSIA {
     VkExternalMemoryHandleTypeFlagBits    handleType;
 } VkMemoryGetZirconHandleInfoFUCHSIA;
 
+#define VK_STRUCTURE_TYPE_BUFFER_COLLECTION_BUFFER_CREATE_INFO_FUCHSIA \
+    ((VkStructureType)1001004008)
 #define VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA \
     ((VkStructureType)1001005000)
 #define VK_STRUCTURE_TYPE_TEMP_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA \
@@ -544,8 +570,53 @@ typedef struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
 // VulkanStream features
 #define VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT (1 << 0)
 #define VULKAN_STREAM_FEATURE_IGNORED_HANDLES_BIT (1 << 1)
+#define VULKAN_STREAM_FEATURE_SHADER_FLOAT16_INT8_BIT (1 << 2)
 
 #define VK_YCBCR_CONVERSION_DO_NOTHING ((VkSamplerYcbcrConversion)0x1111111111111111)
+
+// Stuff we advertised but didn't define the structs for it yet because
+// we also needed to update our vulkan headers and xml
+
+#ifndef VK_VERSION_1_2
+
+typedef struct VkPhysicalDeviceShaderFloat16Int8Features {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFloat16;
+    VkBool32           shaderInt8;
+} VkPhysicalDeviceShaderFloat16Int8Features;
+
+
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES \
+    ((VkStructureType)1000082000)
+
+#endif
+
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR \
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES
+
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR \
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES
+
+#ifndef VK_KHR_shader_float16_int8
+
+#define VK_KHR_shader_float16_int8 1
+#define VK_KHR_SHADER_FLOAT16_INT8_SPEC_VERSION 1
+#define VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME "VK_KHR_shader_float16_int8"
+typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceShaderFloat16Int8FeaturesKHR;
+typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceFloat16Int8FeaturesKHR;
+
+#endif
+
+#define VK_GOOGLE_async_queue_submit 1
+
+typedef void (VKAPI_PTR *PFN_vkQueueHostSyncGOOGLE)(
+    VkQueue queue, uint32_t needHostSync, uint32_t sequenceNumber);
+typedef void (VKAPI_PTR *PFN_vkQueueSubmitAsyncGOOGLE)(
+    VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
+typedef void (VKAPI_PTR *PFN_vkQueueWaitIdleAsyncGOOGLE)(VkQueue queue);
+typedef void (VKAPI_PTR *PFN_vkQueueBindSparseAsyncGOOGLE)(
+    VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence);
 
 #ifdef __cplusplus
 } // extern "C"
