@@ -61,6 +61,8 @@ static const struct _renderControl_funcs_by_name {
 	{"rcCloseBuffer", (void*)rcCloseBuffer},
 	{"rcSetColorBufferVulkanMode2", (void*)rcSetColorBufferVulkanMode2},
 	{"rcMapGpaToBufferHandle", (void*)rcMapGpaToBufferHandle},
+	{"rcCreateBuffer2", (void*)rcCreateBuffer2},
+	{"rcMapGpaToBufferHandle2", (void*)rcMapGpaToBufferHandle2},
 };
 static const int renderControl_num_funcs = sizeof(renderControl_funcs_by_name) / sizeof(struct _renderControl_funcs_by_name);
 

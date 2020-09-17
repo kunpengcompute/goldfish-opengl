@@ -282,6 +282,13 @@ enum AHardwareBuffer_Format {
      *   OpenGL ES: GL_STENCIL_INDEX8
      */
     AHARDWAREBUFFER_FORMAT_S8_UINT                  = 0x35,
+    /**
+     * YUV 420 888 format.
+     * Must have an even width and height. Can be accessed in OpenGL
+     * shaders through an external sampler. Does not support mip-maps
+     * cube-maps or multi-layered textures.
+     */
+    AHARDWAREBUFFER_FORMAT_Y8Cb8Cr8_420             = 0x23,
 };
 /**
  * Buffer usage flags, specifying how the buffer will be accessed.
@@ -617,6 +624,10 @@ typedef void (VKAPI_PTR *PFN_vkQueueSubmitAsyncGOOGLE)(
 typedef void (VKAPI_PTR *PFN_vkQueueWaitIdleAsyncGOOGLE)(VkQueue queue);
 typedef void (VKAPI_PTR *PFN_vkQueueBindSparseAsyncGOOGLE)(
     VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence);
+
+#define VK_GOOGLE_linear_image_layout 1
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetLinearImageLayoutGOOGLE)(VkDevice device, VkFormat format, VkDeviceSize* pOffset, VkDeviceSize* pRowPitchAlignment);
 
 #ifdef __cplusplus
 } // extern "C"
