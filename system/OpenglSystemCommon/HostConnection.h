@@ -24,7 +24,7 @@
 
 #include <cutils/native_handle.h>
 
-#ifdef GOLDFISH_VULKAN
+#ifdef GFXSTREAM
 #include <mutex>
 #else
 #include <utils/threads.h>
@@ -222,10 +222,14 @@ private:
     HostConnectionType m_connectionType;
     GrallocType m_grallocType;
 
-    std::unique_ptr<IOStream> m_stream;
+    // intrusively refcounted
+    IOStream* m_stream = nullptr;
+
     std::unique_ptr<GLEncoder> m_glEnc;
     std::unique_ptr<GL2Encoder> m_gl2Enc;
-    std::unique_ptr<goldfish_vk::VkEncoder> m_vkEnc;
+
+    // intrusively refcounted
+    goldfish_vk::VkEncoder* m_vkEnc = nullptr;
     std::unique_ptr<ExtendedRCEncoderContext> m_rcEnc;
 
     ChecksumCalculator m_checksumHelper;
@@ -234,7 +238,7 @@ private:
     std::string m_glExtensions;
     bool m_grallocOnly;
     bool m_noHostError;
-#ifdef GOLDFISH_VULKAN
+#ifdef GFXSTREAM
     mutable std::mutex m_lock;
 #else
     mutable android::Mutex m_lock;
