@@ -40,9 +40,7 @@ public:
     VkEncoder(IOStream* stream);
     ~VkEncoder();
 
-    void flush();
-    void lock();
-    void unlock();
+#include "VkEncoder.h.inl"
 #ifdef VK_VERSION_1_0
     VkResult vkCreateInstance(
     const VkInstanceCreateInfo* pCreateInfo,
@@ -1838,9 +1836,13 @@ public:
         const VkBindSparseInfo* pBindInfo,
         VkFence fence);
 #endif
-
-    void incRef();
-    bool decRef();
+#ifdef VK_GOOGLE_linear_image_layout
+    void vkGetLinearImageLayoutGOOGLE(
+    VkDevice device,
+        VkFormat format,
+        VkDeviceSize* pOffset,
+        VkDeviceSize* pRowPitchAlignment);
+#endif
 
 private:
     class Impl;
