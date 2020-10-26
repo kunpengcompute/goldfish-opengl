@@ -15,6 +15,8 @@
 
 #include "ResourceTracker.h"
 
+#include "Resources.h"
+
 #include "android/base/Optional.h"
 #include "android/base/threads/AndroidWorkPool.h"
 
@@ -276,13 +278,11 @@ public:
     };
 
     struct VkCommandBuffer_Info {
-        VkEncoder* lastUsedEncoder = nullptr;
-        uint32_t sequenceNumber = 0;
+        uint32_t placeholder;
     };
 
     struct VkQueue_Info {
-        VkEncoder* lastUsedEncoder = nullptr;
-        uint32_t sequenceNumber = 0;
+        uint32_t placeholder;
     };
 
     // custom guest-side structs for images/buffers because of AHardwareBuffer :((
@@ -394,29 +394,20 @@ public:
     }
 
     void unregister_VkCommandBuffer(VkCommandBuffer commandBuffer) {
-        AutoLock lock(mLock);
+        struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+        if (!cb) return;
+        if (cb->lastUsedEncoder) { cb->lastUsedEncoder->decRef(); }
 
-        auto it = info_VkCommandBuffer.find(commandBuffer);
-        if (it == info_VkCommandBuffer.end()) return;
-        auto& info = it->second;
-        if (info.lastUsedEncoder) {
-            info.lastUsedEncoder->decRef();
-        }
-        info.lastUsedEncoder = nullptr;
+        AutoLock lock(mLock);
         info_VkCommandBuffer.erase(commandBuffer);
     }
 
     void unregister_VkQueue(VkQueue queue) {
-        AutoLock lock(mLock);
+        struct goldfish_VkQueue* q = as_goldfish_VkQueue(queue);
+        if (!q) return;
+        if (q->lastUsedEncoder) { q->lastUsedEncoder->decRef(); }
 
-        auto it = info_VkQueue.find(queue);
-        if (it == info_VkQueue.end()) return;
-        auto& info = it->second;
-        auto lastUsedEncoder = info.lastUsedEncoder;
-        if (info.lastUsedEncoder) {
-            info.lastUsedEncoder->decRef();
-        }
-        info.lastUsedEncoder = nullptr;
+        AutoLock lock(mLock);
         info_VkQueue.erase(queue);
     }
 
@@ -1111,9 +1102,10 @@ public:
             "VK_KHR_maintenance1",
             "VK_KHR_maintenance2",
             "VK_KHR_maintenance3",
-            "VK_KHR_get_memory_requirements2",
-            "VK_KHR_dedicated_allocation",
             "VK_KHR_bind_memory2",
+            "VK_KHR_dedicated_allocation",
+            "VK_KHR_get_memory_requirements2",
+            "VK_KHR_image_format_list",
             "VK_KHR_sampler_ycbcr_conversion",
             "VK_KHR_shader_float16_int8",
             "VK_AMD_gpu_shader_half_float",
@@ -3399,8 +3391,10 @@ public:
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
         if (exportSyncFd) {
-            ALOGV("%s: ensure sync device\n", __func__);
-            ensureSyncDeviceFd();
+            if (!mFeatureInfo->hasVirtioGpuNativeSync) {
+                ALOGV("%s: ensure sync device\n", __func__);
+                ensureSyncDeviceFd();
+            }
 
             ALOGV("%s: getting fence info\n", __func__);
             AutoLock lock(mLock);
@@ -3591,11 +3585,52 @@ public:
                 return VK_ERROR_OUT_OF_HOST_MEMORY;
             }
 
-            goldfish_sync_queue_work(
-                mSyncDeviceFd,
-                get_host_u64_VkFence(pGetFdInfo->fence) /* the handle */,
-                GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
-                pFd);
+            if (mFeatureInfo->hasVirtioGpuNativeSync) {
+#if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
+                uint64_t hostFenceHandle = get_host_u64_VkFence(pGetFdInfo->fence);
+                uint32_t hostFenceHandleLo = (uint32_t)hostFenceHandle;
+                uint32_t hostFenceHandleHi = (uint32_t)(hostFenceHandle >> 32);
+
+                uint64_t hostDeviceHandle = get_host_u64_VkDevice(device);
+                uint32_t hostDeviceHandleLo = (uint32_t)hostDeviceHandle;
+                uint32_t hostDeviceHandleHi = (uint32_t)(hostFenceHandle >> 32);
+
+                #define VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD 0xa000
+
+                uint32_t cmdDwords[5] = {
+                    VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD,
+                    hostDeviceHandleLo,
+                    hostDeviceHandleHi,
+                    hostFenceHandleLo,
+                    hostFenceHandleHi,
+                };
+
+                drm_virtgpu_execbuffer execbuffer = {
+                    .flags = VIRTGPU_EXECBUF_FENCE_FD_OUT,
+                    .size = 5 * sizeof(uint32_t),
+                    .command = (uint64_t)(cmdDwords),
+                    .bo_handles = 0,
+                    .num_bo_handles = 0,
+                    .fence_fd = -1,
+                };
+
+                int res = drmIoctl(mRendernodeFd, DRM_IOCTL_VIRTGPU_EXECBUFFER, &execbuffer);
+                if (res) {
+                    ALOGE("%s: Failed to virtgpu execbuffer: sterror: %s errno: %d\n", __func__,
+                            strerror(errno), errno);
+                    abort();
+                }
+
+                *pFd = execbuffer.fence_fd;
+#endif
+            } else {
+                goldfish_sync_queue_work(
+                    mSyncDeviceFd,
+                    get_host_u64_VkFence(pGetFdInfo->fence) /* the handle */,
+                    GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
+                    pFd);
+            }
+
             // relinquish ownership
             info.syncFd = -1;
             ALOGV("%s: got fd: %d\n", __func__, *pFd);
@@ -4906,7 +4941,7 @@ public:
         auto& callbacks = mEncoderCleanupCallbacks[encoder];
         callbacks[object] = callback;
     }
-    
+
     void unregisterEncoderCleanupCallback(const VkEncoder* encoder, void* object) {
         AutoLock lock(mLock);
         mEncoderCleanupCallbacks[encoder].erase(object);
@@ -4927,45 +4962,28 @@ public:
     }
 
     uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* currentEncoder) {
-        AutoLock lock(mLock);
-
-        auto it = info_VkCommandBuffer.find(commandBuffer);
-        if (it == info_VkCommandBuffer.end()) return 0;
-
-        auto& info = it->second;
+        struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+        if (!cb) return 0;
 
         currentEncoder->incRef();
 
-        auto lastEncoder = info.lastUsedEncoder;
-        info.lastUsedEncoder = currentEncoder;
+        auto lastEncoder = cb->lastUsedEncoder;
+
+        cb->lastUsedEncoder = currentEncoder;
+
         if (!lastEncoder) return 0;
-        auto oldSeq = info.sequenceNumber;
-        bool lookupAgain = false;
 
         if (lastEncoder != currentEncoder) {
-            info.sequenceNumber += 2;
-            lookupAgain = true;
-            lock.unlock();
-
+            auto oldSeq = cb->sequenceNumber;
+            cb->sequenceNumber += 2;
             lastEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, false, oldSeq + 1);
             lastEncoder->flush();
-
             currentEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, true, oldSeq + 2);
-
-            lock.lock();
         }
 
         if (lastEncoder->decRef()) {
-            if (lookupAgain) {
-                auto it2 = info_VkCommandBuffer.find(commandBuffer);
-                if (it2 == info_VkCommandBuffer.end()) return 0;
-                auto& info2 = it2->second;
-                info2.lastUsedEncoder = nullptr;
-            } else {
-                info.lastUsedEncoder = nullptr;
-            }
+            cb->lastUsedEncoder = nullptr;
         }
-
         return 0;
     }
 
@@ -4974,42 +4992,27 @@ public:
             return 0;
         }
 
-        AutoLock lock(mLock);
-
-        auto it = info_VkQueue.find(queue);
-        if (it == info_VkQueue.end()) return 0;
-
-        auto& info = it->second;
+        struct goldfish_VkQueue* q = as_goldfish_VkQueue(queue);
+        if (!q) return 0;
 
         currentEncoder->incRef();
 
-        auto lastEncoder = info.lastUsedEncoder;
-        info.lastUsedEncoder = currentEncoder;
+        auto lastEncoder = q->lastUsedEncoder;
+
+        q->lastUsedEncoder = currentEncoder;
+
         if (!lastEncoder) return 0;
-        auto oldSeq = info.sequenceNumber;
-        bool lookupAgain = false;
 
         if (lastEncoder != currentEncoder) {
-            info.sequenceNumber += 2;
-            lookupAgain = true;
-            lock.unlock();
-
+            auto oldSeq = q->sequenceNumber;
+            q->sequenceNumber += 2;
             lastEncoder->vkQueueHostSyncGOOGLE(queue, false, oldSeq + 1);
             lastEncoder->flush();
             currentEncoder->vkQueueHostSyncGOOGLE(queue, true, oldSeq + 2);
-
-            lock.lock();
         }
 
         if (lastEncoder->decRef()) {
-            if (lookupAgain) {
-                auto it2 = info_VkQueue.find(queue);
-                if (it2 == info_VkQueue.end()) return 0;
-                auto& info2 = it2->second;
-                info2.lastUsedEncoder = nullptr;
-            } else {
-                info.lastUsedEncoder = nullptr;
-            }
+            q->lastUsedEncoder = nullptr;
         }
 
         return 0;

@@ -17,6 +17,10 @@
 
 #include "cutils/properties.h"
 
+#ifdef HOST_BUILD
+#include "android/base/Tracing.h"
+#endif
+
 #ifdef GOLDFISH_NO_GL
 struct gl_client_context_t {
     int placeholder;
@@ -359,7 +363,11 @@ HostConnection::HostConnection() :
     m_grallocOnly(true),
     m_noHostError(true),
     m_rendernodeFd(-1),
-    m_rendernodeFdOwned(false) { }
+    m_rendernodeFdOwned(false) {
+#ifdef HOST_BUILD
+    android::base::initializeTracing();
+#endif
+}
 
 HostConnection::~HostConnection()
 {
@@ -647,6 +655,7 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetVirtioGpuNativeSync(rcEnc);
         queryAndSetVulkanShaderFloat16Int8Support(rcEnc);
         queryAndSetVulkanAsyncQueueSubmitSupport(rcEnc);
+        queryAndSetHostSideTracingSupport(rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_connectionType, rcEnc);
         }
@@ -907,5 +916,12 @@ void HostConnection::queryAndSetVulkanAsyncQueueSubmitSupport(ExtendedRCEncoderC
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kVulkanAsyncQueueSubmit) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkanAsyncQueueSubmit = true;
+    }
+}
+
+void HostConnection::queryAndSetHostSideTracingSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kHostSideTracing) != std::string::npos) {
+        rcEnc->featureInfo()->hasHostSideTracing = true;
     }
 }
