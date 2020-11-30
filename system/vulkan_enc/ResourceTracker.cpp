@@ -15,6 +15,8 @@
 
 #include "ResourceTracker.h"
 
+#include "Resources.h"
+
 #include "android/base/Optional.h"
 #include "android/base/threads/AndroidWorkPool.h"
 
@@ -276,13 +278,11 @@ public:
     };
 
     struct VkCommandBuffer_Info {
-        VkEncoder* lastUsedEncoder = nullptr;
-        uint32_t sequenceNumber = 0;
+        uint32_t placeholder;
     };
 
     struct VkQueue_Info {
-        VkEncoder* lastUsedEncoder = nullptr;
-        uint32_t sequenceNumber = 0;
+        uint32_t placeholder;
     };
 
     // custom guest-side structs for images/buffers because of AHardwareBuffer :((
@@ -394,29 +394,20 @@ public:
     }
 
     void unregister_VkCommandBuffer(VkCommandBuffer commandBuffer) {
-        AutoLock lock(mLock);
+        struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+        if (!cb) return;
+        if (cb->lastUsedEncoder) { cb->lastUsedEncoder->decRef(); }
 
-        auto it = info_VkCommandBuffer.find(commandBuffer);
-        if (it == info_VkCommandBuffer.end()) return;
-        auto& info = it->second;
-        if (info.lastUsedEncoder) {
-            info.lastUsedEncoder->decRef();
-        }
-        info.lastUsedEncoder = nullptr;
+        AutoLock lock(mLock);
         info_VkCommandBuffer.erase(commandBuffer);
     }
 
     void unregister_VkQueue(VkQueue queue) {
-        AutoLock lock(mLock);
+        struct goldfish_VkQueue* q = as_goldfish_VkQueue(queue);
+        if (!q) return;
+        if (q->lastUsedEncoder) { q->lastUsedEncoder->decRef(); }
 
-        auto it = info_VkQueue.find(queue);
-        if (it == info_VkQueue.end()) return;
-        auto& info = it->second;
-        auto lastUsedEncoder = info.lastUsedEncoder;
-        if (info.lastUsedEncoder) {
-            info.lastUsedEncoder->decRef();
-        }
-        info.lastUsedEncoder = nullptr;
+        AutoLock lock(mLock);
         info_VkQueue.erase(queue);
     }
 
@@ -818,6 +809,14 @@ public:
             mSysmemAllocator =
                 std::make_unique<llcpp::fuchsia::sysmem::Allocator::SyncClient>(
                     std::move(sysmem_channel));
+            char name[ZX_MAX_NAME_LEN] = {};
+            zx_object_get_property(zx_process_self(), ZX_PROP_NAME, name, sizeof(name));
+            std::string client_name(name);
+            client_name += "-goldfish";
+            zx_info_handle_basic_t info;
+            zx_object_get_info(zx_process_self(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
+                               nullptr, nullptr);
+            mSysmemAllocator->SetDebugClientInfo(fidl::unowned_str(client_name), info.koid);
         }
 #endif
 
@@ -830,12 +829,11 @@ public:
         if (mFeatureInfo->hasVulkanShaderFloat16Int8) {
             mStreamFeatureBits |= VULKAN_STREAM_FEATURE_SHADER_FLOAT16_INT8_BIT;
         }
-
 #if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
-        if (mFeatureInfo->hasVirtioGpuNext) {
-            ALOGD("%s: has virtio-gpu-next; create hostmem rendernode\n", __func__);
-            mRendernodeFd = drmOpenRender(128 /* RENDERNODE_MINOR */);
-        }
+       if (mFeatureInfo->hasVirtioGpuNext) {
+           ALOGD("%s: has virtio-gpu-next; create hostmem rendernode\n", __func__);
+           mRendernodeFd = drmOpenRender(128 /* RENDERNODE_MINOR */);
+       }
 #endif
     }
 
@@ -1111,9 +1109,10 @@ public:
             "VK_KHR_maintenance1",
             "VK_KHR_maintenance2",
             "VK_KHR_maintenance3",
-            "VK_KHR_get_memory_requirements2",
-            "VK_KHR_dedicated_allocation",
             "VK_KHR_bind_memory2",
+            "VK_KHR_dedicated_allocation",
+            "VK_KHR_get_memory_requirements2",
+            "VK_KHR_image_format_list",
             "VK_KHR_sampler_ycbcr_conversion",
             "VK_KHR_shader_float16_int8",
             "VK_AMD_gpu_shader_half_float",
@@ -1201,7 +1200,7 @@ public:
             getHostDeviceExtensionIndex(
                 "VK_KHR_external_memory_fd") != -1;
         bool moltenVkExtAvailable =
-            getHostInstanceExtensionIndex(
+            getHostDeviceExtensionIndex(
                 "VK_MVK_moltenvk") != -1;
 
         bool hostHasExternalMemorySupport =
@@ -1890,6 +1889,26 @@ public:
                         image_constraints.pixel_format.type =
                             llcpp::fuchsia::sysmem::PixelFormatType::R8G8B8A8;
                         break;
+                    case VK_FORMAT_R8_UNORM:
+                    case VK_FORMAT_R8_UINT:
+                    case VK_FORMAT_R8_USCALED:
+                    case VK_FORMAT_R8_SNORM:
+                    case VK_FORMAT_R8_SINT:
+                    case VK_FORMAT_R8_SSCALED:
+                    case VK_FORMAT_R8_SRGB:
+                        image_constraints.pixel_format.type =
+                            llcpp::fuchsia::sysmem::PixelFormatType::R8;
+                        break;
+                    case VK_FORMAT_R8G8_UNORM:
+                    case VK_FORMAT_R8G8_UINT:
+                    case VK_FORMAT_R8G8_USCALED:
+                    case VK_FORMAT_R8G8_SNORM:
+                    case VK_FORMAT_R8G8_SINT:
+                    case VK_FORMAT_R8G8_SSCALED:
+                    case VK_FORMAT_R8G8_SRGB:
+                        image_constraints.pixel_format.type =
+                            llcpp::fuchsia::sysmem::PixelFormatType::R8G8;
+                        break;
                     default:
                         return VK_ERROR_FORMAT_NOT_SUPPORTED;
                 }
@@ -2115,6 +2134,9 @@ public:
 #if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
                 uint64_t hvaSizeId[3];
 
+                int rendernodeFdForMem = drmOpenRender(128 /* RENDERNODE_MINOR */);
+                ALOGE("%s: render fd = %d\n", __func__, rendernodeFdForMem);
+
                 mLock.unlock();
                 enc->vkGetMemoryHostAddressInfoGOOGLE(
                         device, hostMemAlloc.memory,
@@ -2132,7 +2154,7 @@ public:
                 drm_rc_blob.size = hvaSizeId[1];
 
                 int res = drmIoctl(
-                    mRendernodeFd, DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB, &drm_rc_blob);
+                    rendernodeFdForMem, DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB, &drm_rc_blob);
 
                 if (res) {
                     ALOGE("%s: Failed to resource create v2: sterror: %s errno: %d\n", __func__,
@@ -2144,7 +2166,7 @@ public:
                 memset(&map_info, 0, sizeof(map_info));
                 map_info.handle = drm_rc_blob.bo_handle;
 
-                res = drmIoctl(mRendernodeFd, DRM_IOCTL_VIRTGPU_MAP, &map_info);
+                res = drmIoctl(rendernodeFdForMem, DRM_IOCTL_VIRTGPU_MAP, &map_info);
                 if (res) {
                     ALOGE("%s: Failed to virtgpu map: sterror: %s errno: %d\n", __func__,
                             strerror(errno), errno);
@@ -2152,16 +2174,21 @@ public:
                 }
 
                 directMappedAddr = (uint64_t)(uintptr_t)
-                    mmap64(0, hvaSizeId[1], PROT_WRITE, MAP_SHARED, mRendernodeFd, map_info.offset);
+                    mmap64(0, hvaSizeId[1], PROT_WRITE, MAP_SHARED, rendernodeFdForMem, map_info.offset);
 
                 if (!directMappedAddr) {
                     ALOGE("%s: mmap of virtio gpu resource failed\n", __func__);
                     abort();
                 }
 
+                hostMemAlloc.memoryAddr = directMappedAddr;
+                hostMemAlloc.memorySize = hvaSizeId[1];
+
                 // add the host's page offset
                 directMappedAddr += (uint64_t)(uintptr_t)(hvaSizeId[0]) & (PAGE_SIZE - 1);
 				directMapResult = VK_SUCCESS;
+
+                hostMemAlloc.fd = rendernodeFdForMem;
 #endif // VK_USE_PLATFORM_ANDROID_KHR
             }
 
@@ -2579,6 +2606,25 @@ public:
                         case VK_FORMAT_R8G8B8A8_USCALED:
                             format = llcpp::fuchsia::hardware::goldfish::
                                 ColorBufferFormatType::RGBA;
+                            break;
+                        case VK_FORMAT_R8_UNORM:
+                        case VK_FORMAT_R8_UINT:
+                        case VK_FORMAT_R8_USCALED:
+                        case VK_FORMAT_R8_SNORM:
+                        case VK_FORMAT_R8_SINT:
+                        case VK_FORMAT_R8_SSCALED:
+                        case VK_FORMAT_R8_SRGB:
+                            format = llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType::
+                                LUMINANCE;
+                            break;
+                        case VK_FORMAT_R8G8_UNORM:
+                        case VK_FORMAT_R8G8_UINT:
+                        case VK_FORMAT_R8G8_USCALED:
+                        case VK_FORMAT_R8G8_SNORM:
+                        case VK_FORMAT_R8G8_SINT:
+                        case VK_FORMAT_R8G8_SSCALED:
+                        case VK_FORMAT_R8G8_SRGB:
+                            format = llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType::RG;
                             break;
                         default:
                             ALOGE("Unsupported format: %d",
@@ -3399,8 +3445,10 @@ public:
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
         if (exportSyncFd) {
-            ALOGV("%s: ensure sync device\n", __func__);
-            ensureSyncDeviceFd();
+            if (!mFeatureInfo->hasVirtioGpuNativeSync) {
+                ALOGV("%s: ensure sync device\n", __func__);
+                ensureSyncDeviceFd();
+            }
 
             ALOGV("%s: getting fence info\n", __func__);
             AutoLock lock(mLock);
@@ -3591,11 +3639,52 @@ public:
                 return VK_ERROR_OUT_OF_HOST_MEMORY;
             }
 
-            goldfish_sync_queue_work(
-                mSyncDeviceFd,
-                get_host_u64_VkFence(pGetFdInfo->fence) /* the handle */,
-                GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
-                pFd);
+            if (mFeatureInfo->hasVirtioGpuNativeSync) {
+#if !defined(HOST_BUILD) && defined(VK_USE_PLATFORM_ANDROID_KHR)
+                uint64_t hostFenceHandle = get_host_u64_VkFence(pGetFdInfo->fence);
+                uint32_t hostFenceHandleLo = (uint32_t)hostFenceHandle;
+                uint32_t hostFenceHandleHi = (uint32_t)(hostFenceHandle >> 32);
+
+                uint64_t hostDeviceHandle = get_host_u64_VkDevice(device);
+                uint32_t hostDeviceHandleLo = (uint32_t)hostDeviceHandle;
+                uint32_t hostDeviceHandleHi = (uint32_t)(hostFenceHandle >> 32);
+
+                #define VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD 0xa000
+
+                uint32_t cmdDwords[5] = {
+                    VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD,
+                    hostDeviceHandleLo,
+                    hostDeviceHandleHi,
+                    hostFenceHandleLo,
+                    hostFenceHandleHi,
+                };
+
+                drm_virtgpu_execbuffer execbuffer = {
+                    .flags = VIRTGPU_EXECBUF_FENCE_FD_OUT,
+                    .size = 5 * sizeof(uint32_t),
+                    .command = (uint64_t)(cmdDwords),
+                    .bo_handles = 0,
+                    .num_bo_handles = 0,
+                    .fence_fd = -1,
+                };
+
+                int res = drmIoctl(mRendernodeFd, DRM_IOCTL_VIRTGPU_EXECBUFFER, &execbuffer);
+                if (res) {
+                    ALOGE("%s: Failed to virtgpu execbuffer: sterror: %s errno: %d\n", __func__,
+                            strerror(errno), errno);
+                    abort();
+                }
+
+                *pFd = execbuffer.fence_fd;
+#endif
+            } else {
+                goldfish_sync_queue_work(
+                    mSyncDeviceFd,
+                    get_host_u64_VkFence(pGetFdInfo->fence) /* the handle */,
+                    GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
+                    pFd);
+            }
+
             // relinquish ownership
             info.syncFd = -1;
             ALOGV("%s: got fd: %d\n", __func__, *pFd);
@@ -4204,17 +4293,56 @@ public:
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
         if (exportSyncFd) {
+            if (mFeatureInfo->hasVirtioGpuNativeSync) {
+#if !defined(HOST_BUILD)
+                uint64_t hostFenceHandle = get_host_u64_VkSemaphore(*pSemaphore);
+                uint32_t hostFenceHandleLo = (uint32_t)hostFenceHandle;
+                uint32_t hostFenceHandleHi = (uint32_t)(hostFenceHandle >> 32);
 
-            ensureSyncDeviceFd();
+                uint64_t hostDeviceHandle = get_host_u64_VkDevice(device);
+                uint32_t hostDeviceHandleLo = (uint32_t)hostDeviceHandle;
+                uint32_t hostDeviceHandleHi = (uint32_t)(hostFenceHandle >> 32);
 
-            if (exportSyncFd) {
-                int syncFd = -1;
-                goldfish_sync_queue_work(
-                    mSyncDeviceFd,
-                    get_host_u64_VkSemaphore(*pSemaphore) /* the handle */,
-                    GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
-                    &syncFd);
-                info.syncFd = syncFd;
+                #define VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD 0xa000
+
+                uint32_t cmdDwords[5] = {
+                    VIRTIO_GPU_NATIVE_SYNC_VULKAN_CREATE_EXPORT_FD,
+                    hostDeviceHandleLo,
+                    hostDeviceHandleHi,
+                    hostFenceHandleLo,
+                    hostFenceHandleHi,
+                };
+
+                drm_virtgpu_execbuffer execbuffer = {
+                    .flags = VIRTGPU_EXECBUF_FENCE_FD_OUT,
+                    .size = 5 * sizeof(uint32_t),
+                    .command = (uint64_t)(cmdDwords),
+                    .bo_handles = 0,
+                    .num_bo_handles = 0,
+                    .fence_fd = -1,
+                };
+
+                int res = drmIoctl(mRendernodeFd, DRM_IOCTL_VIRTGPU_EXECBUFFER, &execbuffer);
+                if (res) {
+                    ALOGE("%s: Failed to virtgpu execbuffer: sterror: %s errno: %d\n", __func__,
+                            strerror(errno), errno);
+                    abort();
+                }
+
+                info.syncFd = execbuffer.fence_fd;
+#endif
+            } else {
+                ensureSyncDeviceFd();
+
+                if (exportSyncFd) {
+                    int syncFd = -1;
+                    goldfish_sync_queue_work(
+                            mSyncDeviceFd,
+                            get_host_u64_VkSemaphore(*pSemaphore) /* the handle */,
+                            GOLDFISH_SYNC_VULKAN_SEMAPHORE_SYNC /* thread handle (doubling as type field) */,
+                            &syncFd);
+                    info.syncFd = syncFd;
+                }
             }
         }
 #endif
@@ -4840,6 +4968,20 @@ public:
             VK_FORMAT_R8G8B8A8_SNORM,
             VK_FORMAT_R8G8B8A8_SSCALED,
             VK_FORMAT_R8G8B8A8_USCALED,
+            VK_FORMAT_R8_UNORM,
+            VK_FORMAT_R8_UINT,
+            VK_FORMAT_R8_USCALED,
+            VK_FORMAT_R8_SNORM,
+            VK_FORMAT_R8_SINT,
+            VK_FORMAT_R8_SSCALED,
+            VK_FORMAT_R8_SRGB,
+            VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_R8G8_UINT,
+            VK_FORMAT_R8G8_USCALED,
+            VK_FORMAT_R8G8_SNORM,
+            VK_FORMAT_R8G8_SINT,
+            VK_FORMAT_R8G8_SSCALED,
+            VK_FORMAT_R8G8_SRGB,
         };
 
         VkExternalImageFormatProperties* ext_img_properties =
@@ -4870,6 +5012,17 @@ public:
         }
 
         if (hostRes != VK_SUCCESS) return hostRes;
+
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        if (ext_img_properties) {
+            ext_img_properties->externalMemoryProperties = {
+                .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
+                                          VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
+                .exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+                .compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+            };
+        }
+#endif
 
         if (output_ahw_usage) {
             output_ahw_usage->androidHardwareBufferUsage =
@@ -4906,7 +5059,7 @@ public:
         auto& callbacks = mEncoderCleanupCallbacks[encoder];
         callbacks[object] = callback;
     }
-    
+
     void unregisterEncoderCleanupCallback(const VkEncoder* encoder, void* object) {
         AutoLock lock(mLock);
         mEncoderCleanupCallbacks[encoder].erase(object);
@@ -4927,45 +5080,28 @@ public:
     }
 
     uint32_t syncEncodersForCommandBuffer(VkCommandBuffer commandBuffer, VkEncoder* currentEncoder) {
-        AutoLock lock(mLock);
-
-        auto it = info_VkCommandBuffer.find(commandBuffer);
-        if (it == info_VkCommandBuffer.end()) return 0;
-
-        auto& info = it->second;
+        struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+        if (!cb) return 0;
 
         currentEncoder->incRef();
 
-        auto lastEncoder = info.lastUsedEncoder;
-        info.lastUsedEncoder = currentEncoder;
+        auto lastEncoder = cb->lastUsedEncoder;
+
+        cb->lastUsedEncoder = currentEncoder;
+
         if (!lastEncoder) return 0;
-        auto oldSeq = info.sequenceNumber;
-        bool lookupAgain = false;
 
         if (lastEncoder != currentEncoder) {
-            info.sequenceNumber += 2;
-            lookupAgain = true;
-            lock.unlock();
-
+            auto oldSeq = cb->sequenceNumber;
+            cb->sequenceNumber += 2;
             lastEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, false, oldSeq + 1);
             lastEncoder->flush();
-
             currentEncoder->vkCommandBufferHostSyncGOOGLE(commandBuffer, true, oldSeq + 2);
-
-            lock.lock();
         }
 
         if (lastEncoder->decRef()) {
-            if (lookupAgain) {
-                auto it2 = info_VkCommandBuffer.find(commandBuffer);
-                if (it2 == info_VkCommandBuffer.end()) return 0;
-                auto& info2 = it2->second;
-                info2.lastUsedEncoder = nullptr;
-            } else {
-                info.lastUsedEncoder = nullptr;
-            }
+            cb->lastUsedEncoder = nullptr;
         }
-
         return 0;
     }
 
@@ -4974,42 +5110,27 @@ public:
             return 0;
         }
 
-        AutoLock lock(mLock);
-
-        auto it = info_VkQueue.find(queue);
-        if (it == info_VkQueue.end()) return 0;
-
-        auto& info = it->second;
+        struct goldfish_VkQueue* q = as_goldfish_VkQueue(queue);
+        if (!q) return 0;
 
         currentEncoder->incRef();
 
-        auto lastEncoder = info.lastUsedEncoder;
-        info.lastUsedEncoder = currentEncoder;
+        auto lastEncoder = q->lastUsedEncoder;
+
+        q->lastUsedEncoder = currentEncoder;
+
         if (!lastEncoder) return 0;
-        auto oldSeq = info.sequenceNumber;
-        bool lookupAgain = false;
 
         if (lastEncoder != currentEncoder) {
-            info.sequenceNumber += 2;
-            lookupAgain = true;
-            lock.unlock();
-
+            auto oldSeq = q->sequenceNumber;
+            q->sequenceNumber += 2;
             lastEncoder->vkQueueHostSyncGOOGLE(queue, false, oldSeq + 1);
             lastEncoder->flush();
             currentEncoder->vkQueueHostSyncGOOGLE(queue, true, oldSeq + 2);
-
-            lock.lock();
         }
 
         if (lastEncoder->decRef()) {
-            if (lookupAgain) {
-                auto it2 = info_VkQueue.find(queue);
-                if (it2 == info_VkQueue.end()) return 0;
-                auto& info2 = it2->second;
-                info2.lastUsedEncoder = nullptr;
-            } else {
-                info.lastUsedEncoder = nullptr;
-            }
+            q->lastUsedEncoder = nullptr;
         }
 
         return 0;

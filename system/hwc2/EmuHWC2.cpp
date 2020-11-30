@@ -382,7 +382,7 @@ Error EmuHWC2::registerCallback(Callback descriptor,
     // Callback without the state lock held
     if (descriptor == Callback::Hotplug) {
         lock.unlock();
-        auto hotplug = reinterpret_cast<HWC2_PFN_VSYNC>(pointer);
+        auto hotplug = reinterpret_cast<HWC2_PFN_HOTPLUG>(pointer);
         for (const auto& iter : mDisplays) {
             hotplug(callbackData, iter.first, static_cast<int32_t>(Connection::Connected));
         }
@@ -862,14 +862,26 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
         }
 
         hostCon->lock();
-        if (hostCompositionV1) {
-            rcEnc->rcCompose(rcEnc,
-                             sizeof(ComposeDevice) + numLayer * sizeof(ComposeLayer),
-                             (void *)p);
+        if (rcEnc->hasAsyncFrameCommands()) {
+            if (hostCompositionV1) {
+                rcEnc->rcComposeAsync(rcEnc,
+                        sizeof(ComposeDevice) + numLayer * sizeof(ComposeLayer),
+                        (void *)p);
+            } else {
+                rcEnc->rcComposeAsync(rcEnc,
+                        sizeof(ComposeDevice_v2) + numLayer * sizeof(ComposeLayer),
+                        (void *)p2);
+            }
         } else {
-            rcEnc->rcCompose(rcEnc,
-                             sizeof(ComposeDevice_v2) + numLayer * sizeof(ComposeLayer),
-                             (void *)p2);
+            if (hostCompositionV1) {
+                rcEnc->rcCompose(rcEnc,
+                        sizeof(ComposeDevice) + numLayer * sizeof(ComposeLayer),
+                        (void *)p);
+            } else {
+                rcEnc->rcCompose(rcEnc,
+                        sizeof(ComposeDevice_v2) + numLayer * sizeof(ComposeLayer),
+                        (void *)p2);
+            }
         }
 
         hostCon->unlock();
@@ -897,7 +909,11 @@ Error EmuHWC2::Display::present(int32_t* outRetireFence) {
         *outRetireFence = dup(retire_fd);
         close(retire_fd);
         hostCon->lock();
-        rcEnc->rcDestroySyncKHR(rcEnc, sync_handle);
+        if (rcEnc->hasAsyncFrameCommands()) {
+            rcEnc->rcDestroySyncKHRAsync(rcEnc, sync_handle);
+        } else {
+            rcEnc->rcDestroySyncKHR(rcEnc, sync_handle);
+        }
         hostCon->unlock();
     } else {
         // we set all layers Composition::Client, so do nothing.

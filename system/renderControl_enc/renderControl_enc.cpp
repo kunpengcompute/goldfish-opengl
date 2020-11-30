@@ -81,8 +81,8 @@ EGLint rcGetEGLVersion_enc(void *self , EGLint* major, EGLint* minor)
 	int tmp = OP_rcGetEGLVersion;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
-	*(unsigned int *)(ptr) = __size_major; ptr += 4;
-	*(unsigned int *)(ptr) = __size_minor; ptr += 4;
+	memcpy(ptr, &__size_major, 4); ptr += 4;
+	memcpy(ptr, &__size_minor, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -129,7 +129,7 @@ EGLint rcQueryEGLString_enc(void *self , EGLenum name, void* buffer, EGLint buff
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &name, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
+	memcpy(ptr, &__size_buffer, 4); ptr += 4;
 		memcpy(ptr, &bufferSize, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
@@ -175,7 +175,7 @@ EGLint rcGetGLString_enc(void *self , EGLenum name, void* buffer, EGLint bufferS
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &name, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
+	memcpy(ptr, &__size_buffer, 4); ptr += 4;
 		memcpy(ptr, &bufferSize, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
@@ -220,7 +220,7 @@ EGLint rcGetNumConfigs_enc(void *self , uint32_t* numAttribs)
 	int tmp = OP_rcGetNumConfigs;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
-	*(unsigned int *)(ptr) = __size_numAttribs; ptr += 4;
+	memcpy(ptr, &__size_numAttribs, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -265,7 +265,7 @@ EGLint rcGetConfigs_enc(void *self , uint32_t bufSize, GLuint* buffer)
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &bufSize, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
+	memcpy(ptr, &__size_buffer, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -310,10 +310,10 @@ EGLint rcChooseConfig_enc(void *self , EGLint* attribs, uint32_t attribs_size, u
 	int tmp = OP_rcChooseConfig;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
-	*(unsigned int *)(ptr) = __size_attribs; ptr += 4;
+	memcpy(ptr, &__size_attribs, 4); ptr += 4;
 	memcpy(ptr, attribs, __size_attribs);ptr += __size_attribs;
 		memcpy(ptr, &attribs_size, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_configs; ptr += 4;
+	memcpy(ptr, &__size_configs, 4); ptr += 4;
 		memcpy(ptr, &configs_size, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
@@ -900,7 +900,7 @@ void rcReadColorBuffer_enc(void *self , uint32_t colorbuffer, GLint x, GLint y, 
 		memcpy(ptr, &height, 4); ptr += 4;
 		memcpy(ptr, &format, 4); ptr += 4;
 		memcpy(ptr, &type, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_pixels; ptr += 4;
+	memcpy(ptr, &__size_pixels, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1148,12 +1148,12 @@ void rcCreateSyncKHR_enc(void *self , EGLenum type, EGLint* attribs, uint32_t nu
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &type, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_attribs; ptr += 4;
+	memcpy(ptr, &__size_attribs, 4); ptr += 4;
 	memcpy(ptr, attribs, __size_attribs);ptr += __size_attribs;
 		memcpy(ptr, &num_attribs, 4); ptr += 4;
 		memcpy(ptr, &destroy_when_signaled, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_glsync_out; ptr += 4;
-	*(unsigned int *)(ptr) = __size_syncthread_out; ptr += 4;
+	memcpy(ptr, &__size_glsync_out, 4); ptr += 4;
+	memcpy(ptr, &__size_syncthread_out, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1452,7 +1452,7 @@ GLint rcCompose_enc(void *self , uint32_t bufferSize, void* buffer)
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &bufferSize, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
+	memcpy(ptr, &__size_buffer, 4); ptr += 4;
 	memcpy(ptr, buffer, __size_buffer);ptr += __size_buffer;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
@@ -1495,7 +1495,7 @@ int rcCreateDisplay_enc(void *self , uint32_t* displayId)
 	int tmp = OP_rcCreateDisplay;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
-	*(unsigned int *)(ptr) = __size_displayId; ptr += 4;
+	memcpy(ptr, &__size_displayId, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1623,7 +1623,7 @@ int rcGetDisplayColorBuffer_enc(void *self , uint32_t displayId, uint32_t* color
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &displayId, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_colorBuffer; ptr += 4;
+	memcpy(ptr, &__size_colorBuffer, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1668,7 +1668,7 @@ int rcGetColorBufferDisplay_enc(void *self , uint32_t colorBuffer, uint32_t* dis
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorBuffer, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_displayId; ptr += 4;
+	memcpy(ptr, &__size_displayId, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1716,10 +1716,10 @@ int rcGetDisplayPose_enc(void *self , uint32_t displayId, GLint* x, GLint* y, ui
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &displayId, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_x; ptr += 4;
-	*(unsigned int *)(ptr) = __size_y; ptr += 4;
-	*(unsigned int *)(ptr) = __size_w; ptr += 4;
-	*(unsigned int *)(ptr) = __size_h; ptr += 4;
+	memcpy(ptr, &__size_x, 4); ptr += 4;
+	memcpy(ptr, &__size_y, 4); ptr += 4;
+	memcpy(ptr, &__size_w, 4); ptr += 4;
+	memcpy(ptr, &__size_h, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
@@ -1861,7 +1861,7 @@ void rcReadColorBufferYUV_enc(void *self , uint32_t colorbuffer, GLint x, GLint 
 		memcpy(ptr, &y, 4); ptr += 4;
 		memcpy(ptr, &width, 4); ptr += 4;
 		memcpy(ptr, &height, 4); ptr += 4;
-	*(unsigned int *)(ptr) = __size_pixels; ptr += 4;
+	memcpy(ptr, &__size_pixels, 4); ptr += 4;
 		memcpy(ptr, &pixels_size, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
@@ -2188,6 +2188,147 @@ int rcMapGpaToBufferHandle2_enc(void *self , uint32_t bufferHandle, uint64_t gpa
 	return retval;
 }
 
+void rcFlushWindowColorBufferAsyncWithFrameNumber_enc(void *self , uint32_t windowSurface, uint32_t frameNumber)
+{
+	AEMU_SCOPED_TRACE("rcFlushWindowColorBufferAsyncWithFrameNumber encode");
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+	bool useChecksum = checksumCalculator->getVersion() > 0;
+
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcFlushWindowColorBufferAsyncWithFrameNumber;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &windowSurface, 4); ptr += 4;
+		memcpy(ptr, &frameNumber, 4); ptr += 4;
+
+	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+
+}
+
+void rcSetTracingForPuid_enc(void *self , uint64_t puid, uint32_t enable, uint64_t guestTime)
+{
+	AEMU_SCOPED_TRACE("rcSetTracingForPuid encode");
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+	bool useChecksum = checksumCalculator->getVersion() > 0;
+
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 8 + 4 + 8;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcSetTracingForPuid;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &puid, 8); ptr += 8;
+		memcpy(ptr, &enable, 4); ptr += 4;
+		memcpy(ptr, &guestTime, 8); ptr += 8;
+
+	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+
+}
+
+void rcMakeCurrentAsync_enc(void *self , uint32_t context, uint32_t drawSurf, uint32_t readSurf)
+{
+	AEMU_SCOPED_TRACE("rcMakeCurrentAsync encode");
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+	bool useChecksum = checksumCalculator->getVersion() > 0;
+
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcMakeCurrentAsync;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &context, 4); ptr += 4;
+		memcpy(ptr, &drawSurf, 4); ptr += 4;
+		memcpy(ptr, &readSurf, 4); ptr += 4;
+
+	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+
+	stream->flush();
+}
+
+void rcComposeAsync_enc(void *self , uint32_t bufferSize, void* buffer)
+{
+	AEMU_SCOPED_TRACE("rcComposeAsync encode");
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+	bool useChecksum = checksumCalculator->getVersion() > 0;
+
+	const unsigned int __size_buffer =  bufferSize;
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + __size_buffer + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcComposeAsync;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &bufferSize, 4); ptr += 4;
+	memcpy(ptr, &__size_buffer, 4); ptr += 4;
+	memcpy(ptr, buffer, __size_buffer);ptr += __size_buffer;
+
+	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+
+	stream->flush();
+}
+
+void rcDestroySyncKHRAsync_enc(void *self , uint64_t sync)
+{
+	AEMU_SCOPED_TRACE("rcDestroySyncKHRAsync encode");
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+	bool useChecksum = checksumCalculator->getVersion() > 0;
+
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 8;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcDestroySyncKHRAsync;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &sync, 8); ptr += 8;
+
+	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+
+	stream->flush();
+}
+
 }  // namespace
 
 renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream, ChecksumCalculator *checksumCalculator)
@@ -2250,5 +2391,10 @@ renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *strea
 	this->rcMapGpaToBufferHandle = &rcMapGpaToBufferHandle_enc;
 	this->rcCreateBuffer2 = &rcCreateBuffer2_enc;
 	this->rcMapGpaToBufferHandle2 = &rcMapGpaToBufferHandle2_enc;
+	this->rcFlushWindowColorBufferAsyncWithFrameNumber = &rcFlushWindowColorBufferAsyncWithFrameNumber_enc;
+	this->rcSetTracingForPuid = &rcSetTracingForPuid_enc;
+	this->rcMakeCurrentAsync = &rcMakeCurrentAsync_enc;
+	this->rcComposeAsync = &rcComposeAsync_enc;
+	this->rcDestroySyncKHRAsync = &rcDestroySyncKHRAsync_enc;
 }
 
