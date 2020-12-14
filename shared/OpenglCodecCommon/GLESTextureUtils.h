@@ -77,6 +77,8 @@ GLsizei getCompressedImageSize(GLenum internalformat, GLsizei width, GLsizei hei
 // Format queries
 bool isEtc2Format(GLenum internalformat);
 bool isAstcFormat(GLenum internalformat);
+bool isBptcFormat(GLenum internalformat);
+bool isS3tcFormat(GLenum internalformat);
 
 } // namespace GLESTextureUtils
 #endif

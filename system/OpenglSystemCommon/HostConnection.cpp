@@ -358,6 +358,7 @@ static GoldfishGralloc m_goldfishGralloc;
 static GoldfishProcessPipe m_goldfishProcessPipe;
 
 HostConnection::HostConnection() :
+    exitUncleanly(false),
     m_checksumHelper(),
     m_glExtensions(),
     m_grallocOnly(true),
@@ -373,9 +374,10 @@ HostConnection::~HostConnection()
 {
     // round-trip to ensure that queued commands have been processed
     // before process pipe closure is detected.
-    if (m_rcEnc) {
+    if (m_rcEnc && !exitUncleanly) {
         (void)m_rcEnc->rcGetRendererVersion(m_rcEnc.get());
     }
+
     if (m_grallocType == GRALLOC_TYPE_MINIGBM) {
         delete m_grallocHelper;
     }
@@ -587,6 +589,16 @@ void HostConnection::exit() {
     tinfo->hostConn.reset();
 }
 
+void HostConnection::exitUnclean() {
+    EGLThreadInfo *tinfo = getEGLThreadInfo();
+    if (!tinfo) {
+        return;
+    }
+
+    tinfo->hostConn->exitUncleanly = true;
+    tinfo->hostConn.reset();
+}
+
 // static
 std::unique_ptr<HostConnection> HostConnection::createUnique() {
     ALOGD("%s: call\n", __func__);
@@ -656,6 +668,7 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetVulkanShaderFloat16Int8Support(rcEnc);
         queryAndSetVulkanAsyncQueueSubmitSupport(rcEnc);
         queryAndSetHostSideTracingSupport(rcEnc);
+        queryAndSetAsyncFrameCommands(rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_connectionType, rcEnc);
         }
@@ -923,5 +936,12 @@ void HostConnection::queryAndSetHostSideTracingSupport(ExtendedRCEncoderContext*
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kHostSideTracing) != std::string::npos) {
         rcEnc->featureInfo()->hasHostSideTracing = true;
+    }
+}
+
+void HostConnection::queryAndSetAsyncFrameCommands(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kAsyncFrameCommands) != std::string::npos) {
+        rcEnc->featureInfo()->hasAsyncFrameCommands = true;
     }
 }

@@ -26,13 +26,13 @@
 #include <lib/zxio/inception.h>
 #include <unistd.h>
 
+#include "TraceProviderFuchsia.h"
 #include "services/service_connector.h"
 #endif
 
 #include "HostConnection.h"
 #include "ResourceTracker.h"
 #include "VkEncoder.h"
-
 #include "func_table.h"
 
 // Used when there is no Vulkan support on the host.
@@ -708,6 +708,7 @@ class VulkanDevice {
 public:
     VulkanDevice() : mHostSupportsGoldfish(IsAccessible(QEMU_PIPE_PATH)) {
         InitLogger();
+        InitTraceProvider();
         goldfish_vk::ResourceTracker::get();
     }
 
@@ -745,6 +746,9 @@ public:
     }
 
 private:
+    void InitTraceProvider();
+
+    TraceProviderFuchsia mTraceProvider;
     const bool mHostSupportsGoldfish;
 };
 
@@ -774,6 +778,12 @@ void VulkanDevice::InitLogger() {
   fx_log_reconfigure(&config);
 }
 
+void VulkanDevice::InitTraceProvider() {
+    if (!mTraceProvider.Initialize()) {
+        ALOGE("Trace provider failed to initialize");
+    }
+}
+
 extern "C" __attribute__((visibility("default"))) PFN_vkVoidFunction
 vk_icdGetInstanceProcAddr(VkInstance instance, const char* name) {
     return VulkanDevice::GetInstance().GetInstanceProcAddr(instance, name);
@@ -785,11 +795,11 @@ vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t* pSupportedVersion) {
     return VK_SUCCESS;
 }
 
-typedef VkResult(VKAPI_PTR *PFN_vkConnectToServiceAddr)(const char *pName, uint32_t handle);
+typedef VkResult(VKAPI_PTR *PFN_vkOpenInNamespaceAddr)(const char *pName, uint32_t handle);
 
 namespace {
 
-PFN_vkConnectToServiceAddr g_vulkan_connector;
+PFN_vkOpenInNamespaceAddr g_vulkan_connector;
 
 zx_handle_t LocalConnectToServiceFunction(const char* pName) {
     zx::channel remote_endpoint, local_endpoint;
@@ -808,7 +818,7 @@ zx_handle_t LocalConnectToServiceFunction(const char* pName) {
 }
 
 extern "C" __attribute__((visibility("default"))) void
-vk_icdInitializeConnectToServiceCallback(PFN_vkConnectToServiceAddr callback) {
+vk_icdInitializeOpenInNamespaceCallback(PFN_vkOpenInNamespaceAddr callback) {
     g_vulkan_connector = callback;
     SetConnectToServiceFunction(&LocalConnectToServiceFunction);
 }
