@@ -26,13 +26,14 @@
 #include <lib/zxio/inception.h>
 #include <unistd.h>
 
+#include "TraceProviderFuchsia.h"
 #include "services/service_connector.h"
 #endif
 
 #include "HostConnection.h"
+#include "ProcessPipe.h"
 #include "ResourceTracker.h"
 #include "VkEncoder.h"
-
 #include "func_table.h"
 
 // Used when there is no Vulkan support on the host.
@@ -363,6 +364,7 @@ int CloseDevice(struct hw_device_t* /*device*/) {
         return ret; \
     } \
     goldfish_vk::ResourceTracker::get()->setupFeatures(rcEnc->featureInfo_const()); \
+    goldfish_vk::ResourceTracker::get()->setSeqnoPtr(getSeqnoPtrForProcess()); \
     goldfish_vk::ResourceTracker::ThreadingCallbacks threadingCallbacks = { \
         [] { \
           auto hostCon = HostConnection::get(); \
@@ -417,7 +419,7 @@ VkResult CreateInstance(const VkInstanceCreateInfo* create_info,
         return vkstubhal::CreateInstance(create_info, allocator, out_instance);
     }
 
-    VkResult res = vkEnc->vkCreateInstance(create_info, nullptr, out_instance);
+    VkResult res = vkEnc->vkCreateInstance(create_info, nullptr, out_instance, true /* do lock */);
 
     return res;
 }
@@ -607,6 +609,57 @@ VkResult GetBufferCollectionPropertiesFUCHSIA(
 }
 #endif
 
+uint64_t currGuestTimeNs() {
+    struct timespec ts;
+#ifdef __APPLE__
+    clock_gettime(CLOCK_REALTIME, &ts);
+#else
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+#endif
+    uint64_t res = (uint64_t)(ts.tv_sec * 1000000000ULL + ts.tv_nsec);
+    return res;
+}
+
+struct FrameTracingState {
+    uint32_t frameNumber = 0;
+    bool tracingEnabled = false;
+    void onSwapBuffersSuccessful(ExtendedRCEncoderContext* rcEnc) {
+#ifdef GFXSTREAM
+        bool current = android::base::isTracingEnabled();
+        // edge trigger
+        if (current && !tracingEnabled) {
+            if (rcEnc->hasHostSideTracing()) {
+                rcEnc->rcSetTracingForPuid(rcEnc, getPuid(), 1, currGuestTimeNs());
+            }
+        }
+        if (!current && tracingEnabled) {
+            if (rcEnc->hasHostSideTracing()) {
+                rcEnc->rcSetTracingForPuid(rcEnc, getPuid(), 0, currGuestTimeNs());
+            }
+        }
+        tracingEnabled = current;
+#endif
+        ++frameNumber;
+    }
+};
+
+static FrameTracingState sFrameTracingState;
+
+static PFN_vkVoidFunction sQueueSignalReleaseImageAndroidImpl = 0;
+
+static VkResult
+QueueSignalReleaseImageANDROID(
+    VkQueue queue,
+    uint32_t waitSemaphoreCount,
+    const VkSemaphore* pWaitSemaphores,
+    VkImage image,
+    int* pNativeFenceFd)
+{
+    sFrameTracingState.onSwapBuffersSuccessful(HostConnection::get()->rcEncoder());
+    ((PFN_vkQueueSignalReleaseImageANDROID)sQueueSignalReleaseImageAndroidImpl)(queue, waitSemaphoreCount, pWaitSemaphores, image, pNativeFenceFd);
+    return VK_SUCCESS;
+}
+
 static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice device, const char* name) {
     AEMU_SCOPED_TRACE("goldfish_vulkan::GetDeviceProcAddr");
 
@@ -645,6 +698,14 @@ static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice device, const char* name) {
         return (PFN_vkVoidFunction)GetBufferCollectionPropertiesFUCHSIA;
     }
 #endif
+    if (!strcmp(name, "vkQueueSignalReleaseImageANDROID")) {
+        if (!sQueueSignalReleaseImageAndroidImpl) {
+            sQueueSignalReleaseImageAndroidImpl =
+                (PFN_vkVoidFunction)(
+                    goldfish_vk::goldfish_vulkan_get_device_proc_address(device, "vkQueueSignalReleaseImageANDROID"));
+        }
+        return (PFN_vkVoidFunction)QueueSignalReleaseImageANDROID;
+    }
     if (!strcmp(name, "vkGetDeviceProcAddr")) {
         return (PFN_vkVoidFunction)(GetDeviceProcAddr);
     }
@@ -669,6 +730,14 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance, const char* name) {
     }
     if (!strcmp(name, "vkGetDeviceProcAddr")) {
         return (PFN_vkVoidFunction)(GetDeviceProcAddr);
+    }
+    if (!strcmp(name, "vkQueueSignalReleaseImageANDROID")) {
+        if (!sQueueSignalReleaseImageAndroidImpl) {
+            sQueueSignalReleaseImageAndroidImpl =
+                (PFN_vkVoidFunction)(
+                    goldfish_vk::goldfish_vulkan_get_instance_proc_address(instance, "vkQueueSignalReleaseImageANDROID"));
+        }
+        return (PFN_vkVoidFunction)QueueSignalReleaseImageANDROID;
     }
     return (PFN_vkVoidFunction)(goldfish_vk::goldfish_vulkan_get_instance_proc_address(instance, name));
 }
@@ -708,6 +777,7 @@ class VulkanDevice {
 public:
     VulkanDevice() : mHostSupportsGoldfish(IsAccessible(QEMU_PIPE_PATH)) {
         InitLogger();
+        InitTraceProvider();
         goldfish_vk::ResourceTracker::get();
     }
 
@@ -745,6 +815,9 @@ public:
     }
 
 private:
+    void InitTraceProvider();
+
+    TraceProviderFuchsia mTraceProvider;
     const bool mHostSupportsGoldfish;
 };
 
@@ -774,6 +847,12 @@ void VulkanDevice::InitLogger() {
   fx_log_reconfigure(&config);
 }
 
+void VulkanDevice::InitTraceProvider() {
+    if (!mTraceProvider.Initialize()) {
+        ALOGE("Trace provider failed to initialize");
+    }
+}
+
 extern "C" __attribute__((visibility("default"))) PFN_vkVoidFunction
 vk_icdGetInstanceProcAddr(VkInstance instance, const char* name) {
     return VulkanDevice::GetInstance().GetInstanceProcAddr(instance, name);
@@ -785,11 +864,11 @@ vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t* pSupportedVersion) {
     return VK_SUCCESS;
 }
 
-typedef VkResult(VKAPI_PTR *PFN_vkConnectToServiceAddr)(const char *pName, uint32_t handle);
+typedef VkResult(VKAPI_PTR *PFN_vkOpenInNamespaceAddr)(const char *pName, uint32_t handle);
 
 namespace {
 
-PFN_vkConnectToServiceAddr g_vulkan_connector;
+PFN_vkOpenInNamespaceAddr g_vulkan_connector;
 
 zx_handle_t LocalConnectToServiceFunction(const char* pName) {
     zx::channel remote_endpoint, local_endpoint;
@@ -808,7 +887,7 @@ zx_handle_t LocalConnectToServiceFunction(const char* pName) {
 }
 
 extern "C" __attribute__((visibility("default"))) void
-vk_icdInitializeConnectToServiceCallback(PFN_vkConnectToServiceAddr callback) {
+vk_icdInitializeOpenInNamespaceCallback(PFN_vkOpenInNamespaceAddr callback) {
     g_vulkan_connector = callback;
     SetConnectToServiceFunction(&LocalConnectToServiceFunction);
 }

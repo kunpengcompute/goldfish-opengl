@@ -9005,6 +9005,10 @@ void transform_fromhost_VkImportPhysicalAddressGOOGLE(
 #endif
 #ifdef VK_GOOGLE_linear_image_layout
 #endif
+#ifdef VK_MVK_moltenvk
+#endif
+#ifdef VK_GOOGLE_queue_submit_with_commands
+#endif
 void transform_tohost_extension_struct(
     ResourceTracker* resourceTracker,
     void* structExtension_out)

@@ -15,6 +15,7 @@
 */
 
 #include "ProcessPipe.h"
+#include "HostConnection.h"
 #include "renderControl_enc.h"
 
 #include <qemu_pipe_bp.h>
@@ -51,6 +52,18 @@ static pthread_once_t     sProcPipeOnce = PTHREAD_ONCE_INIT;
 static uint64_t           sProcUID = 0;
 static volatile HostConnectionType sConnType = HOST_CONNECTION_VIRTIO_GPU_PIPE;
 
+static uint32_t* sSeqnoPtr = 0;
+
+// Meant to be called only once per process.
+static void initSeqno() {
+    // So why do we reinitialize here? It's for testing purposes only;
+    // we have a unit test that exercise the case where this sequence
+    // number is reset as a result of guest process kill.
+    if (sSeqnoPtr) delete sSeqnoPtr;
+    sSeqnoPtr = new uint32_t;
+    *sSeqnoPtr = 0;
+}
+
 // processPipeInitOnce is used to generate a process unique ID (puid).
 // processPipeInitOnce will only be called at most once per process.
 // Use it with pthread_once for thread safety.
@@ -60,6 +73,8 @@ static volatile HostConnectionType sConnType = HOST_CONNECTION_VIRTIO_GPU_PIPE;
 // host.
 #ifdef __Fuchsia__
 static void processPipeInitOnce() {
+    initSeqno();
+
     zx::channel channel(GetConnectToServiceFunction()(QEMU_PIPE_PATH));
     if (!channel) {
         ALOGE("%s: failed to open " QEMU_PIPE_PATH,
@@ -70,16 +85,16 @@ static void processPipeInitOnce() {
     llcpp::fuchsia::hardware::goldfish::PipeDevice::SyncClient device(
         std::move(channel));
 
-    zx::channel pipe_server, pipe_client;
-    zx_status_t status = zx::channel::create(0, &pipe_server, &pipe_client);
-    if (status != ZX_OK) {
-        ALOGE("%s: zx_channel_create failed: %d", __FUNCTION__, status);
+    auto pipe_ends =
+        fidl::CreateEndpoints<::llcpp::fuchsia::hardware::goldfish::Pipe>();
+    if (!pipe_ends.is_ok()) {
+        ALOGE("%s: zx_channel_create failed: %d", __FUNCTION__, pipe_ends.status_value());
         return;
     }
 
     llcpp::fuchsia::hardware::goldfish::Pipe::SyncClient pipe(
-        std::move(pipe_client));
-    device.OpenPipe(std::move(pipe_server));
+        std::move(pipe_ends->client));
+    device.OpenPipe(std::move(pipe_ends->server));
 
     zx::vmo vmo;
     {
@@ -93,7 +108,7 @@ static void processPipeInitOnce() {
     }
 
     size_t len = strlen("pipe:GLProcessPipe");
-    status = vmo.write("pipe:GLProcessPipe", 0, len + 1);
+    zx_status_t status = vmo.write("pipe:GLProcessPipe", 0, len + 1);
     if (status != ZX_OK) {
         ALOGE("%s: failed write pipe name", __FUNCTION__);
         return;
@@ -144,14 +159,7 @@ static void sQemuPipeInit() {
     }
     // Send a confirmation int to the host
     int32_t confirmInt = 100;
-    ssize_t stat = 0;
-    do {
-        stat =
-            qemu_pipe_write(sProcPipe, (const char*)&confirmInt,
-                sizeof(confirmInt));
-    } while (stat < 0 && errno == EINTR);
-
-    if (stat != sizeof(confirmInt)) { // failed
+    if (qemu_pipe_write_fully(sProcPipe, &confirmInt, sizeof(confirmInt))) { // failed
         qemu_pipe_close(sProcPipe);
         sProcPipe = 0;
         ALOGW("Process pipe failed");
@@ -159,13 +167,7 @@ static void sQemuPipeInit() {
     }
 
     // Ask the host for per-process unique ID
-    do {
-        stat =
-            qemu_pipe_read(sProcPipe, (char*)&sProcUID,
-                sizeof(sProcUID));
-    } while (stat < 0 && (errno == EINTR || errno == EAGAIN));
-
-    if (stat != sizeof(sProcUID)) {
+    if (qemu_pipe_read_fully(sProcPipe, &sProcUID, sizeof(sProcUID))) {
         qemu_pipe_close(sProcPipe);
         sProcPipe = 0;
         sProcUID = 0;
@@ -175,6 +177,8 @@ static void sQemuPipeInit() {
 }
 
 static void processPipeInitOnce() {
+    initSeqno();
+
 #if defined(HOST_BUILD) || !defined(GFXSTREAM)
     sQemuPipeInit();
 #else // HOST_BUILD
@@ -207,4 +211,58 @@ bool processPipeInit(HostConnectionType connType, renderControl_encoder_context_
     if (pipeHandleInvalid) return false;
     rcEnc->rcSetPuid(rcEnc, sProcUID);
     return true;
+}
+
+uint64_t getPuid() {
+    return sProcUID;
+}
+
+void processPipeRestart() {
+    ALOGW("%s: restarting process pipe\n", __func__);
+    bool isPipe = false;
+
+    switch (sConnType) {
+        // TODO: Move those over too
+        case HOST_CONNECTION_QEMU_PIPE:
+        case HOST_CONNECTION_ADDRESS_SPACE:
+        case HOST_CONNECTION_TCP:
+        case HOST_CONNECTION_VIRTIO_GPU:
+            isPipe = true;
+            break;
+        case HOST_CONNECTION_VIRTIO_GPU_PIPE:
+        case HOST_CONNECTION_VIRTIO_GPU_ADDRESS_SPACE: {
+            isPipe = false;
+            break;
+        }
+    }
+
+    sProcUID = 0;
+
+#ifdef __Fuchsia__
+    zx_handle_close(sProcPipe);
+    sProcPipe = ZX_HANDLE_INVALID;
+#else
+    if (isPipe) {
+        if (qemu_pipe_valid(sProcPipe)) {
+            qemu_pipe_close(sProcPipe);
+            sProcPipe = 0;
+        }
+    } else {
+        delete sVirtioGpuPipeStream;
+        sVirtioGpuPipeStream = nullptr;
+    }
+#endif // __Fuchsia__
+
+    processPipeInitOnce();
+};
+
+void refreshHostConnection() {
+    HostConnection* hostConn = HostConnection::get();
+    ExtendedRCEncoderContext* rcEnc = hostConn->rcEncoder();
+    rcEnc->rcSetPuid(rcEnc, sProcUID);
+}
+
+uint32_t* getSeqnoPtrForProcess() {
+    // It's assumed process pipe state has already been initialized.
+    return sSeqnoPtr;
 }

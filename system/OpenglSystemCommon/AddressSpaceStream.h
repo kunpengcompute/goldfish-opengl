@@ -44,6 +44,7 @@ public:
     virtual const unsigned char *readFully( void *buf, size_t len);
     virtual const unsigned char *read( void *buf, size_t *inout_len);
     virtual int writeFully(const void *buf, size_t len);
+    virtual int writeFullyAsync(const void *buf, size_t len);
     virtual const unsigned char *commitBufferAndReadFully(size_t size, void *buf, size_t len);
 
     int getRendernodeFd() const {
@@ -65,6 +66,9 @@ private:
     void ensureType1Finished();
     void ensureType3Finished();
     int type1Write(uint32_t offset, size_t size);
+
+    void backoff();
+    void resetBackoff();
 
     bool m_virtioMode;
     struct address_space_ops m_ops;
@@ -93,6 +97,9 @@ private:
 
     uint32_t m_notifs;
     uint32_t m_written;
+
+    uint64_t m_backoffIters;
+    uint64_t m_backoffFactor;
 };
 
 #endif

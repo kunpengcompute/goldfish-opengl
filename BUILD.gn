@@ -52,9 +52,9 @@ shared_library("libvulkan_goldfish") {
     "system/OpenglSystemCommon/ThreadInfo.h",
     "system/renderControl_enc/renderControl_enc.cpp",
     "system/renderControl_enc/renderControl_enc.h",
-    "system/vulkan/func_table.cpp",
-    "system/vulkan/func_table.h",
     "system/vulkan/goldfish_vulkan.cpp",
+    "system/vulkan_enc/CommandBufferStagingStream.cpp",
+    "system/vulkan_enc/CommandBufferStagingStream.h",
     "system/vulkan_enc/HostVisibleMemoryVirtualization.cpp",
     "system/vulkan_enc/HostVisibleMemoryVirtualization.h",
     "system/vulkan_enc/ResourceTracker.cpp",
@@ -69,12 +69,18 @@ shared_library("libvulkan_goldfish") {
     "system/vulkan_enc/VulkanHandleMapping.h",
     "system/vulkan_enc/VulkanStreamGuest.cpp",
     "system/vulkan_enc/VulkanStreamGuest.h",
+    "system/vulkan_enc/func_table.cpp",
+    "system/vulkan_enc/func_table.h",
+    "system/vulkan_enc/goldfish_vk_counting_guest.cpp",
+    "system/vulkan_enc/goldfish_vk_counting_guest.h",
     "system/vulkan_enc/goldfish_vk_deepcopy_guest.cpp",
     "system/vulkan_enc/goldfish_vk_deepcopy_guest.h",
     "system/vulkan_enc/goldfish_vk_extension_structs_guest.cpp",
     "system/vulkan_enc/goldfish_vk_extension_structs_guest.h",
     "system/vulkan_enc/goldfish_vk_marshaling_guest.cpp",
     "system/vulkan_enc/goldfish_vk_marshaling_guest.h",
+    "system/vulkan_enc/goldfish_vk_reserved_marshaling_guest.cpp",
+    "system/vulkan_enc/goldfish_vk_reserved_marshaling_guest.h",
     "system/vulkan_enc/goldfish_vk_transform_guest.cpp",
     "system/vulkan_enc/goldfish_vk_transform_guest.h",
   ]
@@ -122,12 +128,20 @@ shared_library("libvulkan_goldfish") {
   ldflags = [ "-static-libstdc++" ]
 
   if (target_os == "fuchsia") {
-    sources -= [ "system/OpenglSystemCommon/QemuPipeStream.cpp" ]
+    sources -= [
+      "shared/OpenglCodecCommon/goldfish_dma.cpp",
+      "shared/OpenglCodecCommon/goldfish_dma.h",
+      "shared/qemupipe/qemu_pipe_common.cpp",
+      "shared/qemupipe/qemu_pipe_guest.cpp",
+      "system/OpenglSystemCommon/QemuPipeStream.cpp",
+    ]
     sources += [
       "fuchsia/fuchsia_stdio.cc",
       "fuchsia/port.cc",
       "fuchsia/service_connector.cc",
       "system/OpenglSystemCommon/QemuPipeStreamFuchsia.cpp",
+      "system/OpenglSystemCommon/TraceProviderFuchsia.cpp",
+      "system/OpenglSystemCommon/TraceProviderFuchsia.h",
     ]
 
     include_dirs += [
@@ -135,15 +149,19 @@ shared_library("libvulkan_goldfish") {
       "//third_party/Vulkan-Headers/include",
     ]
 
-    libs = [ "zircon" ]
-
     deps = [
       "//sdk/fidl/fuchsia.hardware.goldfish:fuchsia.hardware.goldfish_llcpp",
       "//sdk/fidl/fuchsia.logger:fuchsia.logger_llcpp",
       "//sdk/fidl/fuchsia.sysmem:fuchsia.sysmem_llcpp",
+      "//sdk/lib/fdio",
+      "//src/zircon/lib/zircon",
+      "//zircon/public/lib/async-cpp",
       "//zircon/public/lib/zx",
+      "//zircon/system/ulib/async-default",
+      "//zircon/system/ulib/async-loop:async-loop-cpp",
       "//zircon/system/ulib/syslog:syslog-static",
       "//zircon/system/ulib/trace:trace-with-static-engine",
+      "//zircon/system/ulib/trace-provider:trace-provider-with-static-engine",
       "//zircon/system/ulib/zxio",
     ]
 

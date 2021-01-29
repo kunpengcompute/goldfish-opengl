@@ -17,6 +17,10 @@
 
 #include "cutils/properties.h"
 
+#ifdef HOST_BUILD
+#include "android/base/Tracing.h"
+#endif
+
 #ifdef GOLDFISH_NO_GL
 struct gl_client_context_t {
     int placeholder;
@@ -354,20 +358,26 @@ static GoldfishGralloc m_goldfishGralloc;
 static GoldfishProcessPipe m_goldfishProcessPipe;
 
 HostConnection::HostConnection() :
+    exitUncleanly(false),
     m_checksumHelper(),
     m_glExtensions(),
     m_grallocOnly(true),
     m_noHostError(true),
     m_rendernodeFd(-1),
-    m_rendernodeFdOwned(false) { }
+    m_rendernodeFdOwned(false) {
+#ifdef HOST_BUILD
+    android::base::initializeTracing();
+#endif
+}
 
 HostConnection::~HostConnection()
 {
     // round-trip to ensure that queued commands have been processed
     // before process pipe closure is detected.
-    if (m_rcEnc) {
+    if (m_rcEnc && !exitUncleanly) {
         (void)m_rcEnc->rcGetRendererVersion(m_rcEnc.get());
     }
+
     if (m_grallocType == GRALLOC_TYPE_MINIGBM) {
         delete m_grallocHelper;
     }
@@ -579,6 +589,16 @@ void HostConnection::exit() {
     tinfo->hostConn.reset();
 }
 
+void HostConnection::exitUnclean() {
+    EGLThreadInfo *tinfo = getEGLThreadInfo();
+    if (!tinfo) {
+        return;
+    }
+
+    tinfo->hostConn->exitUncleanly = true;
+    tinfo->hostConn.reset();
+}
+
 // static
 std::unique_ptr<HostConnection> HostConnection::createUnique() {
     ALOGD("%s: call\n", __func__);
@@ -614,6 +634,7 @@ GL2Encoder *HostConnection::gl2Encoder()
 
 VkEncoder *HostConnection::vkEncoder()
 {
+    rcEncoder();
     if (!m_vkEnc) {
         m_vkEnc = new VkEncoder(m_stream);
     }
@@ -647,6 +668,9 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetVirtioGpuNativeSync(rcEnc);
         queryAndSetVulkanShaderFloat16Int8Support(rcEnc);
         queryAndSetVulkanAsyncQueueSubmitSupport(rcEnc);
+        queryAndSetHostSideTracingSupport(rcEnc);
+        queryAndSetAsyncFrameCommands(rcEnc);
+        queryAndSetVulkanQueueSubmitWithCommandsSupport(rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_connectionType, rcEnc);
         }
@@ -909,3 +933,25 @@ void HostConnection::queryAndSetVulkanAsyncQueueSubmitSupport(ExtendedRCEncoderC
         rcEnc->featureInfo()->hasVulkanAsyncQueueSubmit = true;
     }
 }
+
+void HostConnection::queryAndSetHostSideTracingSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kHostSideTracing) != std::string::npos) {
+        rcEnc->featureInfo()->hasHostSideTracing = true;
+    }
+}
+
+void HostConnection::queryAndSetAsyncFrameCommands(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kAsyncFrameCommands) != std::string::npos) {
+        rcEnc->featureInfo()->hasAsyncFrameCommands = true;
+    }
+}
+
+void HostConnection::queryAndSetVulkanQueueSubmitWithCommandsSupport(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kVulkanQueueSubmitWithCommands) != std::string::npos) {
+        rcEnc->featureInfo()->hasVulkanQueueSubmitWithCommands = true;
+    }
+}
+
