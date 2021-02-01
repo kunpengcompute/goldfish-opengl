@@ -10372,6 +10372,10 @@ void unmarshal_VkImportPhysicalAddressGOOGLE(
 #endif
 #ifdef VK_GOOGLE_linear_image_layout
 #endif
+#ifdef VK_MVK_moltenvk
+#endif
+#ifdef VK_GOOGLE_queue_submit_with_commands
+#endif
 void marshal_extension_struct(
     VulkanStreamGuest* vkStream,
     const void* structExtension)
@@ -13247,6 +13251,38 @@ const char* api_opcode_to_string(
         case OP_vkGetLinearImageLayoutGOOGLE:
         {
             return "OP_vkGetLinearImageLayoutGOOGLE";
+        }
+#endif
+#ifdef VK_MVK_moltenvk
+        case OP_vkGetMTLDeviceMVK:
+        {
+            return "OP_vkGetMTLDeviceMVK";
+        }
+        case OP_vkSetMTLTextureMVK:
+        {
+            return "OP_vkSetMTLTextureMVK";
+        }
+        case OP_vkGetMTLTextureMVK:
+        {
+            return "OP_vkGetMTLTextureMVK";
+        }
+        case OP_vkGetMTLBufferMVK:
+        {
+            return "OP_vkGetMTLBufferMVK";
+        }
+        case OP_vkUseIOSurfaceMVK:
+        {
+            return "OP_vkUseIOSurfaceMVK";
+        }
+        case OP_vkGetIOSurfaceMVK:
+        {
+            return "OP_vkGetIOSurfaceMVK";
+        }
+#endif
+#ifdef VK_GOOGLE_queue_submit_with_commands
+        case OP_vkQueueFlushCommandsGOOGLE:
+        {
+            return "OP_vkQueueFlushCommandsGOOGLE";
         }
 #endif
         default:
