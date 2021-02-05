@@ -15,13 +15,18 @@
 */
 
 #include "ThreadInfo.h"
+
+#ifdef HOST_BUILD
+#include "android/base/threads/AndroidThread.h"
+#else
 #include "cutils/threads.h"
+#endif
 
 #include <pthread.h>
 
-#ifdef GFXSTREAM
+#if defined(HOST_BUILD) || defined(GFXSTREAM)
 
-thread_local EGLThreadInfo sEglThreadInfoThreadLocal;
+static thread_local EGLThreadInfo sEglThreadInfoThreadLocal;
 
 EGLThreadInfo *goldfish_get_egl_tls()
 {
@@ -33,7 +38,11 @@ EGLThreadInfo* getEGLThreadInfo() {
 }
 
 int32_t getCurrentThreadId() {
+#ifdef HOST_BUILD
+    return (int32_t)android::base::guest::getCurrentThreadId();
+#else
     return (int32_t)gettid();
+#endif
 }
 
 void setTlsDestructor(tlsDtorCallback func) {
