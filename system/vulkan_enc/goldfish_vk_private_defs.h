@@ -85,8 +85,6 @@ typedef VkResult (VKAPI_PTR *PFN_vkGetSwapchainGrallocUsage2ANDROID)(VkDevice de
 typedef VkResult (VKAPI_PTR *PFN_vkAcquireImageANDROID)(VkDevice device, VkImage image, int nativeFenceFd, VkSemaphore semaphore, VkFence fence);
 typedef VkResult (VKAPI_PTR *PFN_vkQueueSignalReleaseImageANDROID)(VkQueue queue, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, VkImage image, int* pNativeFenceFd);
 
-#define VK_GOOGLE_address_space 1
-
 typedef VkResult (VKAPI_PTR *PFN_vkMapMemoryIntoAddressSpaceGOOGLE)(VkDevice device, VkDeviceMemory memory, uint64_t* pAddress);
 
 #define VK_GOOGLE_color_buffer 1
@@ -122,11 +120,7 @@ typedef struct {
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterImageColorBufferGOOGLE)(VkDevice device, VkImage image, uint32_t colorBuffer);
 typedef VkResult (VKAPI_PTR *PFN_vkRegisterBufferColorBufferGOOGLE)(VkDevice device, VkBuffer image, uint32_t colorBuffer);
 
-#define VK_GOOGLE_address_space_info 1
-
 typedef VkResult (VKAPI_PTR *PFN_vkGetMemoryHostAddressInfoGOOGLE)(VkDevice device, VkDeviceMemory memory, uint64_t* pAddress, uint64_t* pSize);
-
-#define VK_GOOGLE_free_memory_sync 1
 
 typedef VkResult (VKAPI_PTR *PFN_vkFreeMemorySyncGOOGLE)(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocationCallbacks);
 
@@ -452,8 +446,6 @@ typedef void (VKAPI_PTR *PFN_vkCommandBufferHostSyncGOOGLE)(
     uint32_t needHostSync,
     uint32_t sequenceNumber);
 
-#define VK_GOOGLE_create_resources_with_requirements 1
-
 typedef void (VKAPI_PTR *PFN_vkCreateImageWithRequirementsGOOGLE)(
     VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkMemoryRequirements* pMemoryRequirements);
 
@@ -616,7 +608,7 @@ typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceFloat16Int8Fea
 
 #endif
 
-#define VK_GOOGLE_async_queue_submit 1
+#define VK_GOOGLE_gfxstream 1
 
 typedef void (VKAPI_PTR *PFN_vkQueueHostSyncGOOGLE)(
     VkQueue queue, uint32_t needHostSync, uint32_t sequenceNumber);
@@ -626,12 +618,10 @@ typedef void (VKAPI_PTR *PFN_vkQueueWaitIdleAsyncGOOGLE)(VkQueue queue);
 typedef void (VKAPI_PTR *PFN_vkQueueBindSparseAsyncGOOGLE)(
     VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence);
 
-#define VK_GOOGLE_linear_image_layout 1
-
 typedef VkResult (VKAPI_PTR *PFN_vkGetLinearImageLayoutGOOGLE)(VkDevice device, VkFormat format, VkDeviceSize* pOffset, VkDeviceSize* pRowPitchAlignment);
 
-#define VK_GOOGLE_queue_submit_with_commands 1
 typedef void (VKAPI_PTR *PFN_vkQueueFlushCommandsGOOGLE)(VkQueue queue, VkDeviceSize dataSize, const void* pData);
+typedef void (VKAPI_PTR *PFN_vkQueueCommitDescriptorSetUpdatesGOOGLE)(VkQueue queue, uint32_t descriptorPoolCount, const VkDescriptorPool* pDescriptorPools, uint32_t descriptorSetCount, const VkDescriptorSetLayout* pDescriptorSetLayouts, const uint64_t* pDescriptorSetPoolIds, const uint32_t* pDescriptorSetWhichPool, const uint32_t* pDescriptorSetPendingAllocation, const uint32_t* pDescriptorWriteStartingIndices, uint32_t pendingDescriptorWriteCount, const VkWriteDescriptorSet* pPendingDescriptorWrites);
 
 #ifdef __cplusplus
 } // extern "C"
@@ -643,6 +633,12 @@ template<class T, typename F>
 bool arrayany(const T* arr, uint32_t begin, uint32_t end, const F& func) {
     const T* e = arr + end;
     return std::find_if(arr + begin, e, func) != e;
+}
+
+#define DEFINE_ALIAS_FUNCTION(ORIGINAL_FN, ALIAS_FN) \
+template <typename... Args> \
+inline auto ALIAS_FN(Args&&... args) -> decltype(ORIGINAL_FN(std::forward<Args>(args)...)) { \
+  return ORIGINAL_FN(std::forward<Args>(args)...); \
 }
 
 #endif
