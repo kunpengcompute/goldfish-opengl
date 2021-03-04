@@ -286,11 +286,23 @@ public:
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo);
+    VkResult on_vkSetBufferCollectionImageConstraintsFUCHSIA(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo);
     VkResult on_vkGetBufferCollectionPropertiesFUCHSIA(
         void* context, VkResult input_result,
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         VkBufferCollectionPropertiesFUCHSIA* pProperties);
+    VkResult on_vkGetBufferCollectionProperties2FUCHSIA(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        VkBufferCollectionProperties2FUCHSIA* pProperties);
 #endif
 
     VkResult on_vkGetAndroidHardwareBufferPropertiesANDROID(
@@ -486,6 +498,18 @@ public:
         const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo,
         VkImageFormatProperties2* pImageFormatProperties);
 
+    void on_vkGetPhysicalDeviceExternalSemaphoreProperties(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+        VkExternalSemaphoreProperties* pExternalSemaphoreProperties);
+
+    void on_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
+        void* context,
+        VkPhysicalDevice physicalDevice,
+        const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+        VkExternalSemaphoreProperties* pExternalSemaphoreProperties);
+
     void registerEncoderCleanupCallback(const VkEncoder* encoder, void* handle, CleanupCallback callback);
     void unregisterEncoderCleanupCallback(const VkEncoder* encoder, void* handle);
     void onEncoderDeleted(const VkEncoder* encoder);
@@ -517,6 +541,23 @@ public:
         VkCommandBuffer commandBuffer,
         uint32_t commandBufferCount,
         const VkCommandBuffer* pCommandBuffers);
+
+    void on_vkCmdBindDescriptorSets(
+        void* context,
+        VkCommandBuffer commandBuffer,
+        VkPipelineBindPoint pipelineBindPoint,
+        VkPipelineLayout layout,
+        uint32_t firstSet,
+        uint32_t descriptorSetCount,
+        const VkDescriptorSet* pDescriptorSets,
+        uint32_t dynamicOffsetCount,
+        const uint32_t* pDynamicOffsets);
+
+    void on_vkDestroyDescriptorSetLayout(
+        void* context,
+        VkDevice device,
+        VkDescriptorSetLayout descriptorSetLayout,
+        const VkAllocationCallbacks* pAllocator);
 
     bool isMemoryTypeHostVisible(VkDevice device, uint32_t typeIndex) const;
     uint8_t* getMappedPointer(VkDeviceMemory memory);
@@ -560,13 +601,20 @@ public:
         uint32_t* typeIndex, uint32_t typeIndexCount,
         uint32_t* typeBits, uint32_t typeBitsCount);
 
-#define DEFINE_TRANSFORMED_TYPE_PROTOTYPE(type) \
-    void transformImpl_##type##_tohost(const type*, uint32_t); \
-    void transformImpl_##type##_fromhost(const type*, uint32_t); \
+    void transformImpl_VkExternalMemoryProperties_fromhost(
+        VkExternalMemoryProperties* pProperties,
+        uint32_t);
+    void transformImpl_VkExternalMemoryProperties_tohost(
+        VkExternalMemoryProperties* pProperties,
+        uint32_t);
 
-LIST_TRANSFORMED_TYPES(DEFINE_TRANSFORMED_TYPE_PROTOTYPE)
+#define DEFINE_TRANSFORMED_TYPE_PROTOTYPE(type)          \
+    void transformImpl_##type##_tohost(type*, uint32_t); \
+    void transformImpl_##type##_fromhost(type*, uint32_t);
 
-  private:
+    LIST_TRIVIAL_TRANSFORMED_TYPES(DEFINE_TRANSFORMED_TYPE_PROTOTYPE)
+
+private:
     class Impl;
     std::unique_ptr<Impl> mImpl;
 };

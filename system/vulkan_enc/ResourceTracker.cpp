@@ -17,6 +17,7 @@
 
 #include "Resources.h"
 #include "CommandBufferStagingStream.h"
+#include "DescriptorSetVirtualization.h"
 
 #include "android/base/Optional.h"
 #include "android/base/threads/AndroidWorkPool.h"
@@ -403,21 +404,33 @@ public:
     };
 
     struct VkDescriptorPool_Info {
-        std::unordered_set<VkDescriptorSet> allocedSets;
-        VkDescriptorPoolCreateFlags createFlags;
+        uint32_t unused;
     };
 
     struct VkDescriptorSet_Info {
-        VkDescriptorPool pool;
-        std::vector<bool> bindingIsImmutableSampler;
+        uint32_t unused;
     };
 
     struct VkDescriptorSetLayout_Info {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        uint32_t unused;
     };
 
     struct VkCommandPool_Info {
         uint32_t unused;
+    };
+
+    struct VkBufferCollectionFUCHSIA_Info {
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        android::base::Optional<
+            llcpp::fuchsia::sysmem::BufferCollectionConstraints>
+            constraints;
+        android::base::Optional<VkBufferCollectionProperties2FUCHSIA>
+            properties;
+
+        // the index of corresponding createInfo for each image format
+        // constraints in |constraints|.
+        std::vector<uint32_t> createInfoIndex;
+#endif  // VK_USE_PLATFORM_FUCHSIA
     };
 
 #define HANDLE_REGISTER_IMPL_IMPL(type) \
@@ -466,7 +479,7 @@ public:
     }
 
     void unregister_VkCommandBuffer(VkCommandBuffer commandBuffer) {
-        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */);
+        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */, true /* also clear pending descriptor sets */);
 
         struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
         if (!cb) return;
@@ -477,6 +490,11 @@ public:
             eraseObject(&p->subObjects, (void*)cb);
         });
         eraseObjects(&cb->poolObjects);
+
+        if (cb->userPtr) {
+            CommandBufferPendingDescriptorSets* pendingSets = (CommandBufferPendingDescriptorSets*)cb->userPtr;
+            delete pendingSets;
+        }
 
         AutoLock lock(mLock);
         info_VkCommandBuffer.erase(commandBuffer);
@@ -554,6 +572,12 @@ public:
             zx_handle_close(semInfo.eventHandle);
         }
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        if (semInfo.syncFd >= 0) {
+            close(semInfo.syncFd);
+        }
+#endif
+
         info_VkSemaphore.erase(sem);
     }
 
@@ -598,66 +622,91 @@ public:
         info_VkFence.erase(fence);
     }
 
+#ifdef VK_USE_PLATFORM_FUCHSIA
+    void unregister_VkBufferCollectionFUCHSIA(
+        VkBufferCollectionFUCHSIA collection) {
+        AutoLock lock(mLock);
+        info_VkBufferCollectionFUCHSIA.erase(collection);
+    }
+#endif
+
     void unregister_VkDescriptorSet_locked(VkDescriptorSet set) {
-        auto it = info_VkDescriptorSet.find(set);
-        if (it == info_VkDescriptorSet.end()) return;
-
-        const auto& setInfo = it->second;
-
-        auto poolIt = info_VkDescriptorPool.find(setInfo.pool);
-
+        struct goldfish_VkDescriptorSet* ds = as_goldfish_VkDescriptorSet(set);
+        delete ds->reified;
         info_VkDescriptorSet.erase(set);
-
-        if (poolIt == info_VkDescriptorPool.end()) return;
-
-        auto& poolInfo = poolIt->second;
-        poolInfo.allocedSets.erase(set);
     }
 
     void unregister_VkDescriptorSet(VkDescriptorSet set) {
+        if (!set) return;
+
         AutoLock lock(mLock);
         unregister_VkDescriptorSet_locked(set);
     }
 
     void unregister_VkDescriptorSetLayout(VkDescriptorSetLayout setLayout) {
+        if (!setLayout) return;
+
         AutoLock lock(mLock);
+        delete as_goldfish_VkDescriptorSetLayout(setLayout)->layoutInfo;
         info_VkDescriptorSetLayout.erase(setLayout);
     }
 
-    void initDescriptorSetStateLocked(const VkDescriptorSetAllocateInfo* ci, const VkDescriptorSet* sets) {
-        auto it = info_VkDescriptorPool.find(ci->descriptorPool);
-        if (it == info_VkDescriptorPool.end()) return;
+    VkResult allocAndInitializeDescriptorSets(
+        void* context,
+        VkDevice device,
+        const VkDescriptorSetAllocateInfo* ci,
+        VkDescriptorSet* sets) {
 
-        auto& info = it->second;
-        for (uint32_t i = 0; i < ci->descriptorSetCount; ++i) {
-            info.allocedSets.insert(sets[i]);
+        if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
+            // Using the pool ID's we collected earlier from the host
+            VkResult poolAllocResult = validateAndApplyVirtualDescriptorSetAllocation(ci, sets);
 
-            auto setIt = info_VkDescriptorSet.find(sets[i]);
-            if (setIt == info_VkDescriptorSet.end()) continue;
+            if (poolAllocResult != VK_SUCCESS) return poolAllocResult;
 
-            auto& setInfo = setIt->second;
-            setInfo.pool = ci->descriptorPool;
+            for (uint32_t i = 0; i < ci->descriptorSetCount; ++i) {
+                register_VkDescriptorSet(sets[i]);
+                VkDescriptorSetLayout setLayout = as_goldfish_VkDescriptorSet(sets[i])->reified->setLayout;
 
-            VkDescriptorSetLayout setLayout = ci->pSetLayouts[i];
-            auto layoutIt = info_VkDescriptorSetLayout.find(setLayout);
-            if (layoutIt == info_VkDescriptorSetLayout.end()) continue;
+                // Need to add ref to the set layout in the virtual case
+                // because the set itself might not be realized on host at the
+                // same time
+                struct goldfish_VkDescriptorSetLayout* dsl = as_goldfish_VkDescriptorSetLayout(setLayout);
+                ++dsl->layoutInfo->refcount;
+            }
+        } else {
+            // Pass through and use host allocation
+            VkEncoder* enc = (VkEncoder*)context;
+            VkResult allocRes = enc->vkAllocateDescriptorSets(device, ci, sets, true /* do lock */);
 
-            const auto& layoutInfo = layoutIt->second;
-            for (size_t i = 0; i < layoutInfo.bindings.size(); ++i) {
-                // Bindings can be sparsely defined
-                const auto& binding = layoutInfo.bindings[i];
-                uint32_t bindingIndex = binding.binding;
-                if (setInfo.bindingIsImmutableSampler.size() <= bindingIndex) {
-                    setInfo.bindingIsImmutableSampler.resize(bindingIndex + 1, false);
-                }
-                setInfo.bindingIsImmutableSampler[bindingIndex] =
-                    binding.descriptorCount > 0 &&
-                     (binding.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER ||
-                      binding.descriptorType ==
-                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) &&
-                    binding.pImmutableSamplers;
+            if (allocRes != VK_SUCCESS) return allocRes;
+
+            for (uint32_t i = 0; i < ci->descriptorSetCount; ++i) {
+                applyDescriptorSetAllocation(ci->descriptorPool, ci->pSetLayouts[i]);
+                fillDescriptorSetInfoForPool(ci->descriptorPool, ci->pSetLayouts[i], sets[i]);
             }
         }
+
+        return VK_SUCCESS;
+    }
+
+    VkDescriptorImageInfo createImmutableSamplersFilteredImageInfo(
+        VkDescriptorType descType,
+        VkDescriptorSet descSet,
+        uint32_t binding,
+        const VkDescriptorImageInfo* pImageInfo) {
+
+        VkDescriptorImageInfo res = *pImageInfo;
+
+        if (descType != VK_DESCRIPTOR_TYPE_SAMPLER &&
+            descType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) return res;
+
+        bool immutableSampler = as_goldfish_VkDescriptorSet(descSet)->reified->bindingIsImmutableSampler[binding];
+
+        if (!immutableSampler) return res;
+
+        res.sampler = 0;
+
+        return res;
     }
 
     VkWriteDescriptorSet
@@ -672,18 +721,8 @@ public:
         if  (descriptorWrite->descriptorType != VK_DESCRIPTOR_TYPE_SAMPLER &&
              descriptorWrite->descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) return res;
 
-        VkDescriptorSet set = descriptorWrite->dstSet;
-        auto descSetIt = info_VkDescriptorSet.find(set);
-        if (descSetIt == info_VkDescriptorSet.end()) {
-            ALOGE("%s: error: descriptor set 0x%llx not found\n", __func__,
-                  (unsigned long long)set);
-            return res;
-        }
-
-        const auto& descInfo = descSetIt->second;
-        uint32_t binding = descriptorWrite->dstBinding;
-
-        bool immutableSampler = descInfo.bindingIsImmutableSampler[binding];
+        bool immutableSampler =
+            as_goldfish_VkDescriptorSet(descriptorWrite->dstSet)->reified->bindingIsImmutableSampler[descriptorWrite->dstBinding];
 
         if (!immutableSampler) return res;
 
@@ -698,55 +737,47 @@ public:
         return res;
     }
 
-    // Also unregisters underlying descriptor sets
-    // and deletes their guest-side wrapped handles.
-    void clearDescriptorPoolLocked(VkDescriptorPool pool) {
-        auto it = info_VkDescriptorPool.find(pool);
-        if (it == info_VkDescriptorPool.end()) return;
-
-        std::vector<VkDescriptorSet> toClear;
-        for (auto set : it->second.allocedSets) {
-            toClear.push_back(set);
+    void freeDescriptorSetsIfHostAllocated(VkEncoder* enc, VkDevice device, uint32_t descriptorSetCount, const VkDescriptorSet* sets) {
+        for (uint32_t i = 0; i < descriptorSetCount; ++i) {
+            struct goldfish_VkDescriptorSet* ds = as_goldfish_VkDescriptorSet(sets[i]);
+            if (ds->reified->allocationPending) {
+                unregister_VkDescriptorSet(sets[i]);
+                delete_goldfish_VkDescriptorSet(sets[i]);
+            } else {
+                enc->vkFreeDescriptorSets(device, ds->reified->pool, 1, &sets[i], false /* no lock */);
+            }
         }
+    }
+
+    void clearDescriptorPoolAndUnregisterDescriptorSets(void* context, VkDevice device, VkDescriptorPool pool) {
+
+        std::vector<VkDescriptorSet> toClear =
+            clearDescriptorPool(pool, mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate);
 
         for (auto set : toClear) {
-            unregister_VkDescriptorSet_locked(set);
+            if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
+                VkDescriptorSetLayout setLayout = as_goldfish_VkDescriptorSet(set)->reified->setLayout;
+                decDescriptorSetLayoutRef(context, device, setLayout, nullptr);
+            }
+            unregister_VkDescriptorSet(set);
             delete_goldfish_VkDescriptorSet(set);
         }
     }
 
     void unregister_VkDescriptorPool(VkDescriptorPool pool) {
+        if (!pool) return;
+
         AutoLock lock(mLock);
-        clearDescriptorPoolLocked(pool);
+
+        struct goldfish_VkDescriptorPool* dp = as_goldfish_VkDescriptorPool(pool);
+        delete dp->allocInfo;
+
         info_VkDescriptorPool.erase(pool);
     }
 
     bool descriptorPoolSupportsIndividualFreeLocked(VkDescriptorPool pool) {
-        auto it = info_VkDescriptorPool.find(pool);
-        if (it == info_VkDescriptorPool.end()) return false;
-
-        const auto& info = it->second;
-
-        return VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT &
-            info.createFlags;
-    }
-
-    bool descriptorSetReallyAllocedFromPoolLocked(VkDescriptorSet set, VkDescriptorPool pool) {
-        auto it = info_VkDescriptorSet.find(set);
-        if (it == info_VkDescriptorSet.end()) return false;
-
-        const auto& info = it->second;
-
-        if (pool != info.pool) return false;
-
-        auto poolIt = info_VkDescriptorPool.find(info.pool);
-        if (poolIt == info_VkDescriptorPool.end()) return false;
-
-        const auto& poolInfo = poolIt->second;
-
-        if (poolInfo.allocedSets.find(set) == poolInfo.allocedSets.end()) return false;
-
-        return true;
+        return as_goldfish_VkDescriptorPool(pool)->allocInfo->createFlags &
+            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     }
 
     static constexpr uint32_t kDefaultApiVersion = VK_MAKE_VERSION(1, 1, 0);
@@ -893,7 +924,8 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         if (mFeatureInfo->hasVulkan) {
-            zx::channel channel(GetConnectToServiceFunction()("/dev/class/goldfish-control/000"));
+            fidl::ClientEnd<llcpp::fuchsia::hardware::goldfish::ControlDevice> channel{
+                zx::channel(GetConnectToServiceFunction()("/dev/class/goldfish-control/000"))};
             if (!channel) {
                 ALOGE("failed to open control device");
                 abort();
@@ -902,7 +934,8 @@ public:
                 llcpp::fuchsia::hardware::goldfish::ControlDevice::SyncClient>(
                 std::move(channel));
 
-            zx::channel sysmem_channel(GetConnectToServiceFunction()("/svc/fuchsia.sysmem.Allocator"));
+            fidl::ClientEnd<llcpp::fuchsia::sysmem::Allocator> sysmem_channel{
+                zx::channel(GetConnectToServiceFunction()("/svc/fuchsia.sysmem.Allocator"))};
             if (!sysmem_channel) {
                 ALOGE("failed to open sysmem connection");
             }
@@ -1106,6 +1139,25 @@ public:
         }
     }
 
+    void transformImpl_VkExternalMemoryProperties_fromhost(
+        VkExternalMemoryProperties* pProperties,
+        uint32_t) {
+        VkExternalMemoryHandleTypeFlags supportedHandleType = 0u;
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        supportedHandleType |=
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA;
+#endif  // VK_USE_PLATFORM_FUCHSIA
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        supportedHandleType |=
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT |
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+#endif  // VK_USE_PLATFORM_ANDROID_KHR
+        if (supportedHandleType) {
+            pProperties->compatibleHandleTypes &= supportedHandleType;
+            pProperties->exportFromImportedHandleTypes &= supportedHandleType;
+        }
+    }
+
     VkResult on_vkEnumerateInstanceExtensionProperties(
         void* context,
         VkResult,
@@ -1120,8 +1172,6 @@ public:
             "VK_KHR_external_memory_capabilities",
             "VK_KHR_external_fence_capabilities",
 #endif
-            // TODO:
-            // VK_KHR_external_memory_capabilities
         };
 
         VkEncoder* enc = (VkEncoder*)context;
@@ -1218,6 +1268,7 @@ public:
             "VK_KHR_image_format_list",
             "VK_KHR_sampler_ycbcr_conversion",
             "VK_KHR_shader_float16_int8",
+            "VK_KHR_timeline_semaphore",
             "VK_AMD_gpu_shader_half_float",
             "VK_NV_shader_subgroup_partitioned",
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -1228,8 +1279,6 @@ public:
             "VK_KHR_external_fence",
             "VK_KHR_external_fence_fd",
 #endif
-            // TODO:
-            // VK_KHR_external_memory_capabilities
         };
 
         VkEncoder* enc = (VkEncoder*)context;
@@ -1691,8 +1740,19 @@ public:
         VkExternalMemoryHandleTypeFlagBits handleType,
         uint32_t handle,
         VkMemoryZirconHandlePropertiesFUCHSIA* pProperties) {
+        using llcpp::fuchsia::hardware::goldfish::MEMORY_PROPERTY_DEVICE_LOCAL;
+        using llcpp::fuchsia::hardware::goldfish::MEMORY_PROPERTY_HOST_VISIBLE;
+
         if (handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) {
             return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
+        zx_info_handle_basic_t handleInfo;
+        zx_status_t status = zx::unowned_vmo(handle)->get_info(
+            ZX_INFO_HANDLE_BASIC, &handleInfo, sizeof(handleInfo), nullptr,
+            nullptr);
+        if (status != ZX_OK || handleInfo.type != ZX_OBJ_TYPE_VMO) {
+            return VK_ERROR_INVALID_EXTERNAL_HANDLE;
         }
 
         AutoLock lock(mLock);
@@ -1705,11 +1765,49 @@ public:
 
         auto& info = deviceIt->second;
 
-        // Device local memory type supported.
+        zx::vmo vmo_dup;
+        status =
+            zx::unowned_vmo(handle)->duplicate(ZX_RIGHT_SAME_RIGHTS, &vmo_dup);
+        if (status != ZX_OK) {
+            ALOGE("zx_handle_duplicate() error: %d", status);
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
+        uint32_t memoryProperty = 0u;
+
+        auto result = mControlDevice->GetBufferHandleInfo(std::move(vmo_dup));
+        if (!result.ok()) {
+            ALOGE(
+                "mControlDevice->GetBufferHandleInfo fatal error: epitaph: %d",
+                result.status());
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+        if (result->result.is_response()) {
+            memoryProperty = result->result.response().info.memory_property();
+        } else if (result->result.err() == ZX_ERR_NOT_FOUND) {
+            // If an VMO is allocated while ColorBuffer/Buffer is not created,
+            // it must be a device-local buffer, since for host-visible buffers,
+            // ColorBuffer/Buffer is created at sysmem allocation time.
+            memoryProperty = MEMORY_PROPERTY_DEVICE_LOCAL;
+        } else {
+            // Importing read-only host memory into the Vulkan driver should not
+            // work, but it is not an error to try to do so. Returning a
+            // VkMemoryZirconHandlePropertiesFUCHSIA with no available
+            // memoryType bits should be enough for clients. See fxbug.dev/24225
+            // for other issues this this flow.
+            ALOGW("GetBufferHandleInfo failed: %d", result->result.err());
+            pProperties->memoryTypeBits = 0;
+            return VK_SUCCESS;
+        }
+
         pProperties->memoryTypeBits = 0;
         for (uint32_t i = 0; i < info.memProps.memoryTypeCount; ++i) {
-            if (info.memProps.memoryTypes[i].propertyFlags &
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+            if (((memoryProperty & MEMORY_PROPERTY_DEVICE_LOCAL) &&
+                 (info.memProps.memoryTypes[i].propertyFlags &
+                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) ||
+                ((memoryProperty & MEMORY_PROPERTY_HOST_VISIBLE) &&
+                 (info.memProps.memoryTypes[i].propertyFlags &
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))) {
                 pProperties->memoryTypeBits |= 1ull << i;
             }
         }
@@ -1848,6 +1946,7 @@ public:
                 std::move(collection_client));
         *pCollection = reinterpret_cast<VkBufferCollectionFUCHSIA>(sysmem_collection);
 
+        register_VkBufferCollectionFUCHSIA(*pCollection);
         return VK_SUCCESS;
     }
 
@@ -1861,18 +1960,35 @@ public:
             sysmem_collection->Close();
         }
         delete sysmem_collection;
+
+        unregister_VkBufferCollectionFUCHSIA(collection);
     }
 
-    inline llcpp::fuchsia::sysmem::BufferCollectionConstraints defaultBufferCollectionConstraints(
-        size_t min_size_bytes,
-        size_t buffer_count) {
+    inline llcpp::fuchsia::sysmem::BufferCollectionConstraints
+    defaultBufferCollectionConstraints(
+        size_t minSizeBytes,
+        size_t minBufferCount,
+        size_t maxBufferCount = 0u,
+        size_t minBufferCountForCamping = 0u,
+        size_t minBufferCountForDedicatedSlack = 0u,
+        size_t minBufferCountForSharedSlack = 0u) {
         llcpp::fuchsia::sysmem::BufferCollectionConstraints constraints = {};
-        constraints.min_buffer_count = buffer_count;
+        constraints.min_buffer_count = minBufferCount;
+        if (maxBufferCount > 0) {
+            constraints.max_buffer_count = maxBufferCount;
+        }
+        if (minBufferCountForCamping) {
+            constraints.min_buffer_count_for_camping = minBufferCountForCamping;
+        }
+        if (minBufferCountForSharedSlack) {
+            constraints.min_buffer_count_for_shared_slack =
+                minBufferCountForSharedSlack;
+        }
         constraints.has_buffer_memory_constraints = true;
         llcpp::fuchsia::sysmem::BufferMemoryConstraints& buffer_constraints =
             constraints.buffer_memory_constraints;
 
-        buffer_constraints.min_size_bytes = min_size_bytes;
+        buffer_constraints.min_size_bytes = minSizeBytes;
         buffer_constraints.max_size_bytes = 0xffffffff;
         buffer_constraints.physically_contiguous_required = false;
         buffer_constraints.secure_required = false;
@@ -1934,6 +2050,106 @@ public:
         return usage;
     }
 
+    static llcpp::fuchsia::sysmem::PixelFormatType vkFormatTypeToSysmem(
+        VkFormat format) {
+        switch (format) {
+            case VK_FORMAT_B8G8R8A8_SINT:
+            case VK_FORMAT_B8G8R8A8_UNORM:
+            case VK_FORMAT_B8G8R8A8_SRGB:
+            case VK_FORMAT_B8G8R8A8_SNORM:
+            case VK_FORMAT_B8G8R8A8_SSCALED:
+            case VK_FORMAT_B8G8R8A8_USCALED:
+                return llcpp::fuchsia::sysmem::PixelFormatType::BGRA32;
+            case VK_FORMAT_R8G8B8A8_SINT:
+            case VK_FORMAT_R8G8B8A8_UNORM:
+            case VK_FORMAT_R8G8B8A8_SRGB:
+            case VK_FORMAT_R8G8B8A8_SNORM:
+            case VK_FORMAT_R8G8B8A8_SSCALED:
+            case VK_FORMAT_R8G8B8A8_USCALED:
+                return llcpp::fuchsia::sysmem::PixelFormatType::R8G8B8A8;
+            case VK_FORMAT_R8_UNORM:
+            case VK_FORMAT_R8_UINT:
+            case VK_FORMAT_R8_USCALED:
+            case VK_FORMAT_R8_SNORM:
+            case VK_FORMAT_R8_SINT:
+            case VK_FORMAT_R8_SSCALED:
+            case VK_FORMAT_R8_SRGB:
+                return llcpp::fuchsia::sysmem::PixelFormatType::R8;
+            case VK_FORMAT_R8G8_UNORM:
+            case VK_FORMAT_R8G8_UINT:
+            case VK_FORMAT_R8G8_USCALED:
+            case VK_FORMAT_R8G8_SNORM:
+            case VK_FORMAT_R8G8_SINT:
+            case VK_FORMAT_R8G8_SSCALED:
+            case VK_FORMAT_R8G8_SRGB:
+                return llcpp::fuchsia::sysmem::PixelFormatType::R8G8;
+            default:
+                return llcpp::fuchsia::sysmem::PixelFormatType::INVALID;
+        }
+    }
+
+    static bool vkFormatMatchesSysmemFormat(
+        VkFormat vkFormat,
+        llcpp::fuchsia::sysmem::PixelFormatType sysmemFormat) {
+        switch (vkFormat) {
+            case VK_FORMAT_B8G8R8A8_SINT:
+            case VK_FORMAT_B8G8R8A8_UNORM:
+            case VK_FORMAT_B8G8R8A8_SRGB:
+            case VK_FORMAT_B8G8R8A8_SNORM:
+            case VK_FORMAT_B8G8R8A8_SSCALED:
+            case VK_FORMAT_B8G8R8A8_USCALED:
+                return sysmemFormat ==
+                       llcpp::fuchsia::sysmem::PixelFormatType::BGRA32;
+            case VK_FORMAT_R8G8B8A8_SINT:
+            case VK_FORMAT_R8G8B8A8_UNORM:
+            case VK_FORMAT_R8G8B8A8_SRGB:
+            case VK_FORMAT_R8G8B8A8_SNORM:
+            case VK_FORMAT_R8G8B8A8_SSCALED:
+            case VK_FORMAT_R8G8B8A8_USCALED:
+                return sysmemFormat ==
+                       llcpp::fuchsia::sysmem::PixelFormatType::R8G8B8A8;
+            case VK_FORMAT_R8_UNORM:
+            case VK_FORMAT_R8_UINT:
+            case VK_FORMAT_R8_USCALED:
+            case VK_FORMAT_R8_SNORM:
+            case VK_FORMAT_R8_SINT:
+            case VK_FORMAT_R8_SSCALED:
+            case VK_FORMAT_R8_SRGB:
+                return sysmemFormat ==
+                           llcpp::fuchsia::sysmem::PixelFormatType::R8 ||
+                       sysmemFormat ==
+                           llcpp::fuchsia::sysmem::PixelFormatType::L8;
+            case VK_FORMAT_R8G8_UNORM:
+            case VK_FORMAT_R8G8_UINT:
+            case VK_FORMAT_R8G8_USCALED:
+            case VK_FORMAT_R8G8_SNORM:
+            case VK_FORMAT_R8G8_SINT:
+            case VK_FORMAT_R8G8_SSCALED:
+            case VK_FORMAT_R8G8_SRGB:
+                return sysmemFormat ==
+                       llcpp::fuchsia::sysmem::PixelFormatType::R8G8;
+            default:
+                return false;
+        }
+    }
+
+    static VkFormat sysmemPixelFormatTypeToVk(
+        llcpp::fuchsia::sysmem::PixelFormatType format) {
+        switch (format) {
+            case llcpp::fuchsia::sysmem::PixelFormatType::BGRA32:
+                return VK_FORMAT_B8G8R8A8_SRGB;
+            case llcpp::fuchsia::sysmem::PixelFormatType::R8G8B8A8:
+                return VK_FORMAT_R8G8B8A8_SRGB;
+            case llcpp::fuchsia::sysmem::PixelFormatType::L8:
+            case llcpp::fuchsia::sysmem::PixelFormatType::R8:
+                return VK_FORMAT_R8_UNORM;
+            case llcpp::fuchsia::sysmem::PixelFormatType::R8G8:
+                return VK_FORMAT_R8G8_UNORM;
+            default:
+                return VK_FORMAT_UNDEFINED;
+        }
+    }
+
     VkResult setBufferCollectionConstraints(
         VkEncoder* enc, VkDevice device,
         llcpp::fuchsia::sysmem::BufferCollection::SyncClient* collection,
@@ -1943,144 +2159,322 @@ public:
             return VK_ERROR_OUT_OF_DEVICE_MEMORY;
         }
 
+        std::vector<VkImageCreateInfo> createInfos;
+        if (pImageInfo->format == VK_FORMAT_UNDEFINED) {
+            const auto kFormats = {
+                VK_FORMAT_B8G8R8A8_SRGB,
+                VK_FORMAT_R8G8B8A8_SRGB,
+            };
+            for (auto format : kFormats) {
+                // shallow copy, using pNext from pImageInfo directly.
+                auto createInfo = *pImageInfo;
+                createInfo.format = format;
+                createInfos.push_back(createInfo);
+            }
+        } else {
+            createInfos.push_back(*pImageInfo);
+        }
+
+        VkImageConstraintsInfoFUCHSIA imageConstraints;
+        imageConstraints.sType =
+            VK_STRUCTURE_TYPE_IMAGE_CONSTRAINTS_INFO_FUCHSIA;
+        imageConstraints.pNext = nullptr;
+        imageConstraints.createInfoCount = createInfos.size();
+        imageConstraints.pCreateInfos = createInfos.data();
+        imageConstraints.pFormatConstraints = nullptr;
+        imageConstraints.maxBufferCount = 0;
+        imageConstraints.minBufferCount = 1;
+        imageConstraints.minBufferCountForCamping = 0;
+        imageConstraints.minBufferCountForDedicatedSlack = 0;
+        imageConstraints.minBufferCountForSharedSlack = 0;
+        imageConstraints.flags = 0u;
+
+        return setBufferCollectionImageConstraints(enc, device, collection,
+                                                   &imageConstraints);
+    }
+
+    VkResult addImageBufferCollectionConstraints(
+        VkEncoder* enc,
+        VkDevice device,
+        VkPhysicalDevice physicalDevice,
+        const VkImageCreateInfo* createInfo,
+        const VkImageFormatConstraintsInfoFUCHSIA* formatConstraints,
+        VkImageTiling tiling,
+        llcpp::fuchsia::sysmem::BufferCollectionConstraints* constraints) {
+        // First check if the format, tiling and usage is supported on host.
+        VkImageFormatProperties imageFormatProperties;
+        auto result = enc->vkGetPhysicalDeviceImageFormatProperties(
+            physicalDevice, createInfo->format, createInfo->imageType, tiling,
+            createInfo->usage, createInfo->flags, &imageFormatProperties,
+            true /* do lock */);
+        if (result != VK_SUCCESS) {
+            ALOGW(
+                "%s: Image format (%u) type (%u) tiling (%u) "
+                "usage (%u) flags (%u) not supported by physical "
+                "device",
+                __func__, static_cast<uint32_t>(createInfo->format),
+                static_cast<uint32_t>(createInfo->imageType),
+                static_cast<uint32_t>(tiling),
+                static_cast<uint32_t>(createInfo->usage),
+                static_cast<uint32_t>(createInfo->flags));
+            return VK_ERROR_FORMAT_NOT_SUPPORTED;
+        }
+
+        // Check if format constraints contains unsupported format features.
+        if (formatConstraints) {
+            VkFormatProperties formatProperties;
+            enc->vkGetPhysicalDeviceFormatProperties(
+                physicalDevice, createInfo->format, &formatProperties,
+                true /* do lock */);
+
+            auto supportedFeatures =
+                (tiling == VK_IMAGE_TILING_LINEAR)
+                    ? formatProperties.linearTilingFeatures
+                    : formatProperties.optimalTilingFeatures;
+            auto requiredFeatures = formatConstraints->requiredFormatFeatures;
+            if ((~supportedFeatures) & requiredFeatures) {
+                ALOGW(
+                    "%s: Host device support features for %s tiling: %08x, "
+                    "required features: %08x, feature bits %08x missing",
+                    __func__,
+                    tiling == VK_IMAGE_TILING_LINEAR ? "LINEAR" : "OPTIMAL",
+                    static_cast<uint32_t>(requiredFeatures),
+                    static_cast<uint32_t>(supportedFeatures),
+                    static_cast<uint32_t>((~supportedFeatures) &
+                                          requiredFeatures));
+                return VK_ERROR_FORMAT_NOT_SUPPORTED;
+            }
+        }
+
+        llcpp::fuchsia::sysmem::ImageFormatConstraints imageConstraints;
+        if (formatConstraints && formatConstraints->sysmemFormat != 0) {
+            auto pixelFormat =
+                static_cast<llcpp::fuchsia::sysmem::PixelFormatType>(
+                    formatConstraints->sysmemFormat);
+            if (createInfo->format != VK_FORMAT_UNDEFINED &&
+                !vkFormatMatchesSysmemFormat(createInfo->format, pixelFormat)) {
+                ALOGW("%s: VkFormat %u doesn't match sysmem pixelFormat %lu",
+                      __func__, static_cast<uint32_t>(createInfo->format),
+                      formatConstraints->sysmemFormat);
+                return VK_ERROR_FORMAT_NOT_SUPPORTED;
+            }
+            imageConstraints.pixel_format.type = pixelFormat;
+        } else {
+            auto pixel_format = vkFormatTypeToSysmem(createInfo->format);
+            if (pixel_format ==
+                llcpp::fuchsia::sysmem::PixelFormatType::INVALID) {
+                ALOGW("%s: Unsupported VkFormat %u", __func__,
+                      static_cast<uint32_t>(createInfo->format));
+                return VK_ERROR_FORMAT_NOT_SUPPORTED;
+            }
+            imageConstraints.pixel_format.type = pixel_format;
+        }
+
+        if (!formatConstraints || formatConstraints->colorSpaceCount == 0u) {
+            imageConstraints.color_spaces_count = 1;
+            imageConstraints.color_space[0].type =
+                llcpp::fuchsia::sysmem::ColorSpaceType::SRGB;
+        } else {
+            imageConstraints.color_spaces_count =
+                formatConstraints->colorSpaceCount;
+            for (size_t i = 0; i < formatConstraints->colorSpaceCount; i++) {
+                imageConstraints.color_space[0].type =
+                    static_cast<llcpp::fuchsia::sysmem::ColorSpaceType>(
+                        formatConstraints->pColorSpaces[i].colorSpace);
+            }
+        }
+
+        // Get row alignment from host GPU.
+        VkDeviceSize offset;
+        VkDeviceSize rowPitchAlignment;
+        enc->vkGetLinearImageLayoutGOOGLE(device, createInfo->format, &offset,
+                                          &rowPitchAlignment,
+                                          true /* do lock */);
+        ALOGD(
+            "vkGetLinearImageLayoutGOOGLE: format %d offset %lu "
+            "rowPitchAlignment = %lu",
+            (int)createInfo->format, offset, rowPitchAlignment);
+
+        imageConstraints.min_coded_width = createInfo->extent.width;
+        imageConstraints.max_coded_width = 0xfffffff;
+        imageConstraints.min_coded_height = createInfo->extent.height;
+        imageConstraints.max_coded_height = 0xffffffff;
+        // The min_bytes_per_row can be calculated by sysmem using
+        // |min_coded_width|, |bytes_per_row_divisor| and color format.
+        imageConstraints.min_bytes_per_row = 0;
+        imageConstraints.max_bytes_per_row = 0xffffffff;
+        imageConstraints.max_coded_width_times_coded_height = 0xffffffff;
+
+        imageConstraints.layers = 1;
+        imageConstraints.coded_width_divisor = 1;
+        imageConstraints.coded_height_divisor = 1;
+        imageConstraints.bytes_per_row_divisor = rowPitchAlignment;
+        imageConstraints.start_offset_divisor = 1;
+        imageConstraints.display_width_divisor = 1;
+        imageConstraints.display_height_divisor = 1;
+        imageConstraints.pixel_format.has_format_modifier = true;
+        imageConstraints.pixel_format.format_modifier.value =
+            (tiling == VK_IMAGE_TILING_LINEAR)
+                ? llcpp::fuchsia::sysmem::FORMAT_MODIFIER_LINEAR
+                : llcpp::fuchsia::sysmem::
+                      FORMAT_MODIFIER_GOOGLE_GOLDFISH_OPTIMAL;
+
+        constraints->image_format_constraints
+            [constraints->image_format_constraints_count++] =
+            std::move(imageConstraints);
+        return VK_SUCCESS;
+    }
+
+    VkResult setBufferCollectionImageConstraints(
+        VkEncoder* enc,
+        VkDevice device,
+        llcpp::fuchsia::sysmem::BufferCollection::SyncClient* collection,
+        const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
+        if (!pImageConstraintsInfo ||
+            pImageConstraintsInfo->sType !=
+                VK_STRUCTURE_TYPE_IMAGE_CONSTRAINTS_INFO_FUCHSIA) {
+            ALOGE("%s: invalid pImageConstraintsInfo", __func__);
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
+        if (pImageConstraintsInfo->createInfoCount == 0) {
+            ALOGE("%s: createInfoCount must be greater than 0", __func__);
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
         llcpp::fuchsia::sysmem::BufferCollectionConstraints constraints =
             defaultBufferCollectionConstraints(
-                /* min_size_bytes */ 0, /* buffer_count */ 1u);
+                /* min_size_bytes */ 0, pImageConstraintsInfo->minBufferCount,
+                pImageConstraintsInfo->maxBufferCount,
+                pImageConstraintsInfo->minBufferCountForCamping,
+                pImageConstraintsInfo->minBufferCountForDedicatedSlack,
+                pImageConstraintsInfo->minBufferCountForSharedSlack);
 
-        constraints.usage.vulkan =
-            getBufferCollectionConstraintsVulkanImageUsage(pImageInfo);
+        std::vector<llcpp::fuchsia::sysmem::ImageFormatConstraints>
+            format_constraints;
 
-        // Set image format constraints for VkImage allocation.
-        if (pImageInfo) {
-            std::vector<VkFormat> formats{pImageInfo->format};
-            if (pImageInfo->format == VK_FORMAT_UNDEFINED) {
-                // This is a hack to allow the client to say it supports every
-                // vulkan format the driver does. TODO(fxb/13247): Modify this
-                // function to take a list of vulkan formats to use.
-                formats = std::vector<VkFormat>{
-                        VK_FORMAT_B8G8R8A8_UNORM,
-                        VK_FORMAT_R8G8B8A8_UNORM,
-                };
-            } else {
-                // If image format is predefined, check on host if the format,
-                // tiling and usage is supported.
-                VkPhysicalDevice physicalDevice;
-                {
-                    AutoLock lock(mLock);
-                    auto deviceIt = info_VkDevice.find(device);
-                    if (deviceIt == info_VkDevice.end()) {
-                        return VK_ERROR_INITIALIZATION_FAILED;
-                    }
-                    physicalDevice = deviceIt->second.physdev;
-                }
+        VkPhysicalDevice physicalDevice;
+        {
+            AutoLock lock(mLock);
+            auto deviceIt = info_VkDevice.find(device);
+            if (deviceIt == info_VkDevice.end()) {
+                return VK_ERROR_INITIALIZATION_FAILED;
+            }
+            physicalDevice = deviceIt->second.physdev;
+        }
 
-                VkImageFormatProperties format_properties;
-                auto result = enc->vkGetPhysicalDeviceImageFormatProperties(
-                    physicalDevice, pImageInfo->format, pImageInfo->imageType,
-                    pImageInfo->tiling, pImageInfo->usage, pImageInfo->flags,
-                    &format_properties, true /* do lock */);
-                if (result != VK_SUCCESS) {
-                    ALOGE(
-                        "%s: Image format (%u) type (%u) tiling (%u) "
-                        "usage (%u) flags (%u) not supported by physical "
-                        "device",
-                        __func__, static_cast<uint32_t>(pImageInfo->format),
-                        static_cast<uint32_t>(pImageInfo->imageType),
-                        static_cast<uint32_t>(pImageInfo->tiling),
-                        static_cast<uint32_t>(pImageInfo->usage),
-                        static_cast<uint32_t>(pImageInfo->flags));
-                    return VK_ERROR_FORMAT_NOT_SUPPORTED;
+        std::vector<uint32_t> createInfoIndex;
+
+        bool hasOptimalTiling = false;
+        for (uint32_t i = 0; i < pImageConstraintsInfo->createInfoCount; i++) {
+            const VkImageCreateInfo* createInfo =
+                &pImageConstraintsInfo->pCreateInfos[i];
+            const VkImageFormatConstraintsInfoFUCHSIA* formatConstraints =
+                pImageConstraintsInfo->pFormatConstraints
+                    ? &pImageConstraintsInfo->pFormatConstraints[i]
+                    : nullptr;
+
+            // add ImageFormatConstraints for *optimal* tiling
+            VkResult optimalResult = VK_ERROR_FORMAT_NOT_SUPPORTED;
+            if (createInfo->tiling == VK_IMAGE_TILING_OPTIMAL) {
+                optimalResult = addImageBufferCollectionConstraints(
+                    enc, device, physicalDevice, createInfo, formatConstraints,
+                    VK_IMAGE_TILING_OPTIMAL, &constraints);
+                if (optimalResult == VK_SUCCESS) {
+                    createInfoIndex.push_back(i);
+                    hasOptimalTiling = true;
                 }
             }
-            constraints.image_format_constraints_count = formats.size();
-            uint32_t format_index = 0;
-            for (VkFormat format : formats) {
-                // Get row alignment from host GPU.
-                VkDeviceSize offset;
-                VkDeviceSize rowPitchAlignment;
-                enc->vkGetLinearImageLayoutGOOGLE(device, format, &offset, &rowPitchAlignment, true /* do lock */);
 
-                ALOGD("vkGetLinearImageLayoutGOOGLE: format %d offset %lu rowPitchAlignment = %lu",
-                    (int)format, offset, rowPitchAlignment);
-
-                llcpp::fuchsia::sysmem::ImageFormatConstraints&
-                    image_constraints =
-                        constraints.image_format_constraints[format_index++];
-                switch (format) {
-                    case VK_FORMAT_B8G8R8A8_SINT:
-                    case VK_FORMAT_B8G8R8A8_UNORM:
-                    case VK_FORMAT_B8G8R8A8_SRGB:
-                    case VK_FORMAT_B8G8R8A8_SNORM:
-                    case VK_FORMAT_B8G8R8A8_SSCALED:
-                    case VK_FORMAT_B8G8R8A8_USCALED:
-                        image_constraints.pixel_format.type =
-                            llcpp::fuchsia::sysmem::PixelFormatType::BGRA32;
-                        break;
-                    case VK_FORMAT_R8G8B8A8_SINT:
-                    case VK_FORMAT_R8G8B8A8_UNORM:
-                    case VK_FORMAT_R8G8B8A8_SRGB:
-                    case VK_FORMAT_R8G8B8A8_SNORM:
-                    case VK_FORMAT_R8G8B8A8_SSCALED:
-                    case VK_FORMAT_R8G8B8A8_USCALED:
-                        image_constraints.pixel_format.type =
-                            llcpp::fuchsia::sysmem::PixelFormatType::R8G8B8A8;
-                        break;
-                    case VK_FORMAT_R8_UNORM:
-                    case VK_FORMAT_R8_UINT:
-                    case VK_FORMAT_R8_USCALED:
-                    case VK_FORMAT_R8_SNORM:
-                    case VK_FORMAT_R8_SINT:
-                    case VK_FORMAT_R8_SSCALED:
-                    case VK_FORMAT_R8_SRGB:
-                        image_constraints.pixel_format.type =
-                            llcpp::fuchsia::sysmem::PixelFormatType::R8;
-                        break;
-                    case VK_FORMAT_R8G8_UNORM:
-                    case VK_FORMAT_R8G8_UINT:
-                    case VK_FORMAT_R8G8_USCALED:
-                    case VK_FORMAT_R8G8_SNORM:
-                    case VK_FORMAT_R8G8_SINT:
-                    case VK_FORMAT_R8G8_SSCALED:
-                    case VK_FORMAT_R8G8_SRGB:
-                        image_constraints.pixel_format.type =
-                            llcpp::fuchsia::sysmem::PixelFormatType::R8G8;
-                        break;
-                    default:
-                        return VK_ERROR_FORMAT_NOT_SUPPORTED;
-                }
-                image_constraints.color_spaces_count = 1;
-                image_constraints.color_space[0].type =
-                    llcpp::fuchsia::sysmem::ColorSpaceType::SRGB;
-                image_constraints.min_coded_width = pImageInfo->extent.width;
-                image_constraints.max_coded_width = 0xfffffff;
-                image_constraints.min_coded_height = pImageInfo->extent.height;
-                image_constraints.max_coded_height = 0xffffffff;
-                // The min_bytes_per_row can be calculated by sysmem using
-                // |min_coded_width|, |bytes_per_row_divisor| and color format.
-                image_constraints.min_bytes_per_row = 0;
-                image_constraints.max_bytes_per_row = 0xffffffff;
-                image_constraints.max_coded_width_times_coded_height =
-                        0xffffffff;
-                image_constraints.layers = 1;
-                image_constraints.coded_width_divisor = 1;
-                image_constraints.coded_height_divisor = 1;
-                image_constraints.bytes_per_row_divisor = rowPitchAlignment;
-                image_constraints.start_offset_divisor = 1;
-                image_constraints.display_width_divisor = 1;
-                image_constraints.display_height_divisor = 1;
+            // Add ImageFormatConstraints for *linear* tiling
+            VkResult linearResult = addImageBufferCollectionConstraints(
+                enc, device, physicalDevice, createInfo, formatConstraints,
+                VK_IMAGE_TILING_LINEAR, &constraints);
+            if (linearResult == VK_SUCCESS) {
+                createInfoIndex.push_back(i);
             }
+
+            // Update usage and BufferMemoryConstraints
+            if (linearResult == VK_SUCCESS || optimalResult == VK_SUCCESS) {
+                constraints.usage.vulkan |=
+                    getBufferCollectionConstraintsVulkanImageUsage(createInfo);
+
+                if (formatConstraints && formatConstraints->flags) {
+                    ALOGW(
+                        "%s: Non-zero flags (%08x) in image format "
+                        "constraints; this is currently not supported, see "
+                        "fxbug.dev/68833.",
+                        __func__, formatConstraints->flags);
+                }
+            }
+        }
+
+        // Set buffer memory constraints based on optimal/linear tiling support
+        // and flags.
+        VkImageConstraintsInfoFlagsFUCHSIA flags = pImageConstraintsInfo->flags;
+        if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA)
+            constraints.usage.cpu |= llcpp::fuchsia::sysmem::cpuUsageRead;
+        if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA)
+            constraints.usage.cpu |= llcpp::fuchsia::sysmem::cpuUsageReadOften;
+        if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA)
+            constraints.usage.cpu |= llcpp::fuchsia::sysmem::cpuUsageWrite;
+        if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA)
+            constraints.usage.cpu |= llcpp::fuchsia::sysmem::cpuUsageWriteOften;
+
+        constraints.has_buffer_memory_constraints = true;
+        auto& memory_constraints = constraints.buffer_memory_constraints;
+        memory_constraints.cpu_domain_supported = true;
+        memory_constraints.ram_domain_supported = true;
+        memory_constraints.inaccessible_domain_supported =
+            hasOptimalTiling &&
+            !(flags & (VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA |
+                       VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA |
+                       VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA |
+                       VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA));
+
+        if (memory_constraints.inaccessible_domain_supported) {
+            memory_constraints.heap_permitted_count = 2;
+            memory_constraints.heap_permitted[0] =
+                llcpp::fuchsia::sysmem::HeapType::GOLDFISH_DEVICE_LOCAL;
+            memory_constraints.heap_permitted[1] =
+                llcpp::fuchsia::sysmem::HeapType::GOLDFISH_HOST_VISIBLE;
+        } else {
+            memory_constraints.heap_permitted_count = 1;
+            memory_constraints.heap_permitted[0] =
+                llcpp::fuchsia::sysmem::HeapType::GOLDFISH_HOST_VISIBLE;
+        }
+
+        if (constraints.image_format_constraints_count == 0) {
+            ALOGE("%s: none of the specified formats is supported by device",
+                  __func__);
+            return VK_ERROR_FORMAT_NOT_SUPPORTED;
         }
 
         constexpr uint32_t kVulkanPriority = 5;
         const char* kName = "GoldfishSysmemShared";
-        collection->SetName(kVulkanPriority, fidl::unowned_str(kName, strlen(kName)));
+        collection->SetName(kVulkanPriority,
+                            fidl::unowned_str(kName, strlen(kName)));
 
-        auto result = collection->SetConstraints(true, std::move(constraints));
+        auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
             ALOGE("setBufferCollectionConstraints: SetConstraints failed: %d",
                   result.status());
             return VK_ERROR_OUT_OF_DEVICE_MEMORY;
         }
+
+        // copy constraints to info_VkBufferCollectionFUCHSIA if
+        // |collection| is a valid VkBufferCollectionFUCHSIA handle.
+        AutoLock lock(mLock);
+        VkBufferCollectionFUCHSIA buffer_collection =
+            reinterpret_cast<VkBufferCollectionFUCHSIA>(collection);
+        if (info_VkBufferCollectionFUCHSIA.find(buffer_collection) !=
+            info_VkBufferCollectionFUCHSIA.end()) {
+            info_VkBufferCollectionFUCHSIA[buffer_collection].constraints =
+                android::base::makeOptional(std::move(constraints));
+            info_VkBufferCollectionFUCHSIA[buffer_collection].createInfoIndex =
+                std::move(createInfoIndex);
+        }
+
         return VK_SUCCESS;
     }
 
@@ -2106,12 +2500,24 @@ public:
         const char* kName = "GoldfishBufferSysmemShared";
         collection->SetName(kVulkanPriority, fidl::unowned_str(kName, strlen(kName)));
 
-        auto result = collection->SetConstraints(true, std::move(constraints));
+        auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
             ALOGE("setBufferCollectionConstraints: SetConstraints failed: %d",
                   result.status());
             return VK_ERROR_OUT_OF_DEVICE_MEMORY;
         }
+
+        // copy constraints to info_VkBufferCollectionFUCHSIA if
+        // |collection| is a valid VkBufferCollectionFUCHSIA handle.
+        AutoLock lock(mLock);
+        VkBufferCollectionFUCHSIA buffer_collection =
+            reinterpret_cast<VkBufferCollectionFUCHSIA>(collection);
+        if (info_VkBufferCollectionFUCHSIA.find(buffer_collection) !=
+            info_VkBufferCollectionFUCHSIA.end()) {
+            info_VkBufferCollectionFUCHSIA[buffer_collection].constraints =
+                android::base::makeOptional(std::move(constraints));
+        }
+
         return VK_SUCCESS;
     }
 
@@ -2123,6 +2529,19 @@ public:
         auto sysmem_collection = reinterpret_cast<
             llcpp::fuchsia::sysmem::BufferCollection::SyncClient*>(collection);
         return setBufferCollectionConstraints(enc, device, sysmem_collection, pImageInfo);
+    }
+
+    VkResult on_vkSetBufferCollectionImageConstraintsFUCHSIA(
+        void* context,
+        VkResult,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
+        VkEncoder* enc = (VkEncoder*)context;
+        auto sysmem_collection = reinterpret_cast<
+            llcpp::fuchsia::sysmem::BufferCollection::SyncClient*>(collection);
+        return setBufferCollectionImageConstraints(
+            enc, device, sysmem_collection, pImageConstraintsInfo);
     }
 
     VkResult on_vkSetBufferCollectionBufferConstraintsFUCHSIA(
@@ -2138,10 +2557,103 @@ public:
     }
 
     VkResult on_vkGetBufferCollectionPropertiesFUCHSIA(
-        void*, VkResult,
+        void* context,
+        VkResult,
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         VkBufferCollectionPropertiesFUCHSIA* pProperties) {
+        VkBufferCollectionProperties2FUCHSIA properties2 = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_COLLECTION_PROPERTIES2_FUCHSIA,
+            .pNext = nullptr};
+        auto result = on_vkGetBufferCollectionProperties2FUCHSIA(
+            context, VK_SUCCESS, device, collection, &properties2);
+        if (result != VK_SUCCESS) {
+            return result;
+        }
+
+        pProperties->count = properties2.bufferCount;
+        pProperties->memoryTypeBits = properties2.memoryTypeBits;
+        return VK_SUCCESS;
+    }
+
+    VkResult getBufferCollectionImageCreateInfoIndexLocked(
+        VkBufferCollectionFUCHSIA collection,
+        llcpp::fuchsia::sysmem::BufferCollectionInfo_2& info,
+        uint32_t* outCreateInfoIndex) {
+        if (!info_VkBufferCollectionFUCHSIA[collection]
+                 .constraints.hasValue()) {
+            ALOGE("%s: constraints not set", __func__);
+            return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+        }
+
+        if (!info.settings.has_image_format_constraints) {
+            // no image format constraints, skip getting createInfoIndex.
+            return VK_SUCCESS;
+        }
+
+        const auto& constraints =
+            *info_VkBufferCollectionFUCHSIA[collection].constraints;
+        const auto& createInfoIndices =
+            info_VkBufferCollectionFUCHSIA[collection].createInfoIndex;
+        const auto& out = info.settings.image_format_constraints;
+        bool foundCreateInfo = false;
+
+        for (size_t imageFormatIndex = 0;
+             imageFormatIndex < constraints.image_format_constraints_count;
+             imageFormatIndex++) {
+            const auto& in =
+                constraints.image_format_constraints[imageFormatIndex];
+            // These checks are sorted in order of how often they're expected to
+            // mismatch, from most likely to least likely. They aren't always
+            // equality comparisons, since sysmem may change some values in
+            // compatible ways on behalf of the other participants.
+            if ((out.pixel_format.type != in.pixel_format.type) ||
+                (out.pixel_format.has_format_modifier !=
+                 in.pixel_format.has_format_modifier) ||
+                (out.pixel_format.format_modifier.value !=
+                 in.pixel_format.format_modifier.value) ||
+                (out.min_bytes_per_row < in.min_bytes_per_row) ||
+                (out.required_max_coded_width < in.required_max_coded_width) ||
+                (out.required_max_coded_height <
+                 in.required_max_coded_height) ||
+                (out.bytes_per_row_divisor % in.bytes_per_row_divisor != 0)) {
+                continue;
+            }
+            // Check if the out colorspaces are a subset of the in color spaces.
+            bool all_color_spaces_found = true;
+            for (uint32_t j = 0; j < out.color_spaces_count; j++) {
+                bool found_matching_color_space = false;
+                for (uint32_t k = 0; k < in.color_spaces_count; k++) {
+                    if (out.color_space[j].type == in.color_space[k].type) {
+                        found_matching_color_space = true;
+                        break;
+                    }
+                }
+                if (!found_matching_color_space) {
+                    all_color_spaces_found = false;
+                    break;
+                }
+            }
+            if (!all_color_spaces_found) {
+                continue;
+            }
+
+            // Choose the first valid format for now.
+            *outCreateInfoIndex = createInfoIndices[imageFormatIndex];
+            return VK_SUCCESS;
+        }
+
+        ALOGE("%s: cannot find a valid image format in constraints", __func__);
+        return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+    }
+
+    VkResult on_vkGetBufferCollectionProperties2FUCHSIA(
+        void* context,
+        VkResult,
+        VkDevice device,
+        VkBufferCollectionFUCHSIA collection,
+        VkBufferCollectionProperties2FUCHSIA* pProperties) {
+        VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
             llcpp::fuchsia::sysmem::BufferCollection::SyncClient*>(collection);
 
@@ -2164,29 +2676,134 @@ public:
             return VK_ERROR_INITIALIZATION_FAILED;
         }
 
-        pProperties->count = info.buffer_count;
+        // memoryTypeBits
+        // ====================================================================
+        {
+            AutoLock lock(mLock);
+            auto deviceIt = info_VkDevice.find(device);
+            if (deviceIt == info_VkDevice.end()) {
+                return VK_ERROR_INITIALIZATION_FAILED;
+            }
+            auto& deviceInfo = deviceIt->second;
 
-        AutoLock lock(mLock);
-
-        auto deviceIt = info_VkDevice.find(device);
-
-        if (deviceIt == info_VkDevice.end()) {
-            return VK_ERROR_INITIALIZATION_FAILED;
-        }
-
-        auto& deviceInfo = deviceIt->second;
-
-        // Device local memory type supported.
-        pProperties->memoryTypeBits = 0;
-        for (uint32_t i = 0; i < deviceInfo.memProps.memoryTypeCount; ++i) {
-            if ((is_device_local && (deviceInfo.memProps.memoryTypes[i].propertyFlags &
-                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) ||
-                (is_host_visible && (deviceInfo.memProps.memoryTypes[i].propertyFlags &
-                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))) {
-                pProperties->memoryTypeBits |= 1ull << i;
+            // Device local memory type supported.
+            pProperties->memoryTypeBits = 0;
+            for (uint32_t i = 0; i < deviceInfo.memProps.memoryTypeCount; ++i) {
+                if ((is_device_local &&
+                     (deviceInfo.memProps.memoryTypes[i].propertyFlags &
+                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) ||
+                    (is_host_visible &&
+                     (deviceInfo.memProps.memoryTypes[i].propertyFlags &
+                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))) {
+                    pProperties->memoryTypeBits |= 1ull << i;
+                }
             }
         }
-        return VK_SUCCESS;
+
+        // bufferCount
+        // ====================================================================
+        pProperties->bufferCount = info.buffer_count;
+
+        auto storeProperties = [this, collection, pProperties]() -> VkResult {
+            // store properties to storage
+            AutoLock lock(mLock);
+            if (info_VkBufferCollectionFUCHSIA.find(collection) ==
+                info_VkBufferCollectionFUCHSIA.end()) {
+                return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+            }
+
+            info_VkBufferCollectionFUCHSIA[collection].properties =
+                android::base::makeOptional(*pProperties);
+
+            // We only do a shallow copy so we should remove all pNext pointers.
+            info_VkBufferCollectionFUCHSIA[collection].properties->pNext =
+                nullptr;
+            info_VkBufferCollectionFUCHSIA[collection]
+                .properties->colorSpace.pNext = nullptr;
+            return VK_SUCCESS;
+        };
+
+        // The fields below only apply to buffer collections with image formats.
+        if (!info.settings.has_image_format_constraints) {
+            ALOGD("%s: buffer collection doesn't have image format constraints",
+                  __func__);
+            return storeProperties();
+        }
+
+        // sysmemFormat
+        // ====================================================================
+
+        pProperties->sysmemFormat = static_cast<uint64_t>(
+            info.settings.image_format_constraints.pixel_format.type);
+
+        // colorSpace
+        // ====================================================================
+        if (info.settings.image_format_constraints.color_spaces_count == 0) {
+            ALOGE(
+                "%s: color space missing from allocated buffer collection "
+                "constraints",
+                __func__);
+            return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+        }
+        // Only report first colorspace for now.
+        pProperties->colorSpace.colorSpace = static_cast<uint32_t>(
+            info.settings.image_format_constraints.color_space[0].type);
+
+        // createInfoIndex
+        // ====================================================================
+        {
+            AutoLock lock(mLock);
+            auto getIndexResult = getBufferCollectionImageCreateInfoIndexLocked(
+                collection, info, &pProperties->createInfoIndex);
+            if (getIndexResult != VK_SUCCESS) {
+                return getIndexResult;
+            }
+        }
+
+        // formatFeatures
+        // ====================================================================
+        VkPhysicalDevice physicalDevice;
+        {
+            AutoLock lock(mLock);
+            auto deviceIt = info_VkDevice.find(device);
+            if (deviceIt == info_VkDevice.end()) {
+                return VK_ERROR_INITIALIZATION_FAILED;
+            }
+            physicalDevice = deviceIt->second.physdev;
+        }
+
+        VkFormat vkFormat = sysmemPixelFormatTypeToVk(
+            info.settings.image_format_constraints.pixel_format.type);
+        VkFormatProperties formatProperties;
+        enc->vkGetPhysicalDeviceFormatProperties(
+            physicalDevice, vkFormat, &formatProperties, true /* do lock */);
+        if (is_device_local) {
+            pProperties->formatFeatures =
+                formatProperties.optimalTilingFeatures;
+        }
+        if (is_host_visible) {
+            pProperties->formatFeatures = formatProperties.linearTilingFeatures;
+        }
+
+        // YCbCr properties
+        // ====================================================================
+        // TODO(59804): Implement this correctly when we support YUV pixel
+        // formats in goldfish ICD.
+        pProperties->samplerYcbcrConversionComponents.r =
+            VK_COMPONENT_SWIZZLE_IDENTITY;
+        pProperties->samplerYcbcrConversionComponents.g =
+            VK_COMPONENT_SWIZZLE_IDENTITY;
+        pProperties->samplerYcbcrConversionComponents.b =
+            VK_COMPONENT_SWIZZLE_IDENTITY;
+        pProperties->samplerYcbcrConversionComponents.a =
+            VK_COMPONENT_SWIZZLE_IDENTITY;
+        pProperties->suggestedYcbcrModel =
+            VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY;
+        pProperties->suggestedYcbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
+        pProperties->suggestedXChromaOffset = VK_CHROMA_LOCATION_MIDPOINT;
+        pProperties->suggestedYChromaOffset = VK_CHROMA_LOCATION_MIDPOINT;
+
+        return storeProperties();
     }
 #endif
 
@@ -2412,24 +3029,26 @@ public:
             vk_find_struct<VkMemoryDedicatedAllocateInfo>(pAllocateInfo);
 
         bool shouldPassThroughDedicatedAllocInfo =
-            !exportAllocateInfoPtr &&
-            !importAhbInfoPtr &&
-            !importBufferCollectionInfoPtr &&
-            !importVmoInfoPtr &&
+            !exportAllocateInfoPtr && !importAhbInfoPtr &&
+            !importBufferCollectionInfoPtr && !importVmoInfoPtr;
+
+#ifndef VK_USE_PLATFORM_FUCHSIA
+        shouldPassThroughDedicatedAllocInfo &=
             !isHostVisibleMemoryTypeIndexForGuest(
-                &mHostVisibleMemoryVirtInfo,
-                pAllocateInfo->memoryTypeIndex);
+                &mHostVisibleMemoryVirtInfo, pAllocateInfo->memoryTypeIndex);
 
         if (!exportAllocateInfoPtr &&
-            (importAhbInfoPtr || importBufferCollectionInfoPtr || importVmoInfoPtr) &&
+            (importAhbInfoPtr || importBufferCollectionInfoPtr ||
+             importVmoInfoPtr) &&
             dedicatedAllocInfoPtr &&
             isHostVisibleMemoryTypeIndexForGuest(
-                &mHostVisibleMemoryVirtInfo,
-                pAllocateInfo->memoryTypeIndex)) {
-            ALOGE("FATAL: It is not yet supported to import-allocate "
-                  "external memory that is both host visible and dedicated.");
+                &mHostVisibleMemoryVirtInfo, pAllocateInfo->memoryTypeIndex)) {
+            ALOGE(
+                "FATAL: It is not yet supported to import-allocate "
+                "external memory that is both host visible and dedicated.");
             abort();
         }
+#endif  // VK_USE_PLATFORM_FUCHSIA
 
         if (shouldPassThroughDedicatedAllocInfo &&
             dedicatedAllocInfoPtr) {
@@ -2727,78 +3346,96 @@ public:
                     abort();
                 }
 
-                if (pImageCreateInfo) {
-                    llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType
-                        format;
-                    switch (pImageCreateInfo->format) {
-                        case VK_FORMAT_B8G8R8A8_SINT:
-                        case VK_FORMAT_B8G8R8A8_UNORM:
-                        case VK_FORMAT_B8G8R8A8_SRGB:
-                        case VK_FORMAT_B8G8R8A8_SNORM:
-                        case VK_FORMAT_B8G8R8A8_SSCALED:
-                        case VK_FORMAT_B8G8R8A8_USCALED:
-                            format = llcpp::fuchsia::hardware::goldfish::
-                                ColorBufferFormatType::BGRA;
-                            break;
-                        case VK_FORMAT_R8G8B8A8_SINT:
-                        case VK_FORMAT_R8G8B8A8_UNORM:
-                        case VK_FORMAT_R8G8B8A8_SRGB:
-                        case VK_FORMAT_R8G8B8A8_SNORM:
-                        case VK_FORMAT_R8G8B8A8_SSCALED:
-                        case VK_FORMAT_R8G8B8A8_USCALED:
-                            format = llcpp::fuchsia::hardware::goldfish::
-                                ColorBufferFormatType::RGBA;
-                            break;
-                        case VK_FORMAT_R8_UNORM:
-                        case VK_FORMAT_R8_UINT:
-                        case VK_FORMAT_R8_USCALED:
-                        case VK_FORMAT_R8_SNORM:
-                        case VK_FORMAT_R8_SINT:
-                        case VK_FORMAT_R8_SSCALED:
-                        case VK_FORMAT_R8_SRGB:
-                            format = llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType::
-                                LUMINANCE;
-                            break;
-                        case VK_FORMAT_R8G8_UNORM:
-                        case VK_FORMAT_R8G8_UINT:
-                        case VK_FORMAT_R8G8_USCALED:
-                        case VK_FORMAT_R8G8_SNORM:
-                        case VK_FORMAT_R8G8_SINT:
-                        case VK_FORMAT_R8G8_SSCALED:
-                        case VK_FORMAT_R8G8_SRGB:
-                            format = llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType::RG;
-                            break;
-                        default:
-                            ALOGE("Unsupported format: %d",
-                                  pImageCreateInfo->format);
-                            abort();
-                    }
+                bool isHostVisible = isHostVisibleMemoryTypeIndexForGuest(
+                    &mHostVisibleMemoryVirtInfo,
+                    pAllocateInfo->memoryTypeIndex);
 
-                    auto createParams =
-                        llcpp::fuchsia::hardware::goldfish::CreateColorBuffer2Params::Builder(
-                            std::make_unique<llcpp::fuchsia::hardware::goldfish::
-                                                 CreateColorBuffer2Params::Frame>())
-                            .set_width(std::make_unique<uint32_t>(pImageCreateInfo->extent.width))
-                            .set_height(std::make_unique<uint32_t>(pImageCreateInfo->extent.height))
-                            .set_format(std::make_unique<
-                                        llcpp::fuchsia::hardware::goldfish::ColorBufferFormatType>(
-                                format))
-                            .set_memory_property(std::make_unique<uint32_t>(
-                                llcpp::fuchsia::hardware::goldfish::MEMORY_PROPERTY_DEVICE_LOCAL))
-                            .build();
+                // Only device-local images need to create color buffer; for
+                // host-visible images, the color buffer is already created when
+                // sysmem allocates memory.
+                if (!isHostVisible) {
+                    if (pImageCreateInfo) {
+                        llcpp::fuchsia::hardware::goldfish::
+                            ColorBufferFormatType format;
+                        switch (pImageCreateInfo->format) {
+                            case VK_FORMAT_B8G8R8A8_SINT:
+                            case VK_FORMAT_B8G8R8A8_UNORM:
+                            case VK_FORMAT_B8G8R8A8_SRGB:
+                            case VK_FORMAT_B8G8R8A8_SNORM:
+                            case VK_FORMAT_B8G8R8A8_SSCALED:
+                            case VK_FORMAT_B8G8R8A8_USCALED:
+                                format = llcpp::fuchsia::hardware::goldfish::
+                                    ColorBufferFormatType::BGRA;
+                                break;
+                            case VK_FORMAT_R8G8B8A8_SINT:
+                            case VK_FORMAT_R8G8B8A8_UNORM:
+                            case VK_FORMAT_R8G8B8A8_SRGB:
+                            case VK_FORMAT_R8G8B8A8_SNORM:
+                            case VK_FORMAT_R8G8B8A8_SSCALED:
+                            case VK_FORMAT_R8G8B8A8_USCALED:
+                                format = llcpp::fuchsia::hardware::goldfish::
+                                    ColorBufferFormatType::RGBA;
+                                break;
+                            case VK_FORMAT_R8_UNORM:
+                            case VK_FORMAT_R8_UINT:
+                            case VK_FORMAT_R8_USCALED:
+                            case VK_FORMAT_R8_SNORM:
+                            case VK_FORMAT_R8_SINT:
+                            case VK_FORMAT_R8_SSCALED:
+                            case VK_FORMAT_R8_SRGB:
+                                format = llcpp::fuchsia::hardware::goldfish::
+                                    ColorBufferFormatType::LUMINANCE;
+                                break;
+                            case VK_FORMAT_R8G8_UNORM:
+                            case VK_FORMAT_R8G8_UINT:
+                            case VK_FORMAT_R8G8_USCALED:
+                            case VK_FORMAT_R8G8_SNORM:
+                            case VK_FORMAT_R8G8_SINT:
+                            case VK_FORMAT_R8G8_SSCALED:
+                            case VK_FORMAT_R8G8_SRGB:
+                                format = llcpp::fuchsia::hardware::goldfish::
+                                    ColorBufferFormatType::RG;
+                                break;
+                            default:
+                                ALOGE("Unsupported format: %d",
+                                      pImageCreateInfo->format);
+                                abort();
+                        }
 
-                    auto result = mControlDevice->CreateColorBuffer2(std::move(vmo_copy),
-                                                                     std::move(createParams));
-                    if (!result.ok() || result.Unwrap()->res != ZX_OK) {
-                        if (result.ok() &&
-                            result.Unwrap()->res == ZX_ERR_ALREADY_EXISTS) {
-                            ALOGD("CreateColorBuffer: color buffer already "
-                                  "exists\n");
-                        } else {
-                            ALOGE("CreateColorBuffer failed: %d:%d",
-                                  result.status(),
-                                  GET_STATUS_SAFE(result, res));
-                            abort();
+                        auto createParams =
+                            llcpp::fuchsia::hardware::goldfish::
+                                CreateColorBuffer2Params::Builder(
+                                    std::make_unique<
+                                        llcpp::fuchsia::hardware::goldfish::
+                                            CreateColorBuffer2Params::Frame>())
+                                    .set_width(std::make_unique<uint32_t>(
+                                        pImageCreateInfo->extent.width))
+                                    .set_height(std::make_unique<uint32_t>(
+                                        pImageCreateInfo->extent.height))
+                                    .set_format(
+                                        std::make_unique<
+                                            llcpp::fuchsia::hardware::goldfish::
+                                                ColorBufferFormatType>(format))
+                                    .set_memory_property(
+                                        std::make_unique<uint32_t>(
+                                            llcpp::fuchsia::hardware::goldfish::
+                                                MEMORY_PROPERTY_DEVICE_LOCAL))
+                                    .build();
+
+                        auto result = mControlDevice->CreateColorBuffer2(
+                            std::move(vmo_copy), std::move(createParams));
+                        if (!result.ok() || result.Unwrap()->res != ZX_OK) {
+                            if (result.ok() &&
+                                result.Unwrap()->res == ZX_ERR_ALREADY_EXISTS) {
+                                ALOGD(
+                                    "CreateColorBuffer: color buffer already "
+                                    "exists\n");
+                            } else {
+                                ALOGE("CreateColorBuffer failed: %d:%d",
+                                      result.status(),
+                                      GET_STATUS_SAFE(result, res));
+                                abort();
+                            }
                         }
                     }
                 }
@@ -3095,9 +3732,13 @@ public:
         uint32_t normalBits) {
         uint32_t res = 0;
         for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; ++i) {
-            if (normalBits & (1 << i) &&
-                !isHostVisibleMemoryTypeIndexForGuest(
-                    &mHostVisibleMemoryVirtInfo, i)) {
+            bool shouldAcceptMemoryIndex = normalBits & (1 << i);
+#ifndef VK_USE_PLATFORM_FUCHSIA
+            shouldAcceptMemoryIndex &= !isHostVisibleMemoryTypeIndexForGuest(
+                &mHostVisibleMemoryVirtInfo, i);
+#endif  // VK_USE_PLATFORM_FUCHSIA
+
+            if (shouldAcceptMemoryIndex) {
                 res |= (1 << i);
             }
         }
@@ -3354,6 +3995,15 @@ public:
                         ALOGE("CreateColorBuffer failed: %d:%d", result.status(),
                               GET_STATUS_SAFE(result, res));
                     }
+                }
+
+                if (info.settings.buffer_settings.heap ==
+                    llcpp::fuchsia::sysmem::HeapType::GOLDFISH_HOST_VISIBLE) {
+                    ALOGD(
+                        "%s: Image uses host visible memory heap; set tiling "
+                        "to linear to match host ImageCreateInfo",
+                        __func__);
+                    localCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
                 }
             }
             isSysmemBackedMemory = true;
@@ -3948,12 +4598,32 @@ public:
 
         if (res != VK_SUCCESS) return res;
 
-        AutoLock lock(mLock);
-        auto it = info_VkDescriptorPool.find(*pDescriptorPool);
-        if (it == info_VkDescriptorPool.end()) return res;
+        VkDescriptorPool pool = *pDescriptorPool;
 
-        auto &info = it->second;
-        info.createFlags = pCreateInfo->flags;
+        struct goldfish_VkDescriptorPool* dp = as_goldfish_VkDescriptorPool(pool);
+        dp->allocInfo = new DescriptorPoolAllocationInfo;
+        dp->allocInfo->device = device;
+        dp->allocInfo->createFlags = pCreateInfo->flags;
+        dp->allocInfo->maxSets = pCreateInfo->maxSets;
+        dp->allocInfo->usedSets = 0;
+
+        for (uint32_t i = 0; i < pCreateInfo->poolSizeCount; ++i) {
+            dp->allocInfo->descriptorCountInfo.push_back({
+                pCreateInfo->pPoolSizes[i].type,
+                pCreateInfo->pPoolSizes[i].descriptorCount,
+                0, /* used */
+            });
+        }
+
+        if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
+            std::vector<uint64_t> poolIds(pCreateInfo->maxSets);
+
+            uint32_t count = pCreateInfo->maxSets;
+            enc->vkCollectDescriptorPoolIdsGOOGLE(
+                device, pool, &count, poolIds.data(), true /* do lock */);
+
+            dp->allocInfo->freePoolIds = poolIds;
+        }
 
         return res;
     }
@@ -3964,7 +4634,11 @@ public:
         VkDescriptorPool descriptorPool,
         const VkAllocationCallbacks* pAllocator) {
 
+        if (!descriptorPool) return;
+
         VkEncoder* enc = (VkEncoder*)context;
+
+        clearDescriptorPoolAndUnregisterDescriptorSets(context, device, descriptorPool);
 
         enc->vkDestroyDescriptorPool(device, descriptorPool, pAllocator, true /* do lock */);
     }
@@ -3976,33 +4650,28 @@ public:
         VkDescriptorPool descriptorPool,
         VkDescriptorPoolResetFlags flags) {
 
+        if (!descriptorPool) return VK_ERROR_INITIALIZATION_FAILED;
+
         VkEncoder* enc = (VkEncoder*)context;
 
         VkResult res = enc->vkResetDescriptorPool(device, descriptorPool, flags, true /* do lock */);
 
         if (res != VK_SUCCESS) return res;
 
-        AutoLock lock(mLock);
-        clearDescriptorPoolLocked(descriptorPool);
+        clearDescriptorPoolAndUnregisterDescriptorSets(context, device, descriptorPool);
         return res;
     }
 
     VkResult on_vkAllocateDescriptorSets(
         void* context,
         VkResult,
-        VkDevice                                    device,
+        VkDevice device,
         const VkDescriptorSetAllocateInfo*          pAllocateInfo,
         VkDescriptorSet*                            pDescriptorSets) {
 
         VkEncoder* enc = (VkEncoder*)context;
 
-        VkResult res = enc->vkAllocateDescriptorSets(device, pAllocateInfo, pDescriptorSets, true /* do lock */);
-
-        if (res != VK_SUCCESS) return res;
-
-        AutoLock lock(mLock);
-        initDescriptorSetStateLocked(pAllocateInfo, pDescriptorSets);
-        return res;
+        return allocAndInitializeDescriptorSets(context, device, pAllocateInfo, pDescriptorSets);
     }
 
     VkResult on_vkFreeDescriptorSets(
@@ -4023,23 +4692,61 @@ public:
         {
             AutoLock lock(mLock);
 
+            // Pool was destroyed
+            if (info_VkDescriptorPool.find(descriptorPool) == info_VkDescriptorPool.end()) {
+                return VK_SUCCESS;
+            }
+
             if (!descriptorPoolSupportsIndividualFreeLocked(descriptorPool))
                 return VK_SUCCESS;
 
-            for (uint32_t i = 0; i < descriptorSetCount; ++i) {
-                if (descriptorSetReallyAllocedFromPoolLocked(
-                        pDescriptorSets[i], descriptorPool)) {
-                    toActuallyFree.push_back(pDescriptorSets[i]);
+            std::vector<VkDescriptorSet> existingDescriptorSets;;
+
+            // Check if this descriptor set was in the pool's set of allocated descriptor sets,
+            // to guard against double free (Double free is allowed by the client)
+            {
+                auto allocedSets = as_goldfish_VkDescriptorPool(descriptorPool)->allocInfo->allocedSets;
+
+                for (uint32_t i = 0; i < descriptorSetCount; ++i) {
+
+                    if (allocedSets.end() == allocedSets.find(pDescriptorSets[i])) {
+                        ALOGV("%s: Warning: descriptor set %p not found in pool. Was this double-freed?\n", __func__,
+                              (void*)pDescriptorSets[i]);
+                        continue;
+                    }
+
+                    auto it = info_VkDescriptorSet.find(pDescriptorSets[i]);
+                    if (it == info_VkDescriptorSet.end())
+                        continue;
+
+                    existingDescriptorSets.push_back(pDescriptorSets[i]);
+                }
+            }
+
+            for (auto set : existingDescriptorSets) {
+                if (removeDescriptorSetFromPool(set, mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate)) {
+                    toActuallyFree.push_back(set);
                 }
             }
 
             if (toActuallyFree.empty()) return VK_SUCCESS;
         }
 
-        return enc->vkFreeDescriptorSets(
-            device, descriptorPool,
-            (uint32_t)toActuallyFree.size(),
-            toActuallyFree.data(), true /* do lock */);
+        if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
+            // In the batched set update case, decrement refcount on the set layout
+            // and only free on host if we satisfied a pending allocation on the
+            // host.
+            for (uint32_t i = 0; i < toActuallyFree.size(); ++i) {
+                VkDescriptorSetLayout setLayout = as_goldfish_VkDescriptorSet(toActuallyFree[i])->reified->setLayout;
+                decDescriptorSetLayoutRef(context, device, setLayout, nullptr);
+            }
+            freeDescriptorSetsIfHostAllocated(
+                enc, device, (uint32_t)toActuallyFree.size(), toActuallyFree.data());
+        } else {
+            // In the non-batched set update case, just free them directly.
+            enc->vkFreeDescriptorSets(device, descriptorPool, (uint32_t)toActuallyFree.size(), toActuallyFree.data(), true /* do lock */);
+        }
+        return VK_SUCCESS;
     }
 
     VkResult on_vkCreateDescriptorSetLayout(
@@ -4057,15 +4764,13 @@ public:
 
         if (res != VK_SUCCESS) return res;
 
-        AutoLock lock(mLock);
-
-        auto it = info_VkDescriptorSetLayout.find(*pSetLayout);
-        if (it == info_VkDescriptorSetLayout.end()) return res;
-
-        auto& info = it->second;
+        struct goldfish_VkDescriptorSetLayout* dsl =
+            as_goldfish_VkDescriptorSetLayout(*pSetLayout);
+        dsl->layoutInfo = new DescriptorSetLayoutInfo;
         for (uint32_t i = 0; i < pCreateInfo->bindingCount; ++i) {
-            info.bindings.push_back(pCreateInfo->pBindings[i]);
+            dsl->layoutInfo->bindings.push_back(pCreateInfo->pBindings[i]);
         }
+        dsl->layoutInfo->refcount = 1;
 
         return res;
     }
@@ -4081,7 +4786,7 @@ public:
         VkEncoder* enc = (VkEncoder*)context;
 
         std::vector<std::vector<VkDescriptorImageInfo>> imageInfosPerWrite(
-            descriptorWriteCount);
+                descriptorWriteCount);
 
         std::vector<VkWriteDescriptorSet> writesWithSuppressedSamplers;
 
@@ -4089,15 +4794,29 @@ public:
             AutoLock lock(mLock);
             for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
                 writesWithSuppressedSamplers.push_back(
-                    createImmutableSamplersFilteredWriteDescriptorSetLocked(
-                        pDescriptorWrites + i,
-                        imageInfosPerWrite.data() + i));
+                        createImmutableSamplersFilteredWriteDescriptorSetLocked(
+                            pDescriptorWrites + i,
+                            imageInfosPerWrite.data() + i));
             }
         }
 
-        enc->vkUpdateDescriptorSets(
-            device, descriptorWriteCount, writesWithSuppressedSamplers.data(),
-            descriptorCopyCount, pDescriptorCopies, true /* do lock */);
+        if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
+            for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
+                VkDescriptorSet set = writesWithSuppressedSamplers[i].dstSet;
+                doEmulatedDescriptorWrite(&writesWithSuppressedSamplers[i],
+                        as_goldfish_VkDescriptorSet(set)->reified);
+            }
+
+            for (uint32_t i = 0; i < descriptorCopyCount; ++i) {
+                doEmulatedDescriptorCopy(&pDescriptorCopies[i],
+                        as_goldfish_VkDescriptorSet(pDescriptorCopies[i].srcSet)->reified,
+                        as_goldfish_VkDescriptorSet(pDescriptorCopies[i].dstSet)->reified);
+            }
+        } else {
+            enc->vkUpdateDescriptorSets(
+                    device, descriptorWriteCount, writesWithSuppressedSamplers.data(),
+                    descriptorCopyCount, pDescriptorCopies, true /* do lock */);
+        }
     }
 
     void on_vkDestroyImage(
@@ -4611,6 +5330,164 @@ public:
 #endif
     }
 
+    struct CommandBufferPendingDescriptorSets {
+        std::unordered_set<VkDescriptorSet> sets;
+    };
+
+    void collectAllPendingDescriptorSetsBottomUp(const std::vector<VkCommandBuffer>& workingSet, std::unordered_set<VkDescriptorSet>& allDs) {
+        if (workingSet.empty()) return;
+
+        std::vector<VkCommandBuffer> nextLevel;
+        for (auto commandBuffer : workingSet) {
+            struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+            forAllObjects(cb->subObjects, [&nextLevel](void* secondary) {
+                    nextLevel.push_back((VkCommandBuffer)secondary);
+                    });
+        }
+
+        collectAllPendingDescriptorSetsBottomUp(nextLevel, allDs);
+
+        for (auto cmdbuf : workingSet) {
+            struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(cmdbuf);
+
+            if (!cb->userPtr) {
+                continue; // No descriptors to update.
+            }
+
+            CommandBufferPendingDescriptorSets* pendingDescriptorSets =
+                (CommandBufferPendingDescriptorSets*)(cb->userPtr);
+
+            if (pendingDescriptorSets->sets.empty()) {
+                continue; // No descriptors to update.
+            }
+
+            allDs.insert(pendingDescriptorSets->sets.begin(), pendingDescriptorSets->sets.end());
+        }
+    }
+
+    void commitDescriptorSetUpdates(void* context, VkQueue queue, const std::unordered_set<VkDescriptorSet>& sets) {
+        VkEncoder* enc = (VkEncoder*)context;
+
+        std::unordered_map<VkDescriptorPool, uint32_t> poolSet;
+        std::vector<VkDescriptorPool> pools;
+        std::vector<VkDescriptorSetLayout> setLayouts;
+        std::vector<uint64_t> poolIds;
+        std::vector<uint32_t> descriptorSetWhichPool;
+        std::vector<uint32_t> pendingAllocations;
+        std::vector<uint32_t> writeStartingIndices;
+        std::vector<VkWriteDescriptorSet> writesForHost;
+
+        uint32_t poolIndex = 0;
+        uint32_t currentWriteIndex = 0;
+        for (auto set : sets) {
+            ReifiedDescriptorSet* reified = as_goldfish_VkDescriptorSet(set)->reified;
+            VkDescriptorPool pool = reified->pool;
+            VkDescriptorSetLayout setLayout = reified->setLayout;
+
+            auto it = poolSet.find(pool);
+            if (it == poolSet.end()) {
+                poolSet[pool] = poolIndex;
+                descriptorSetWhichPool.push_back(poolIndex);
+                pools.push_back(pool);
+                ++poolIndex;
+            } else {
+                uint32_t savedPoolIndex = it->second;
+                descriptorSetWhichPool.push_back(savedPoolIndex);
+            }
+
+            poolIds.push_back(reified->poolId);
+            setLayouts.push_back(setLayout);
+            pendingAllocations.push_back(reified->allocationPending ? 1 : 0);
+            writeStartingIndices.push_back(currentWriteIndex);
+
+            auto& writes = reified->allWrites;
+
+            for (size_t i = 0; i < writes.size(); ++i) {
+                uint32_t binding = i;
+
+                for (size_t j = 0; j < writes[i].size(); ++j) {
+                    auto& write = writes[i][j];
+
+                    if (write.type == DescriptorWriteType::Empty) continue;
+
+                    uint32_t dstArrayElement = 0;
+
+                    VkDescriptorImageInfo* imageInfo = nullptr;
+                    VkDescriptorBufferInfo* bufferInfo = nullptr;
+                    VkBufferView* bufferView = nullptr;
+
+                    switch (write.type) {
+                        case DescriptorWriteType::Empty:
+                            break;
+                        case DescriptorWriteType::ImageInfo:
+                            dstArrayElement = j;
+                            imageInfo = &write.imageInfo;
+                            break;
+                        case DescriptorWriteType::BufferInfo:
+                            dstArrayElement = j;
+                            bufferInfo = &write.bufferInfo;
+                            break;
+                        case DescriptorWriteType::BufferView:
+                            dstArrayElement = j;
+                            bufferView = &write.bufferView;
+                            break;
+                        case DescriptorWriteType::InlineUniformBlock:
+                        case DescriptorWriteType::AccelerationStructure:
+                            // TODO
+                            ALOGE("Encountered pending inline uniform block or acceleration structure desc write, abort (NYI)\n");
+                            abort();
+                        default:
+                            break;
+
+                    }
+
+                    // TODO: Combine multiple writes into one VkWriteDescriptorSet.
+                    VkWriteDescriptorSet forHost = {
+                        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, 0 /* TODO: inline uniform block */,
+                        set,
+                        binding,
+                        dstArrayElement,
+                        1,
+                        write.descriptorType,
+                        imageInfo,
+                        bufferInfo,
+                        bufferView,
+                    };
+
+                    writesForHost.push_back(forHost);
+                    ++currentWriteIndex;
+
+                    // Set it back to empty.
+                    write.type = DescriptorWriteType::Empty;
+                }
+            }
+        }
+
+        // Skip out if there's nothing to VkWriteDescriptorSet home about.
+        if (writesForHost.empty()) {
+            return;
+        }
+
+        enc->vkQueueCommitDescriptorSetUpdatesGOOGLE(
+            queue, 
+            (uint32_t)pools.size(), pools.data(),
+            (uint32_t)sets.size(),
+            setLayouts.data(),
+            poolIds.data(),
+            descriptorSetWhichPool.data(),
+            pendingAllocations.data(),
+            writeStartingIndices.data(),
+            (uint32_t)writesForHost.size(),
+            writesForHost.data(),
+            false /* no lock */);
+
+        // If we got here, then we definitely serviced the allocations.
+        for (auto set : sets) {
+            ReifiedDescriptorSet* reified = as_goldfish_VkDescriptorSet(set)->reified;
+            reified->allocationPending = false;
+        }
+    }
+
     void flushCommandBufferPendingCommandsBottomUp(void* context, VkQueue queue, const std::vector<VkCommandBuffer>& workingSet) {
         if (workingSet.empty()) return;
 
@@ -4649,12 +5526,24 @@ public:
 
     // Unlike resetCommandBufferStagingInfo, this does not always erase its
     // superObjects pointers because the command buffer has merely been
-    // submitted, not reset.
-    // However, if the command buffer was recorded with ONE_TIME_SUBMIT_BIT,
-    // then it will also reset its primaries.
+    // submitted, not reset.  However, if the command buffer was recorded with
+    // ONE_TIME_SUBMIT_BIT, then it will also reset its primaries.
+    //
+    // Also, we save the set of descriptor sets referenced by this command
+    // buffer because we only submitted the command buffer and it's possible to
+    // update the descriptor set again and re-submit the same command without
+    // recording it (Update-after-bind descriptor sets)
     void resetCommandBufferPendingTopology(VkCommandBuffer commandBuffer) {
         struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
-        resetCommandBufferStagingInfo(commandBuffer, cb->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        if (cb->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) {
+            resetCommandBufferStagingInfo(commandBuffer,
+                true /* reset primaries */,
+                true /* clear pending descriptor sets */);
+        } else {
+            resetCommandBufferStagingInfo(commandBuffer,
+                false /* Don't reset primaries */,
+                false /* Don't clear pending descriptor sets */);
+        }
     }
 
     void flushStagingStreams(void* context, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits) {
@@ -4664,7 +5553,13 @@ public:
                 toFlush.push_back(pSubmits[i].pCommandBuffers[j]);
             }
         }
+
+        std::unordered_set<VkDescriptorSet> pendingSets;
+        collectAllPendingDescriptorSetsBottomUp(toFlush, pendingSets);
+        commitDescriptorSetUpdates(context, queue, pendingSets);
+
         flushCommandBufferPendingCommandsBottomUp(context, queue, toFlush);
+
         for (auto cb : toFlush) {
             resetCommandBufferPendingTopology(cb);
         }
@@ -4675,7 +5570,6 @@ public:
         VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) {
         AEMU_SCOPED_TRACE("on_vkQueueSubmit");
 
-        // Send command buffers to the host here
         flushStagingStreams(context, queue, submitCount, pSubmits);
 
         std::vector<VkSemaphore> pre_signal_semaphores;
@@ -5012,26 +5906,6 @@ public:
         return input_result;
     }
 
-    bool isDescriptorTypeImageInfo(VkDescriptorType descType) {
-        return (descType == VK_DESCRIPTOR_TYPE_SAMPLER) ||
-               (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) ||
-               (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-               (descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
-               (descType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
-    }
-
-    bool isDescriptorTypeBufferInfo(VkDescriptorType descType) {
-        return (descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ||
-               (descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ||
-               (descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) ||
-               (descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
-    }
-
-    bool isDescriptorTypeBufferView(VkDescriptorType descType) {
-        return (descType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ||
-               (descType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
-    }
-
     VkResult initDescriptorUpdateTemplateBuffers(
         const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo,
         VkDescriptorUpdateTemplate descriptorUpdateTemplate) {
@@ -5186,44 +6060,100 @@ public:
         size_t currBufferInfoOffset = 0;
         size_t currBufferViewOffset = 0;
 
+        struct goldfish_VkDescriptorSet* ds = as_goldfish_VkDescriptorSet(descriptorSet);
+        ReifiedDescriptorSet* reified = ds->reified;
+
+        bool batched = mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate;
+
         for (uint32_t i = 0; i < templateEntryCount; ++i) {
             const auto& entry = templateEntries[i];
             VkDescriptorType descType = entry.descriptorType;
+            uint32_t dstBinding = entry.dstBinding;
 
             auto offset = entry.offset;
             auto stride = entry.stride;
+            auto dstArrayElement = entry.dstArrayElement;
 
             uint32_t descCount = entry.descriptorCount;
 
             if (isDescriptorTypeImageInfo(descType)) {
+
                 if (!stride) stride = sizeof(VkDescriptorImageInfo);
+
+                const VkDescriptorImageInfo* currImageInfoBegin =
+                    (const VkDescriptorImageInfo*)((uint8_t*)imageInfos + currImageInfoOffset);
+
                 for (uint32_t j = 0; j < descCount; ++j) {
+                    const VkDescriptorImageInfo* user =
+                        (const VkDescriptorImageInfo*)(userBuffer + offset + j * stride);
+
                     memcpy(((uint8_t*)imageInfos) + currImageInfoOffset,
                            userBuffer + offset + j * stride,
                            sizeof(VkDescriptorImageInfo));
                     currImageInfoOffset += sizeof(VkDescriptorImageInfo);
                 }
+
+                if (batched) doEmulatedDescriptorImageInfoWriteFromTemplate(
+                        descType,
+                        dstBinding,
+                        dstArrayElement,
+                        descCount,
+                        currImageInfoBegin,
+                        reified);
+
             } else if (isDescriptorTypeBufferInfo(descType)) {
+
+
                 if (!stride) stride = sizeof(VkDescriptorBufferInfo);
+
+                const VkDescriptorBufferInfo* currBufferInfoBegin =
+                    (const VkDescriptorBufferInfo*)((uint8_t*)bufferInfos + currBufferInfoOffset);
+
                 for (uint32_t j = 0; j < descCount; ++j) {
+                    const VkDescriptorBufferInfo* user =
+                        (const VkDescriptorBufferInfo*)(userBuffer + offset + j * stride);
+
                     memcpy(((uint8_t*)bufferInfos) + currBufferInfoOffset,
                            userBuffer + offset + j * stride,
                            sizeof(VkDescriptorBufferInfo));
                     currBufferInfoOffset += sizeof(VkDescriptorBufferInfo);
                 }
+
+                if (batched) doEmulatedDescriptorBufferInfoWriteFromTemplate(
+                        descType,
+                        dstBinding,
+                        dstArrayElement,
+                        descCount,
+                        currBufferInfoBegin,
+                        reified);
+
             } else if (isDescriptorTypeBufferView(descType)) {
                 if (!stride) stride = sizeof(VkBufferView);
+
+                const VkBufferView* currBufferViewBegin =
+                    (const VkBufferView*)((uint8_t*)bufferViews + currBufferViewOffset);
+
                 for (uint32_t j = 0; j < descCount; ++j) {
                     memcpy(((uint8_t*)bufferViews) + currBufferViewOffset,
                            userBuffer + offset + j * stride,
                            sizeof(VkBufferView));
                     currBufferViewOffset += sizeof(VkBufferView);
                 }
+
+                if (batched) doEmulatedDescriptorBufferViewWriteFromTemplate(
+                        descType,
+                        dstBinding,
+                        dstArrayElement,
+                        descCount,
+                        currBufferViewBegin,
+                        reified);
             } else {
                 ALOGE("%s: FATAL: Unknown descriptor type %d\n", __func__, descType);
                 abort();
             }
         }
+
+        if (batched) return;
 
         enc->vkUpdateDescriptorSetWithTemplateSizedGOOGLE(
             device,
@@ -5352,6 +6282,39 @@ public:
             physicalDevice, pImageFormatInfo, pImageFormatProperties);
     }
 
+    void on_vkGetPhysicalDeviceExternalSemaphoreProperties(
+        void*,
+        VkPhysicalDevice,
+        const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+        VkExternalSemaphoreProperties* pExternalSemaphoreProperties) {
+        (void)pExternalSemaphoreInfo;
+        (void)pExternalSemaphoreProperties;
+#ifdef VK_USE_PLATFORM_FUCHSIA
+        if (pExternalSemaphoreInfo->handleType ==
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA) {
+            pExternalSemaphoreProperties->compatibleHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->externalSemaphoreFeatures |=
+                VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
+                VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
+        }
+#endif  // VK_USE_PLATFORM_FUCHSIA
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+        if (pExternalSemaphoreInfo->handleType ==
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT) {
+            pExternalSemaphoreProperties->compatibleHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT;
+            pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT;
+            pExternalSemaphoreProperties->externalSemaphoreFeatures |=
+                VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
+                VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
+        }
+#endif  // VK_USE_PLATFORM_ANDROID_KHR
+    }
+
     void registerEncoderCleanupCallback(const VkEncoder* encoder, void* object, CleanupCallback callback) {
         AutoLock lock(mLock);
         auto& callbacks = mEncoderCleanupCallbacks[encoder];
@@ -5441,7 +6404,7 @@ public:
 
         (void)context;
 
-        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */);
+        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */, true /* also clear pending descriptor sets */);
 
         VkEncoder* enc = ResourceTracker::getCommandBufferEncoder(commandBuffer);
         (void)input_result;
@@ -5479,7 +6442,7 @@ public:
         VkCommandBuffer commandBuffer,
         VkCommandBufferResetFlags flags) {
 
-        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */);
+        resetCommandBufferStagingInfo(commandBuffer, true /* also reset primaries */, true /* also clear pending descriptor sets */);
 
         VkEncoder* enc = (VkEncoder*)context;
         (void)input_result;
@@ -5541,6 +6504,75 @@ public:
         enc->vkCmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers, true /* do lock */);
     }
 
+    void addPendingDescriptorSets(VkCommandBuffer commandBuffer, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) {
+        struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
+
+        if (!cb->userPtr) {
+            CommandBufferPendingDescriptorSets* newPendingSets =
+                new CommandBufferPendingDescriptorSets;
+            cb->userPtr = newPendingSets;
+        }
+
+        CommandBufferPendingDescriptorSets* pendingSets =
+            (CommandBufferPendingDescriptorSets*)cb->userPtr;
+
+        for (uint32_t i = 0; i < descriptorSetCount; ++i) {
+            pendingSets->sets.insert(pDescriptorSets[i]);
+        }
+    }
+
+    void on_vkCmdBindDescriptorSets(
+        void* context,
+        VkCommandBuffer commandBuffer,
+        VkPipelineBindPoint pipelineBindPoint,
+        VkPipelineLayout layout,
+        uint32_t firstSet,
+        uint32_t descriptorSetCount,
+        const VkDescriptorSet* pDescriptorSets,
+        uint32_t dynamicOffsetCount,
+        const uint32_t* pDynamicOffsets) {
+
+        VkEncoder* enc = (VkEncoder*)context;
+
+        if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate)
+            addPendingDescriptorSets(commandBuffer, descriptorSetCount, pDescriptorSets);
+
+        enc->vkCmdBindDescriptorSets(
+            commandBuffer,
+            pipelineBindPoint,
+            layout,
+            firstSet,
+            descriptorSetCount,
+            pDescriptorSets,
+            dynamicOffsetCount,
+            pDynamicOffsets,
+            true /* do lock */);
+    }
+
+    void decDescriptorSetLayoutRef(
+        void* context,
+        VkDevice device,
+        VkDescriptorSetLayout descriptorSetLayout,
+        const VkAllocationCallbacks* pAllocator) {
+
+        if (!descriptorSetLayout) return;
+
+        struct goldfish_VkDescriptorSetLayout* setLayout = as_goldfish_VkDescriptorSetLayout(descriptorSetLayout);
+
+        if (0 == --setLayout->layoutInfo->refcount) {
+            VkEncoder* enc = (VkEncoder*)context;
+            enc->vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator, true /* do lock */);
+        }
+    }
+
+    void on_vkDestroyDescriptorSetLayout(
+        void* context,
+        VkDevice device,
+        VkDescriptorSetLayout descriptorSetLayout,
+        const VkAllocationCallbacks* pAllocator) {
+        decDescriptorSetLayoutRef(context, device, descriptorSetLayout, pAllocator);
+    }
+
     uint32_t getApiVersionFromInstance(VkInstance instance) const {
         AutoLock lock(mLock);
         uint32_t api = kDefaultApiVersion;
@@ -5588,7 +6620,7 @@ public:
 
     // Resets staging stream for this command buffer and primary command buffers
     // where this command buffer has been recorded.
-    void resetCommandBufferStagingInfo(VkCommandBuffer commandBuffer, bool alsoResetPrimaries) {
+    void resetCommandBufferStagingInfo(VkCommandBuffer commandBuffer, bool alsoResetPrimaries, bool alsoClearPendingDescriptorSets) {
         struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
         if (!cb) {
             return;
@@ -5599,11 +6631,16 @@ public:
             cb->privateStream = nullptr;
         }
 
+        if (alsoClearPendingDescriptorSets && cb->userPtr) {
+            CommandBufferPendingDescriptorSets* pendingSets = (CommandBufferPendingDescriptorSets*)cb->userPtr;
+            pendingSets->sets.clear();
+        }
+
         if (alsoResetPrimaries) {
-            forAllObjects(cb->superObjects, [this, alsoResetPrimaries](void* obj) {
+            forAllObjects(cb->superObjects, [this, alsoResetPrimaries, alsoClearPendingDescriptorSets](void* obj) {
                 VkCommandBuffer superCommandBuffer = (VkCommandBuffer)obj;
                 struct goldfish_VkCommandBuffer* superCb = as_goldfish_VkCommandBuffer(superCommandBuffer);
-                this->resetCommandBufferStagingInfo(superCommandBuffer, alsoResetPrimaries);
+                this->resetCommandBufferStagingInfo(superCommandBuffer, alsoResetPrimaries, alsoClearPendingDescriptorSets);
             });
             eraseObjects(&cb->superObjects);
         }
@@ -5625,7 +6662,7 @@ public:
         if (!p) return;
 
         forAllObjects(p->subObjects, [this](void* commandBuffer) {
-            this->resetCommandBufferStagingInfo((VkCommandBuffer)commandBuffer, true /* also reset primaries */);
+            this->resetCommandBufferStagingInfo((VkCommandBuffer)commandBuffer, true /* also reset primaries */, true /* also clear pending descriptor sets */);
         });
     }
 
@@ -6220,12 +7257,32 @@ VkResult ResourceTracker::on_vkSetBufferCollectionBufferConstraintsFUCHSIA(
         context, input_result, device, collection, pBufferDConstraintsInfo);
 }
 
+VkResult ResourceTracker::on_vkSetBufferCollectionImageConstraintsFUCHSIA(
+    void* context,
+    VkResult input_result,
+    VkDevice device,
+    VkBufferCollectionFUCHSIA collection,
+    const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
+    return mImpl->on_vkSetBufferCollectionImageConstraintsFUCHSIA(
+        context, input_result, device, collection, pImageConstraintsInfo);
+}
+
 VkResult ResourceTracker::on_vkGetBufferCollectionPropertiesFUCHSIA(
         void* context, VkResult input_result,
         VkDevice device,
         VkBufferCollectionFUCHSIA collection,
         VkBufferCollectionPropertiesFUCHSIA* pProperties) {
     return mImpl->on_vkGetBufferCollectionPropertiesFUCHSIA(
+        context, input_result, device, collection, pProperties);
+}
+
+VkResult ResourceTracker::on_vkGetBufferCollectionProperties2FUCHSIA(
+    void* context,
+    VkResult input_result,
+    VkDevice device,
+    VkBufferCollectionFUCHSIA collection,
+    VkBufferCollectionProperties2FUCHSIA* pProperties) {
+    return mImpl->on_vkGetBufferCollectionProperties2FUCHSIA(
         context, input_result, device, collection, pProperties);
 }
 #endif
@@ -6519,6 +7576,26 @@ VkResult ResourceTracker::on_vkGetPhysicalDeviceImageFormatProperties2KHR(
         pImageFormatProperties);
 }
 
+void ResourceTracker::on_vkGetPhysicalDeviceExternalSemaphoreProperties(
+    void* context,
+    VkPhysicalDevice physicalDevice,
+    const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+    VkExternalSemaphoreProperties* pExternalSemaphoreProperties) {
+    mImpl->on_vkGetPhysicalDeviceExternalSemaphoreProperties(
+        context, physicalDevice, pExternalSemaphoreInfo,
+        pExternalSemaphoreProperties);
+}
+
+void ResourceTracker::on_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
+    void* context,
+    VkPhysicalDevice physicalDevice,
+    const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+    VkExternalSemaphoreProperties* pExternalSemaphoreProperties) {
+    mImpl->on_vkGetPhysicalDeviceExternalSemaphoreProperties(
+        context, physicalDevice, pExternalSemaphoreInfo,
+        pExternalSemaphoreProperties);
+}
+
 void ResourceTracker::registerEncoderCleanupCallback(const VkEncoder* encoder, void* handle, ResourceTracker::CleanupCallback callback) {
     mImpl->registerEncoderCleanupCallback(encoder, handle, callback);
 }
@@ -6582,6 +7659,36 @@ void ResourceTracker::on_vkCmdExecuteCommands(
         context, commandBuffer, commandBufferCount, pCommandBuffers);
 }
 
+void ResourceTracker::on_vkCmdBindDescriptorSets(
+    void* context,
+    VkCommandBuffer commandBuffer,
+    VkPipelineBindPoint pipelineBindPoint,
+    VkPipelineLayout layout,
+    uint32_t firstSet,
+    uint32_t descriptorSetCount,
+    const VkDescriptorSet* pDescriptorSets,
+    uint32_t dynamicOffsetCount,
+    const uint32_t* pDynamicOffsets) {
+    mImpl->on_vkCmdBindDescriptorSets(
+        context,
+        commandBuffer,
+        pipelineBindPoint, 
+        layout,
+        firstSet,
+        descriptorSetCount,
+        pDescriptorSets,
+        dynamicOffsetCount,
+        pDynamicOffsets);
+}
+
+void ResourceTracker::on_vkDestroyDescriptorSetLayout(
+    void* context,
+    VkDevice device,
+    VkDescriptorSetLayout descriptorSetLayout,
+    const VkAllocationCallbacks* pAllocator) {
+    mImpl->on_vkDestroyDescriptorSetLayout(context, device, descriptorSetLayout, pAllocator);
+}
+
 void ResourceTracker::deviceMemoryTransform_tohost(
     VkDeviceMemory* memory, uint32_t memoryCount,
     VkDeviceSize* offset, uint32_t offsetCount,
@@ -6610,10 +7717,20 @@ void ResourceTracker::deviceMemoryTransform_fromhost(
         typeBits, typeBitsCount);
 }
 
-#define DEFINE_TRANSFORMED_TYPE_IMPL(type) \
-    void ResourceTracker::transformImpl_##type##_tohost(const type*, uint32_t) { } \
-    void ResourceTracker::transformImpl_##type##_fromhost(const type*, uint32_t) { } \
+void ResourceTracker::transformImpl_VkExternalMemoryProperties_fromhost(
+    VkExternalMemoryProperties* pProperties,
+    uint32_t lenAccess) {
+    mImpl->transformImpl_VkExternalMemoryProperties_fromhost(pProperties,
+                                                             lenAccess);
+}
 
-LIST_TRANSFORMED_TYPES(DEFINE_TRANSFORMED_TYPE_IMPL)
+void ResourceTracker::transformImpl_VkExternalMemoryProperties_tohost(
+    VkExternalMemoryProperties*, uint32_t) {}
+
+#define DEFINE_TRANSFORMED_TYPE_IMPL(type)                                  \
+    void ResourceTracker::transformImpl_##type##_tohost(type*, uint32_t) {} \
+    void ResourceTracker::transformImpl_##type##_fromhost(type*, uint32_t) {}
+
+LIST_TRIVIAL_TRANSFORMED_TYPES(DEFINE_TRANSFORMED_TYPE_IMPL)
 
 } // namespace goldfish_vk
