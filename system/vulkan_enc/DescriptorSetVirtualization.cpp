@@ -118,34 +118,38 @@ void doEmulatedDescriptorWrite(const VkWriteDescriptorSet* write, ReifiedDescrip
     uint32_t descriptorCount = write->descriptorCount;
 
     DescriptorWriteTable& table = toWrite->allWrites;
-    auto& arrayEntries = table[dstBinding];
 
-    if (dstArrayElement + descriptorCount > arrayEntries.size()) {
-        ALOGE("%s: fatal: wanted dstArrayElement(%u) + descriptorCount(%u) = %u writes but only have %zu entries.\n", __func__,
-                dstArrayElement,
-                descriptorCount,
-                dstArrayElement + descriptorCount,
-                arrayEntries.size());
-        abort();
-    }
+    uint32_t arrOffset = dstArrayElement;
 
     if (isDescriptorTypeImageInfo(descType)) {
-        for (uint32_t i = 0; i < descriptorCount; ++i) {
-            auto& entry = arrayEntries[dstArrayElement + i];
+        for (uint32_t i = 0; i < descriptorCount; ++i, ++arrOffset) {
+            if (arrOffset >= table[dstBinding].size()) {
+                ++dstBinding;
+                arrOffset = 0;
+            }
+            auto& entry = table[dstBinding][arrOffset];
             entry.imageInfo = write->pImageInfo[i];
             entry.type = DescriptorWriteType::ImageInfo;
             entry.descriptorType = descType;
         }
     } else if (isDescriptorTypeBufferInfo(descType)) {
-        for (uint32_t i = 0; i < descriptorCount; ++i) {
-            auto& entry = arrayEntries[dstArrayElement + i];
+        for (uint32_t i = 0; i < descriptorCount; ++i, ++arrOffset) {
+            if (arrOffset >= table[dstBinding].size()) {
+                ++dstBinding;
+                arrOffset = 0;
+            }
+            auto& entry = table[dstBinding][arrOffset];
             entry.bufferInfo = write->pBufferInfo[i];
             entry.type = DescriptorWriteType::BufferInfo;
             entry.descriptorType = descType;
         }
     } else if (isDescriptorTypeBufferView(descType)) {
-        for (uint32_t i = 0; i < descriptorCount; ++i) {
-            auto& entry = arrayEntries[dstArrayElement + i];
+        for (uint32_t i = 0; i < descriptorCount; ++i, ++arrOffset) {
+            if (arrOffset >= table[dstBinding].size()) {
+                ++dstBinding;
+                arrOffset = 0;
+            }
+            auto& entry = table[dstBinding][arrOffset];
             entry.bufferView = write->pTexelBufferView[i];
             entry.type = DescriptorWriteType::BufferView;
             entry.descriptorType = descType;
@@ -171,14 +175,24 @@ void doEmulatedDescriptorCopy(const VkCopyDescriptorSet* copy, const ReifiedDesc
     // (TODO: Maybe just notice the pointers are the same? can aliasing in any other way happen?)
 
     std::vector<DescriptorWrite> toCopy;
-    for (uint32_t i = 0; i < copy->descriptorCount; ++i) {
-        // TODO: Copy subparts of inline uniform blocks and acceleration structures
-        toCopy.push_back(srcTable[copy->srcBinding][copy->srcArrayElement + i]);
+    uint32_t currBinding = copy->srcBinding;
+    uint32_t arrOffset = copy->srcArrayElement;
+    for (uint32_t i = 0; i < copy->descriptorCount; ++i, ++arrOffset) {
+        if (arrOffset >= srcTable[currBinding].size()) {
+            ++currBinding;
+            arrOffset = 0;
+        }
+        toCopy.push_back(srcTable[currBinding][arrOffset]);
     }
 
-    for (uint32_t i = 0; i < copy->descriptorCount; ++i) {
-        dstTable[copy->dstBinding][copy->dstArrayElement + i] =
-            toCopy[i];
+    currBinding = copy->dstBinding;
+    arrOffset = copy->dstArrayElement;
+    for (uint32_t i = 0; i < copy->descriptorCount; ++i, ++arrOffset) {
+        if (arrOffset >= dstTable[currBinding].size()) {
+            ++currBinding;
+            arrOffset = 0;
+        }
+        dstTable[currBinding][arrOffset] = toCopy[i];
     }
 }
 
@@ -191,10 +205,16 @@ void doEmulatedDescriptorImageInfoWriteFromTemplate(
     ReifiedDescriptorSet* set) {
 
     DescriptorWriteTable& table = set->allWrites;
-    auto& arrayEntries = table[binding];
 
-    for (uint32_t i = 0; i < count; ++i) {
-        auto& entry = arrayEntries[dstArrayElement + i];
+    uint32_t currBinding = binding;
+    uint32_t arrOffset = dstArrayElement;
+
+    for (uint32_t i = 0; i < count; ++i, ++arrOffset) {
+        if (arrOffset >= table[currBinding].size()) {
+            ++currBinding;
+            arrOffset = 0;
+        }
+        auto& entry = table[currBinding][arrOffset];
         entry.imageInfo = imageInfos[i];
         entry.type = DescriptorWriteType::ImageInfo;
         entry.descriptorType = descType;
@@ -210,10 +230,16 @@ void doEmulatedDescriptorBufferInfoWriteFromTemplate(
     ReifiedDescriptorSet* set) {
 
     DescriptorWriteTable& table = set->allWrites;
-    auto& arrayEntries = table[binding];
 
-    for (uint32_t i = 0; i < count; ++i) {
-        auto& entry = arrayEntries[dstArrayElement + i];
+    uint32_t currBinding = binding;
+    uint32_t arrOffset = dstArrayElement;
+
+    for (uint32_t i = 0; i < count; ++i, ++arrOffset) {
+        if (arrOffset >= table[currBinding].size()) {
+            ++currBinding;
+            arrOffset = 0;
+        }
+        auto& entry = table[currBinding][dstArrayElement + i];
         entry.bufferInfo = bufferInfos[i];
         entry.type = DescriptorWriteType::BufferInfo;
         entry.descriptorType = descType;
@@ -229,10 +255,16 @@ void doEmulatedDescriptorBufferViewWriteFromTemplate(
     ReifiedDescriptorSet* set) {
 
     DescriptorWriteTable& table = set->allWrites;
-    auto& arrayEntries = table[binding];
 
-    for (uint32_t i = 0; i < count; ++i) {
-        auto& entry = arrayEntries[dstArrayElement + i];
+    uint32_t currBinding = binding;
+    uint32_t arrOffset = dstArrayElement;
+
+    for (uint32_t i = 0; i < count; ++i, ++arrOffset) {
+        if (arrOffset >= table[currBinding].size()) {
+            ++currBinding;
+            arrOffset = 0;
+        }
+        auto& entry = table[currBinding][dstArrayElement + i];
         entry.bufferView = bufferViews[i];
         entry.type = DescriptorWriteType::BufferView;
         entry.descriptorType = descType;
