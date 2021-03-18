@@ -222,6 +222,14 @@ SetBufferCollectionConstraintsFUCHSIA(VkDevice /*device*/,
     return VK_SUCCESS;
 }
 
+VkResult SetBufferCollectionImageConstraintsFUCHSIA(
+    VkDevice /*device*/,
+    VkBufferCollectionFUCHSIA /*collection*/,
+    const VkImageConstraintsInfoFUCHSIA* /*pImageConstraintsInfo*/) {
+    AEMU_SCOPED_TRACE("vkstubhal::SetBufferCollectionImageConstraintsFUCHSIA");
+    return VK_SUCCESS;
+}
+
 VkResult SetBufferCollectionBufferConstraintsFUCHSIA(
     VkDevice /*device*/,
     VkBufferCollectionFUCHSIA /*collection*/,
@@ -235,6 +243,14 @@ GetBufferCollectionPropertiesFUCHSIA(VkDevice /*device*/,
                                      VkBufferCollectionFUCHSIA /*collection*/,
                                      VkBufferCollectionPropertiesFUCHSIA* /*pProperties*/) {
     AEMU_SCOPED_TRACE("vkstubhal::GetBufferCollectionPropertiesFUCHSIA");
+    return VK_SUCCESS;
+}
+
+VkResult GetBufferCollectionProperties2FUCHSIA(
+    VkDevice /*device*/,
+    VkBufferCollectionFUCHSIA /*collection*/,
+    VkBufferCollectionProperties2FUCHSIA* /*pProperties*/) {
+    AEMU_SCOPED_TRACE("vkstubhal::GetBufferCollectionProperties2FUCHSIA");
     return VK_SUCCESS;
 }
 #endif
@@ -288,10 +304,16 @@ PFN_vkVoidFunction GetInstanceProcAddr(VkInstance instance,
         return reinterpret_cast<PFN_vkVoidFunction>(DestroyBufferCollectionFUCHSIA);
     if (strcmp(name, "vkSetBufferCollectionConstraintsFUCHSIA") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(SetBufferCollectionConstraintsFUCHSIA);
+    if (strcmp(name, "vkSetBufferCollectionImageConstraintsFUCHSIA") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(
+            SetBufferCollectionImageConstraintsFUCHSIA);
     if (strcmp(name, "vkSetBufferCollectionBufferConstraintsFUCHSIA") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(SetBufferCollectionBufferConstraintsFUCHSIA);
     if (strcmp(name, "vkGetBufferCollectionPropertiesFUCHSIA") == 0)
         return reinterpret_cast<PFN_vkVoidFunction>(GetBufferCollectionPropertiesFUCHSIA);
+    if (strcmp(name, "vkGetBufferCollectionProperties2FUCHSIA") == 0)
+        return reinterpret_cast<PFN_vkVoidFunction>(
+            GetBufferCollectionProperties2FUCHSIA);
 #endif
     // Return NoOp for entrypoints that should never be called.
     if (strcmp(name, "vkGetPhysicalDeviceFeatures") == 0 ||
@@ -589,6 +611,29 @@ VkResult SetBufferCollectionBufferConstraintsFUCHSIA(
 }
 
 VKAPI_ATTR
+VkResult SetBufferCollectionImageConstraintsFUCHSIA(
+    VkDevice device,
+    VkBufferCollectionFUCHSIA collection,
+    const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
+    AEMU_SCOPED_TRACE(
+        "goldfish_vulkan::SetBufferCollectionBufferConstraintsFUCHSIA");
+
+    VK_HOST_CONNECTION(VK_ERROR_DEVICE_LOST)
+
+    if (!hostSupportsVulkan) {
+        return vkstubhal::SetBufferCollectionImageConstraintsFUCHSIA(
+            device, collection, pImageConstraintsInfo);
+    }
+
+    VkResult res =
+        goldfish_vk::ResourceTracker::get()
+            ->on_vkSetBufferCollectionImageConstraintsFUCHSIA(
+                vkEnc, VK_SUCCESS, device, collection, pImageConstraintsInfo);
+
+    return res;
+}
+
+VKAPI_ATTR
 VkResult GetBufferCollectionPropertiesFUCHSIA(
     VkDevice device,
     VkBufferCollectionFUCHSIA collection,
@@ -604,6 +649,27 @@ VkResult GetBufferCollectionPropertiesFUCHSIA(
     VkResult res = goldfish_vk::ResourceTracker::get()->
         on_vkGetBufferCollectionPropertiesFUCHSIA(
             vkEnc, VK_SUCCESS, device, collection, pProperties);
+
+    return res;
+}
+
+VKAPI_ATTR
+VkResult GetBufferCollectionProperties2FUCHSIA(
+    VkDevice device,
+    VkBufferCollectionFUCHSIA collection,
+    VkBufferCollectionProperties2FUCHSIA* pProperties) {
+    AEMU_SCOPED_TRACE("goldfish_vulkan::GetBufferCollectionProperties2FUCHSIA");
+
+    VK_HOST_CONNECTION(VK_ERROR_DEVICE_LOST)
+
+    if (!hostSupportsVulkan) {
+        return vkstubhal::GetBufferCollectionProperties2FUCHSIA(
+            device, collection, pProperties);
+    }
+
+    VkResult res = goldfish_vk::ResourceTracker::get()
+                       ->on_vkGetBufferCollectionProperties2FUCHSIA(
+                           vkEnc, VK_SUCCESS, device, collection, pProperties);
 
     return res;
 }
@@ -691,11 +757,17 @@ static PFN_vkVoidFunction GetDeviceProcAddr(VkDevice device, const char* name) {
     if (!strcmp(name, "vkSetBufferCollectionConstraintsFUCHSIA")) {
         return (PFN_vkVoidFunction)SetBufferCollectionConstraintsFUCHSIA;
     }
+    if (!strcmp(name, "vkSetBufferCollectionImageConstraintsFUCHSIA")) {
+        return (PFN_vkVoidFunction)SetBufferCollectionImageConstraintsFUCHSIA;
+    }
     if (!strcmp(name, "vkSetBufferCollectionBufferConstraintsFUCHSIA")) {
         return (PFN_vkVoidFunction)SetBufferCollectionBufferConstraintsFUCHSIA;
     }
     if (!strcmp(name, "vkGetBufferCollectionPropertiesFUCHSIA")) {
         return (PFN_vkVoidFunction)GetBufferCollectionPropertiesFUCHSIA;
+    }
+    if (!strcmp(name, "vkGetBufferCollectionProperties2FUCHSIA")) {
+        return (PFN_vkVoidFunction)GetBufferCollectionProperties2FUCHSIA;
     }
 #endif
     if (!strcmp(name, "vkQueueSignalReleaseImageANDROID")) {
@@ -822,25 +894,31 @@ private:
 };
 
 void VulkanDevice::InitLogger() {
-   zx_handle_t channel = GetConnectToServiceFunction()("/svc/fuchsia.logger.LogSink");
-   if (channel == ZX_HANDLE_INVALID)
-      return;
+  auto log_service = ([] () -> std::optional<zx::socket> {
+    fidl::ClientEnd<fuchsia_logger::LogSink> channel{zx::channel{
+      GetConnectToServiceFunction()("/svc/fuchsia.logger.LogSink")}};
+    if (!channel.is_valid())
+      return std::nullopt;
 
-  zx::socket local_socket, remote_socket;
-  zx_status_t status = zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
-  if (status != ZX_OK)
-    return;
+    zx::socket local_socket, remote_socket;
+    zx_status_t status = zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
+    if (status != ZX_OK)
+      return std::nullopt;
 
-  auto result = llcpp::fuchsia::logger::LogSink::Call::Connect(
-      zx::unowned_channel(channel), std::move(remote_socket));
-  zx_handle_close(channel);
+    auto result = fuchsia_logger::LogSink::Call::Connect(
+        channel, std::move(remote_socket));
 
-  if (result.status() != ZX_OK)
+    if (!result.ok())
+      return std::nullopt;
+
+    return local_socket;
+  })();
+  if (!log_service)
     return;
 
   fx_logger_config_t config = {.min_severity = FX_LOG_INFO,
                                .console_fd = -1,
-                               .log_service_channel = local_socket.release(),
+                               .log_service_channel = log_service->release(),
                                .tags = nullptr,
                                .num_tags = 0};
 

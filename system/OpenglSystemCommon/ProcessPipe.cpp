@@ -75,24 +75,25 @@ static void initSeqno() {
 static void processPipeInitOnce() {
     initSeqno();
 
-    zx::channel channel(GetConnectToServiceFunction()(QEMU_PIPE_PATH));
+    fidl::ClientEnd<fuchsia_hardware_goldfish::PipeDevice> channel{
+        zx::channel(GetConnectToServiceFunction()(QEMU_PIPE_PATH))};
     if (!channel) {
         ALOGE("%s: failed to open " QEMU_PIPE_PATH,
               __FUNCTION__);
         return;
     }
 
-    llcpp::fuchsia::hardware::goldfish::PipeDevice::SyncClient device(
+    fuchsia_hardware_goldfish::PipeDevice::SyncClient device(
         std::move(channel));
 
     auto pipe_ends =
-        fidl::CreateEndpoints<::llcpp::fuchsia::hardware::goldfish::Pipe>();
+        fidl::CreateEndpoints<::fuchsia_hardware_goldfish::Pipe>();
     if (!pipe_ends.is_ok()) {
         ALOGE("%s: zx_channel_create failed: %d", __FUNCTION__, pipe_ends.status_value());
         return;
     }
 
-    llcpp::fuchsia::hardware::goldfish::Pipe::SyncClient pipe(
+    fuchsia_hardware_goldfish::Pipe::SyncClient pipe(
         std::move(pipe_ends->client));
     device.OpenPipe(std::move(pipe_ends->server));
 
