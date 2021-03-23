@@ -19,25 +19,16 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_VENDOR_MODULE := true
 emulator_hwcomposer_shared_libraries := \
-    android.hardware.graphics.mapper@2.0 \
-    android.hardware.graphics.mapper@4.0 \
-    libbase \
-    libEGL \
-    libcutils \
-    libcuttlefish_device_config \
-    libcuttlefish_device_config_proto \
-    libcuttlefish_utils \
-    libcuttlefish_fs \
-    libdrm \
-    libgralloctypes \
-    libhardware \
-    libhidlbase \
-    libjpeg \
     liblog \
+    libutils \
+    libcutils \
+    libdrm \
+    libEGL \
+    libutils \
+    libhardware \
     libsync \
     libui \
-    libutils \
-    libutils \
+    android.hardware.graphics.mapper@2.0 \
 
 emulator_hwcomposer_cflags += \
     -DLOG_TAG=\"hwc2\" \
@@ -45,31 +36,23 @@ emulator_hwcomposer_cflags += \
     -DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION
 
 emulator_hwcomposer_c_includes += \
-    device/generic/goldfish-opengl/host/include/libOpenglRender \
-    device/generic/goldfish-opengl/shared/OpenglCodecCommon \
-    device/generic/goldfish-opengl/system/OpenglSystemCommon \
-    device/generic/goldfish-opengl/system/include \
-    device/generic/goldfish-opengl/system/renderControl_enc \
-    external/libdrm \
     system/core/libsync \
     system/core/libsync/include \
+    device/generic/goldfish-opengl/system/include \
+    device/generic/goldfish-opengl/system/OpenglSystemCommon \
+    device/generic/goldfish-opengl/host/include/libOpenglRender \
+    device/generic/goldfish-opengl/shared/OpenglCodecCommon \
+    device/generic/goldfish-opengl/system/renderControl_enc \
+    external/libdrm
 
 emulator_hwcomposer_relative_path := hw
 
 emulator_hwcomposer2_src_files := \
-    Device.cpp \
-    Display.cpp \
-    Drm.cpp \
-    DrmPresenter.cpp \
-    Gralloc.cpp \
-    GuestComposer.cpp \
-    HostComposer.cpp \
-    Layer.cpp \
+    EmuHWC2.cpp
 
 include $(CLEAR_VARS)
 
 LOCAL_VENDOR_MODULE := true
-LOCAL_STATIC_LIBRARIES := libyuv_static
 LOCAL_SHARED_LIBRARIES := $(emulator_hwcomposer_shared_libraries)
 LOCAL_SHARED_LIBRARIES += libOpenglSystemCommon lib_renderControl_enc
 LOCAL_SHARED_LIBRARIES += libui
