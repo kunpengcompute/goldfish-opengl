@@ -16,6 +16,8 @@
 
 #include "Display.h"
 
+#include <sync/sync.h>
+
 #include <atomic>
 #include <numeric>
 
@@ -25,7 +27,6 @@ namespace android {
 namespace {
 
 std::atomic<hwc2_config_t> sNextConfigId{0};
-std::atomic<hwc2_display_t> sNextDisplayId{0};
 
 bool IsValidColorMode(android_color_mode_t mode) {
   switch (mode) {
@@ -59,11 +60,11 @@ bool isValidPowerMode(HWC2::PowerMode mode) {
 
 }  // namespace
 
-Display::Display(Device& device, Composer* composer)
+Display::Display(Device& device, Composer* composer, hwc2_display_t id)
     : mDevice(device),
       mComposer(composer),
-      mId(sNextDisplayId++),
-      mVsyncThread(*this) {}
+      mId(id),
+      mVsyncThread(new VsyncThread(*this)) {}
 
 Display::~Display() {}
 
@@ -76,7 +77,7 @@ HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
   std::unique_lock<std::recursive_mutex> lock(mStateMutex);
 
   mVsyncPeriod = 1000 * 1000 * 1000 / refreshRateHz;
-  mVsyncThread.run("", ANDROID_PRIORITY_URGENT_DISPLAY);
+  mVsyncThread->run("", ANDROID_PRIORITY_URGENT_DISPLAY);
 
   hwc2_config_t configId = sNextConfigId++;
 
@@ -95,6 +96,31 @@ HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
   return HWC2::Error::None;
 }
 
+HWC2::Error Display::updateParameters(uint32_t width, uint32_t height,
+                                      uint32_t dpiX, uint32_t dpiY,
+                                      uint32_t refreshRateHz) {
+  DEBUG_LOG("%s updating display:%" PRIu64
+            " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
+            __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
+
+  std::unique_lock<std::recursive_mutex> lock(mStateMutex);
+
+  mVsyncPeriod = 1000 * 1000 * 1000 / refreshRateHz;
+
+  auto it = mConfigs.find(*mActiveConfigId);
+  if (it == mConfigs.end()) {
+    ALOGE("%s: failed to find config %" PRIu32, __func__, *mActiveConfigId);
+    return HWC2::Error::NoResources;
+  }
+  it->second.setAttribute(HWC2::Attribute::VsyncPeriod, mVsyncPeriod);
+  it->second.setAttribute(HWC2::Attribute::Width, width);
+  it->second.setAttribute(HWC2::Attribute::Height, height);
+  it->second.setAttribute(HWC2::Attribute::DpiX, dpiX * 1000);
+  it->second.setAttribute(HWC2::Attribute::DpiY, dpiY * 1000);
+
+  return HWC2::Error::None;
+}
+
 Layer* Display::getLayer(hwc2_layer_t layerId) {
   auto it = mLayers.find(layerId);
   if (it == mLayers.end()) {
@@ -103,6 +129,21 @@ Layer* Display::getLayer(hwc2_layer_t layerId) {
   }
 
   return it->second.get();
+}
+
+buffer_handle_t Display::waitAndGetClientTargetBuffer() {
+  DEBUG_LOG("%s: display:%" PRIu64, __FUNCTION__, mId);
+
+  int fence = mClientTarget.getFence();
+  if (fence != -1) {
+    int err = sync_wait(fence, 3000);
+    if (err < 0 && errno == ETIME) {
+      ALOGE("%s waited on fence %" PRId32 " for 3000 ms", __FUNCTION__, fence);
+    }
+    close(fence);
+  }
+
+  return mClientTarget.getBuffer();
 }
 
 HWC2::Error Display::acceptChanges() {
@@ -199,6 +240,8 @@ HWC2::Error Display::getDisplayAttributeEnum(hwc2_config_t configId,
 
   const Config& config = it->second;
   *outValue = config.getAttribute(attribute);
+  DEBUG_LOG("%s: display:%" PRIu64 " attribute:%s value is %" PRIi32,
+            __FUNCTION__, mId, attributeString.c_str(), *outValue);
   return HWC2::Error::None;
 }
 
@@ -466,7 +509,7 @@ HWC2::Error Display::setClientTarget(buffer_handle_t target,
   std::unique_lock<std::recursive_mutex> lock(mStateMutex);
   mClientTarget.setBuffer(target);
   mClientTarget.setFence(acquireFence);
-
+  mComposer->onDisplayClientTargetSet(this);
   return HWC2::Error::None;
 }
 

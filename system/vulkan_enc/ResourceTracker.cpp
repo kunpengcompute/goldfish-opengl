@@ -931,7 +931,7 @@ public:
                 abort();
             }
             mControlDevice = std::make_unique<
-                fuchsia_hardware_goldfish::ControlDevice::SyncClient>(
+                fidl::WireSyncClient<fuchsia_hardware_goldfish::ControlDevice>>(
                 std::move(channel));
 
             fidl::ClientEnd<fuchsia_sysmem::Allocator> sysmem_channel{
@@ -940,7 +940,7 @@ public:
                 ALOGE("failed to open sysmem connection");
             }
             mSysmemAllocator =
-                std::make_unique<fuchsia_sysmem::Allocator::SyncClient>(
+                std::make_unique<fidl::WireSyncClient<fuchsia_sysmem::Allocator>>(
                     std::move(sysmem_channel));
             char name[ZX_MAX_NAME_LEN] = {};
             zx_object_get_property(zx_process_self(), ZX_PROP_NAME, name, sizeof(name));
@@ -949,7 +949,8 @@ public:
             zx_info_handle_basic_t info;
             zx_object_get_info(zx_process_self(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
                                nullptr, nullptr);
-            mSysmemAllocator->SetDebugClientInfo(fidl::unowned_str(client_name), info.koid);
+            mSysmemAllocator->SetDebugClientInfo(fidl::StringView::FromExternal(client_name),
+                                                 info.koid);
         }
 #endif
 
@@ -1145,6 +1146,7 @@ public:
         VkExternalMemoryHandleTypeFlags supportedHandleType = 0u;
 #ifdef VK_USE_PLATFORM_FUCHSIA
         supportedHandleType |=
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA |
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA;
 #endif  // VK_USE_PLATFORM_FUCHSIA
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -1743,7 +1745,8 @@ public:
         using fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_DEVICE_LOCAL;
         using fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_HOST_VISIBLE;
 
-        if (handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) {
+        if (handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA &&
+            handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA) {
             return VK_ERROR_INITIALIZATION_FAILED;
         }
 
@@ -1942,7 +1945,7 @@ public:
         }
 
         auto* sysmem_collection =
-            new fuchsia_sysmem::BufferCollection::SyncClient(
+            new fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>(
                 std::move(collection_client));
         *pCollection = reinterpret_cast<VkBufferCollectionFUCHSIA>(sysmem_collection);
 
@@ -1955,7 +1958,7 @@ public:
         VkBufferCollectionFUCHSIA collection,
         const VkAllocationCallbacks*) {
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         if (sysmem_collection) {
             sysmem_collection->Close();
         }
@@ -2152,7 +2155,7 @@ public:
 
     VkResult setBufferCollectionConstraints(
         VkEncoder* enc, VkDevice device,
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkImageCreateInfo* pImageInfo) {
         if (pImageInfo == nullptr) {
             ALOGE("setBufferCollectionConstraints: pImageInfo cannot be null.");
@@ -2328,7 +2331,7 @@ public:
     VkResult setBufferCollectionImageConstraints(
         VkEncoder* enc,
         VkDevice device,
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
         if (!pImageConstraintsInfo ||
             pImageConstraintsInfo->sType !=
@@ -2451,9 +2454,8 @@ public:
         }
 
         constexpr uint32_t kVulkanPriority = 5;
-        const char* kName = "GoldfishSysmemShared";
-        collection->SetName(kVulkanPriority,
-                            fidl::unowned_str(kName, strlen(kName)));
+        const char kName[] = "GoldfishSysmemShared";
+        collection->SetName(kVulkanPriority, fidl::StringView(kName));
 
         auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
@@ -2479,7 +2481,7 @@ public:
     }
 
     VkResult setBufferCollectionBufferConstraints(
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) {
         if (pBufferConstraintsInfo == nullptr) {
             ALOGE(
@@ -2497,8 +2499,8 @@ public:
                 pBufferConstraintsInfo);
 
         constexpr uint32_t kVulkanPriority = 5;
-        const char* kName = "GoldfishBufferSysmemShared";
-        collection->SetName(kVulkanPriority, fidl::unowned_str(kName, strlen(kName)));
+        const char kName[] = "GoldfishBufferSysmemShared";
+        collection->SetName(kVulkanPriority, fidl::StringView(kName));
 
         auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
@@ -2527,7 +2529,7 @@ public:
         const VkImageCreateInfo* pImageInfo) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionConstraints(enc, device, sysmem_collection, pImageInfo);
     }
 
@@ -2539,7 +2541,7 @@ public:
         const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionImageConstraints(
             enc, device, sysmem_collection, pImageConstraintsInfo);
     }
@@ -2551,7 +2553,7 @@ public:
         VkBufferCollectionFUCHSIA collection,
         const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) {
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionBufferConstraints(sysmem_collection,
                                                     pBufferConstraintsInfo);
     }
@@ -2655,7 +2657,7 @@ public:
         VkBufferCollectionProperties2FUCHSIA* pProperties) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
 
         auto result = sysmem_collection->WaitForBuffersAllocated();
         if (!result.ok() || result.Unwrap()->status != ZX_OK) {
@@ -3024,6 +3026,11 @@ public:
 
         const VkImportMemoryZirconHandleInfoFUCHSIA* importVmoInfoPtr =
             vk_find_struct<VkImportMemoryZirconHandleInfoFUCHSIA>(pAllocateInfo);
+        if (!importVmoInfoPtr) {
+            importVmoInfoPtr = reinterpret_cast<const VkImportMemoryZirconHandleInfoFUCHSIA*>(
+                __vk_find_struct(const_cast<void*>(pAllocateInfo->pNext),
+                    VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA));
+        }
 
         const VkMemoryDedicatedAllocateInfo* dedicatedAllocInfoPtr =
             vk_find_struct<VkMemoryDedicatedAllocateInfo>(pAllocateInfo);
@@ -3080,8 +3087,10 @@ public:
                 exportAllocateInfoPtr->handleTypes &
                 VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
             exportVmo =
-                exportAllocateInfoPtr->handleTypes &
-                VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA;
+                (exportAllocateInfoPtr->handleTypes &
+                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
+                (exportAllocateInfoPtr->handleTypes &
+                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA);
         } else if (importAhbInfoPtr) {
             importAhb = true;
         } else if (importBufferCollectionInfoPtr) {
@@ -3172,7 +3181,7 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 importBufferCollectionInfoPtr->collection);
             auto result = collection->WaitForBuffersAllocated();
             if (!result.ok() || result.Unwrap()->status != ZX_OK) {
@@ -3290,7 +3299,7 @@ public:
                     }
                 }
 
-                fuchsia_sysmem::BufferCollection::SyncClient collection(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection> collection(
                     std::move(collection_ends->client));
                 if (hasDedicatedImage) {
                     VkResult res = setBufferCollectionConstraints(
@@ -3899,14 +3908,16 @@ public:
         bool isSysmemBackedMemory = false;
 
         if (extImgCiPtr &&
+            ((extImgCiPtr->handleTypes &
+                VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
             (extImgCiPtr->handleTypes &
-             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA)) {
+                VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA))) {
             isSysmemBackedMemory = true;
         }
 
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 extBufferCollectionPtr->collection);
             uint32_t index = extBufferCollectionPtr->index;
             zx::vmo vmo;
@@ -4918,8 +4929,10 @@ public:
         const VkExternalMemoryBufferCreateInfo* extBufCiPtr =
             vk_find_struct<VkExternalMemoryBufferCreateInfo>(pCreateInfo);
         if (extBufCiPtr &&
+            ((extBufCiPtr->handleTypes &
+             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
             (extBufCiPtr->handleTypes &
-             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA)) {
+             VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA))) {
             isSysmemBackedMemory = true;
         }
 
@@ -4929,7 +4942,7 @@ public:
 
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 extBufferCollectionPtr->collection);
             uint32_t index = extBufferCollectionPtr->index;
 
@@ -5117,8 +5130,10 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         bool exportEvent = exportSemaphoreInfoPtr &&
+            ((exportSemaphoreInfoPtr->handleTypes &
+             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA) ||
             (exportSemaphoreInfoPtr->handleTypes &
-             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA);
+             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA));
 
         if (exportEvent) {
             finalCreateInfo.pNext = nullptr;
@@ -5154,7 +5169,7 @@ public:
 
         info.device = device;
         info.eventHandle = event_handle;
-#ifdef VK_PLATFORM_FUCHSIA
+#ifdef VK_USE_PLATFORM_FUCHSIA
         info.eventKoid = getEventKoid(info.eventHandle);
 #endif
 
@@ -6226,12 +6241,32 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         if (ext_img_properties) {
-            ext_img_properties->externalMemoryProperties = {
-                .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
-                                          VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
-                .exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
-                .compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
-            };
+            const VkPhysicalDeviceExternalImageFormatInfo* ext_img_info =
+                vk_find_struct<VkPhysicalDeviceExternalImageFormatInfo>(pImageFormatInfo);
+            if (ext_img_info) {
+                switch (static_cast<uint32_t>(ext_img_info->handleType)) {
+                case VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA:
+                    ext_img_properties->externalMemoryProperties = {
+                        .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
+                                                  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
+                        .exportFromImportedHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+                        .compatibleHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+                    };
+                    break;
+                case VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA:
+                    ext_img_properties->externalMemoryProperties = {
+                        .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
+                                                  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
+                        .exportFromImportedHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+                        .compatibleHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+                    };
+                    break;
+                }
+            }
         }
 #endif
 
@@ -6279,6 +6314,16 @@ public:
                 VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
             pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
                 VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->externalSemaphoreFeatures |=
+                VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
+                VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
+        }
+        if (pExternalSemaphoreInfo->handleType ==
+            static_cast<uint32_t>(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)) {
+            pExternalSemaphoreProperties->compatibleHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA;
             pExternalSemaphoreProperties->externalSemaphoreFeatures |=
                 VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
                 VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
@@ -6685,9 +6730,9 @@ private:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
     std::unique_ptr<
-        fuchsia_hardware_goldfish::ControlDevice::SyncClient>
+        fidl::WireSyncClient<fuchsia_hardware_goldfish::ControlDevice>>
         mControlDevice;
-    std::unique_ptr<fuchsia_sysmem::Allocator::SyncClient>
+    std::unique_ptr<fidl::WireSyncClient<fuchsia_sysmem::Allocator>>
         mSysmemAllocator;
 #endif
 

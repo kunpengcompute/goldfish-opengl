@@ -35,10 +35,15 @@ class GuestComposer : public Composer {
   GuestComposer(GuestComposer&&) = delete;
   GuestComposer& operator=(GuestComposer&&) = delete;
 
-  HWC2::Error init() override;
+  HWC2::Error init(const HotplugCallback& cb) override;
 
   HWC2::Error createDisplays(
       Device* device,
+      const AddDisplayToDeviceFunction& addDisplayToDeviceFn) override;
+
+  HWC2::Error createDisplay(
+      Device* device, uint32_t displayId, uint32_t width, uint32_t height,
+      uint32_t dpiX, uint32_t dpiY, uint32_t refreshRateHz,
       const AddDisplayToDeviceFunction& addDisplayToDeviceFn) override;
 
   HWC2::Error onDisplayDestroy(Display*) override;
@@ -77,11 +82,11 @@ class GuestComposer : public Composer {
   bool canComposeLayer(Layer* layer);
 
   // Composes the given layer into the given destination buffer.
-  HWC2::Error composerLayerInto(Layer* layer, std::uint8_t* dstBuffer,
-                                std::uint32_t dstBufferWidth,
-                                std::uint32_t dstBufferHeight,
-                                std::uint32_t dstBufferStrideBytes,
-                                std::uint32_t dstBufferBytesPerPixel);
+  HWC2::Error composeLayerInto(Layer* layer, std::uint8_t* dstBuffer,
+                               std::uint32_t dstBufferWidth,
+                               std::uint32_t dstBufferHeight,
+                               std::uint32_t dstBufferStrideBytes,
+                               std::uint32_t dstBufferBytesPerPixel);
 
   struct GuestComposerDisplayInfo {
     // Additional per display buffer for the composition result.
@@ -95,6 +100,10 @@ class GuestComposer : public Composer {
   Gralloc mGralloc;
 
   DrmPresenter mDrmPresenter;
+
+  // Cuttlefish on QEMU does not have a display. Disable presenting to avoid
+  // spamming logcat with DRM commit failures.
+  bool mPresentDisabled = false;
 
   uint8_t* getRotatingScratchBuffer(std::size_t neededSize,
                                     std::uint32_t order);
