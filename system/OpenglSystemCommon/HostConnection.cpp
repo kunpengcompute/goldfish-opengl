@@ -40,6 +40,7 @@ public:
     void setNoHostError(bool) { }
     void setDrawCallFlushInterval(uint32_t) { }
     void setHasAsyncUnmapBuffer(int) { }
+    void setHasSyncBufferData(int) { }
 };
 #else
 #include "GLEncoder.h"
@@ -105,11 +106,16 @@ static HostConnectionType getConnectionTypeFromProperty() {
     return HOST_CONNECTION_ADDRESS_SPACE;
 #else
     char transportValue[PROPERTY_VALUE_MAX] = "";
-    property_get("ro.boot.qemu.gltransport", transportValue, "");
 
-    if (!transportValue[0]) {
+    do {
+        property_get("ro.boot.qemu.gltransport.name", transportValue, "");
+        if (transportValue[0]) { break; }
+
+        property_get("ro.boot.qemu.gltransport", transportValue, "");
+        if (transportValue[0]) { break; }
+
         property_get("ro.boot.hardware.gltransport", transportValue, "");
-    }
+    } while (false);
 
     if (!transportValue[0]) return HOST_CONNECTION_QEMU_PIPE;
 
@@ -620,6 +626,7 @@ GL2Encoder *HostConnection::gl2Encoder()
         m_gl2Enc->setDrawCallFlushInterval(
             getDrawCallFlushIntervalFromProperty());
         m_gl2Enc->setHasAsyncUnmapBuffer(m_rcEnc->hasAsyncUnmapBuffer());
+        m_gl2Enc->setHasSyncBufferData(m_rcEnc->hasSyncBufferData());
     }
     return m_gl2Enc.get();
 }
@@ -664,6 +671,8 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetAsyncFrameCommands(rcEnc);
         queryAndSetVulkanQueueSubmitWithCommandsSupport(rcEnc);
         queryAndSetVulkanBatchedDescriptorSetUpdateSupport(rcEnc);
+        queryAndSetSyncBufferData(rcEnc);
+        queryVersion(rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_connectionType, rcEnc);
         }
@@ -953,4 +962,16 @@ void HostConnection::queryAndSetVulkanBatchedDescriptorSetUpdateSupport(Extended
     if (glExtensions.find(kVulkanBatchedDescriptorSetUpdate) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkanBatchedDescriptorSetUpdate = true;
     }
+}
+
+void HostConnection::queryAndSetSyncBufferData(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kSyncBufferData) != std::string::npos) {
+        rcEnc->featureInfo()->hasSyncBufferData = true;
+    }
+}
+
+GLint HostConnection::queryVersion(ExtendedRCEncoderContext* rcEnc) {
+    GLint version = m_rcEnc->rcGetRendererVersion(m_rcEnc.get());
+    return version;
 }

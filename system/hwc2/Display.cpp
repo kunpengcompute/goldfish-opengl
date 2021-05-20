@@ -69,10 +69,11 @@ Display::Display(Device& device, Composer* composer, hwc2_display_t id)
 Display::~Display() {}
 
 HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
-                          uint32_t dpiY, uint32_t refreshRateHz) {
-  DEBUG_LOG("%s initializing display:%" PRIu64
-            " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
-            __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
+                          uint32_t dpiY, uint32_t refreshRateHz,
+                          const std::optional<std::vector<uint8_t>>& edid) {
+  ALOGD("%s initializing display:%" PRIu64
+        " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
+        __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
 
   std::unique_lock<std::recursive_mutex> lock(mStateMutex);
 
@@ -92,13 +93,14 @@ HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
   mActiveConfigId = configId;
   mActiveColorMode = HAL_COLOR_MODE_NATIVE;
   mColorModes.emplace((android_color_mode_t)HAL_COLOR_MODE_NATIVE);
+  mEdid = edid;
 
   return HWC2::Error::None;
 }
 
-HWC2::Error Display::updateParameters(uint32_t width, uint32_t height,
-                                      uint32_t dpiX, uint32_t dpiY,
-                                      uint32_t refreshRateHz) {
+HWC2::Error Display::updateParameters(
+    uint32_t width, uint32_t height, uint32_t dpiX, uint32_t dpiY,
+    uint32_t refreshRateHz, const std::optional<std::vector<uint8_t>>& edid) {
   DEBUG_LOG("%s updating display:%" PRIu64
             " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
             __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
@@ -117,6 +119,8 @@ HWC2::Error Display::updateParameters(uint32_t width, uint32_t height,
   it->second.setAttribute(HWC2::Attribute::Height, height);
   it->second.setAttribute(HWC2::Attribute::DpiX, dpiX * 1000);
   it->second.setAttribute(HWC2::Attribute::DpiY, dpiY * 1000);
+
+  mEdid = edid;
 
   return HWC2::Error::None;
 }
@@ -200,8 +204,13 @@ HWC2::Error Display::destroyLayer(hwc2_layer_t layerId) {
     return HWC2::Error::BadLayer;
   }
 
-  std::remove_if(mOrderedLayers.begin(), mOrderedLayers.end(),
-                 [layerId](Layer* layer) { return layer->getId() == layerId; });
+  mOrderedLayers.erase(std::remove_if(mOrderedLayers.begin(),  //
+                                      mOrderedLayers.end(),    //
+                                      [layerId](Layer* layer) {
+                                        return layer->getId() == layerId;
+                                      }),
+                       mOrderedLayers.end());
+
   mLayers.erase(it);
 
   DEBUG_LOG("%s destroyed layer:%" PRIu64, __FUNCTION__, layerId);
@@ -300,8 +309,8 @@ HWC2::Error Display::getColorModes(uint32_t* outNumModes, int32_t* outModes) {
   }
 
   // we only support HAL_COLOR_MODE_NATIVE so far
-  uint32_t numModes =
-      std::min(*outNumModes, static_cast<uint32_t>(mColorModes.size()));
+  uint32_t numModes = std::min<uint32_t>(
+      *outNumModes, static_cast<uint32_t>(mColorModes.size()));
   std::copy_n(mColorModes.cbegin(), numModes, outModes);
   *outNumModes = numModes;
   return HWC2::Error::None;
@@ -760,6 +769,18 @@ HWC2::Error Display::getDisplayIdentificationData(uint8_t* outPort,
     return HWC2::Error::BadParameter;
   }
 
+  if (mEdid) {
+    if (outData) {
+      *outDataSize = std::min<uint32_t>(*outDataSize, (*mEdid).size());
+      memcpy(outData, (*mEdid).data(), *outDataSize);
+    } else {
+      *outDataSize = (*mEdid).size();
+    }
+    *outPort = mId;
+    return HWC2::Error::None;
+  }
+
+  // fallback to legacy EDID implementation
   uint32_t len = std::min(*outDataSize, (uint32_t)ARRAY_SIZE(sEDID0));
   if (outData != nullptr && len < (uint32_t)ARRAY_SIZE(sEDID0)) {
     ALOGW("%s: display:%" PRIu64 " small buffer size: %u is specified",
@@ -810,11 +831,10 @@ HWC2::Error Display::getDisplayCapabilities(uint32_t* outNumCapabilities,
     return HWC2::Error::None;
   }
 
-  bool brightness_support = true;
-  bool doze_support = true;
+  bool brightness_support = false;
+  bool doze_support = false;
 
-  uint32_t count =
-      1 + static_cast<uint32_t>(doze_support) + (brightness_support ? 1 : 0);
+  uint32_t count = 1 + (doze_support ? 1 : 0) + (brightness_support ? 1 : 0);
   int index = 0;
   if (outCapabilities != nullptr && (*outNumCapabilities >= count)) {
     outCapabilities[index++] =
@@ -844,7 +864,7 @@ HWC2::Error Display::setDisplayBrightness(float brightness) {
 
   ALOGW("TODO: setDisplayBrightness() is not implemented yet: brightness=%f",
         brightness);
-  return HWC2::Error::None;
+  return HWC2::Error::Unsupported;
 }
 
 void Display::Config::setAttribute(HWC2::Attribute attribute, int32_t value) {

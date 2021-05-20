@@ -35,6 +35,9 @@ public:
     void setHasAsyncUnmapBuffer(int version) {
         m_hasAsyncUnmapBuffer = version;
     }
+    void setHasSyncBufferData(bool value) {
+        m_hasSyncBufferData = value;
+    }
     void setNoHostError(bool noHostError) {
         m_noHostError = noHostError;
     }
@@ -62,7 +65,7 @@ public:
     }
     void setSharedGroup(GLSharedGroupPtr shared) {
         m_shared = shared;
-        if (m_state && m_shared.Ptr()) {
+        if (m_state && m_shared) {
             m_state->setTextureData(m_shared->getTextureData());
             m_state->setRenderbufferInfo(m_shared->getRenderbufferInfo());
             m_state->setSamplerInfo(m_shared->getSamplerInfo());
@@ -94,7 +97,7 @@ public:
 
     void override2DTextureTarget(GLenum target);
     void restore2DTextureTarget(GLenum target);
-    void associateEGLImage(GLenum target, GLeglImageOES eglImage);
+    void associateEGLImage(GLenum target, GLeglImageOES eglImage, int width, int height);
 
     // Convenience functions for buffers
     GLuint boundBuffer(GLenum target) const;
@@ -113,6 +116,7 @@ private:
     std::vector<std::string> m_currExtensionsArray;
 
     bool    m_hasAsyncUnmapBuffer;
+    bool    m_hasSyncBufferData;
     bool    m_initialized;
     bool    m_noHostError;
     GLClientState *m_state;
