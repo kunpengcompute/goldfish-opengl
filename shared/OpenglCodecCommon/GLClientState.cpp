@@ -1481,7 +1481,7 @@ GLenum GLClientState::bindTexture(GLenum target, GLuint texture,
     return GL_NO_ERROR;
 }
 
-void GLClientState::setBoundEGLImage(GLenum target, GLeglImageOES image) {
+void GLClientState::setBoundEGLImage(GLenum target, GLeglImageOES image, int width, int height) {
     (void)image;
 
     if (target == GL_RENDERBUFFER) {
@@ -1489,7 +1489,7 @@ void GLClientState::setBoundEGLImage(GLenum target, GLeglImageOES image) {
         setBoundRenderbufferEGLImageBacked();
         setBoundRenderbufferFormat(GL_RGBA);
         setBoundRenderbufferSamples(0);
-        setBoundRenderbufferDimensions(1, 1);
+        setBoundRenderbufferDimensions(width, height);
     } else {
         GLuint texture = getBoundTexture(target);
         TextureRec* texrec = getTextureRec(texture);
@@ -1499,7 +1499,7 @@ void GLClientState::setBoundEGLImage(GLenum target, GLeglImageOES image) {
         setBoundTextureFormat(target, GL_RGBA);
         setBoundTextureType(target, GL_UNSIGNED_BYTE);
         setBoundTextureSamples(target, 0);
-        setBoundTextureDims(target, target, 0, 1, 1, 1);
+        setBoundTextureDims(target, target, 0, width, height, 1);
     }
 }
 
@@ -1760,7 +1760,9 @@ GLuint GLClientState::getBoundFramebuffer(GLenum target) const
 GLenum GLClientState::checkFramebufferCompleteness(GLenum target) {
     // Default framebuffer is complete
     // TODO: Check the case where the default framebuffer is 0x0
-    if (0 == boundFramebuffer(target)) return GL_FRAMEBUFFER_COMPLETE;
+    if (0 == boundFramebuffer(target)) {
+        return GL_FRAMEBUFFER_COMPLETE;
+    }
 
     bool hasAttachment = false;
     FboProps& props = boundFboProps(target);
@@ -2469,6 +2471,10 @@ void GLClientState::addFreshFramebuffer(GLuint name) {
     props.depthAttachment_hasRbo = false;
     props.stencilAttachment_hasRbo = false;
     props.depthstencilAttachment_hasRbo = false;
+
+    props.defaultWidth = 0;
+    props.defaultHeight = 0;
+
     mFboState.fboData[name] = props;
 }
 

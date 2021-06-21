@@ -297,19 +297,27 @@ uint64_t currGuestTimeNs() {
 struct app_time_metric_t {
     uint64_t lastLogTime;
     uint64_t lastSwapBuffersReturnTime;
-    uint64_t numSamples;
+    unsigned int numSamples;
     uint64_t totalAppTime;
+    uint64_t minAppTime;
+    uint64_t maxAppTime;
 
     app_time_metric_t() :
         lastLogTime(0),
         lastSwapBuffersReturnTime(0),
         numSamples(0),
-        totalAppTime(0)
+        totalAppTime(0),
+        minAppTime(0),
+        maxAppTime(0)
     {
     }
 
     void onSwapBuffersReturn() {
         lastSwapBuffersReturnTime = currGuestTimeNs();
+    }
+
+    static float ns2ms(uint64_t ns) {
+        return (float)ns / 1000000.0;
     }
 
     void onQueueBufferReturn() {
@@ -320,6 +328,14 @@ struct app_time_metric_t {
 
         uint64_t now = currGuestTimeNs();
         uint64_t appTime = now - lastSwapBuffersReturnTime;
+        if(numSamples == 0) {
+          minAppTime = appTime;
+          maxAppTime = appTime;
+        }
+        else {
+          minAppTime = fmin(minAppTime, appTime);
+          maxAppTime = fmax(maxAppTime, appTime);
+        }
         totalAppTime += appTime;
         numSamples++;
         // Reset so we don't record a bad sample if swapBuffers fails
@@ -332,9 +348,13 @@ struct app_time_metric_t {
 
         // Log/reset once every second
         if(now - lastLogTime > 1000000000) {
-            float averageAppTimeMs = (float)totalAppTime / 1000000.0 / numSamples;
-            ALOGD("average app time: %0.2f ms (n=%llu)", averageAppTimeMs, (unsigned long long)numSamples);
+            float avgMs = ns2ms(totalAppTime) / numSamples;
+            float minMs = ns2ms(minAppTime);
+            float maxMs = ns2ms(maxAppTime);
+            ALOGD("app_time_stats: avg=%0.2fms min=%0.2fms max=%0.2fms count=%u", avgMs, minMs, maxMs, numSamples);
             totalAppTime = 0;
+            minAppTime = 0;
+            maxAppTime = 0;
             numSamples = 0;
             lastLogTime = now;
         }
@@ -1196,6 +1216,7 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
     }
 
     int attribs_size = 0;
+    EGLint backup_attribs[1];
     if (attrib_list) {
         const EGLint * attrib_p = attrib_list;
         while (attrib_p[0] != EGL_NONE) {
@@ -1203,6 +1224,10 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
             attrib_p += 2;
         }
         attribs_size++; //for the terminating EGL_NONE
+    } else {
+        attribs_size = 1;
+        backup_attribs[0] = EGL_NONE;
+        attrib_list = backup_attribs;
     }
 
     // API 19 passes EGL_SWAP_BEHAVIOR_PRESERVED_BIT to surface type,
@@ -1228,7 +1253,7 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
             attribs_size * sizeof(EGLint), (uint32_t*)tempConfigs, config_size);
 
     if (local_attrib_list) delete [] local_attrib_list;
-    if (*num_config <= 0) {
+    if (*num_config < 0) {
         EGLint err = -(*num_config);
         *num_config = 0;
         switch (err) {
@@ -2255,6 +2280,8 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
         image->dpy = dpy;
         image->target = target;
         image->native_buffer = native_buffer;
+        image->width = native_buffer->width;
+        image->height = native_buffer->width;
 
         return (EGLImageKHR)image;
     }
@@ -2271,6 +2298,8 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
         image->dpy = dpy;
         image->target = target;
         image->host_egl_image = img;
+        image->width = context->getClientState()->queryTexWidth(0, texture);
+        image->height = context->getClientState()->queryTexHeight(0, texture);
 
         return (EGLImageKHR)image;
     }
@@ -2356,17 +2385,17 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
 
         // Validate and input attribs
         for (int i = 0; i < num_actual_attribs; i += 2) {
-            if (attrib_list[i] == EGL_SYNC_TYPE_KHR) {
-                DPRINT("ERROR: attrib key = EGL_SYNC_TYPE_KHR");
-            }
-            if (attrib_list[i] == EGL_SYNC_STATUS_KHR) {
-                DPRINT("ERROR: attrib key = EGL_SYNC_STATUS_KHR");
-            }
-            if (attrib_list[i] == EGL_SYNC_CONDITION_KHR) {
-                DPRINT("ERROR: attrib key = EGL_SYNC_CONDITION_KHR");
-            }
             EGLint attrib_key = attrib_list[i];
             EGLint attrib_val = attrib_list[i + 1];
+            switch (attrib_key) {
+                case EGL_SYNC_TYPE_KHR:
+                case EGL_SYNC_STATUS_KHR:
+                case EGL_SYNC_CONDITION_KHR:
+                case EGL_SYNC_NATIVE_FENCE_FD_ANDROID:
+                    break;
+                default:
+                    setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_SYNC_KHR);
+            }
             if (attrib_key == EGL_SYNC_NATIVE_FENCE_FD_ANDROID) {
                 if (attrib_val != EGL_NO_NATIVE_FENCE_FD_ANDROID) {
                     inputFenceFd = attrib_val;
@@ -2435,8 +2464,8 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync)
     (void)dpy;
 
     if (!eglsync) {
-        DPRINT("WARNING: null sync object")
-        return EGL_TRUE;
+        ALOGE("%s: null sync object!", __FUNCTION__);
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = static_cast<EGLSync_t*>(eglsync);
@@ -2467,8 +2496,8 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags,
     (void)dpy;
 
     if (!eglsync) {
-        DPRINT("WARNING: null sync object");
-        return EGL_CONDITION_SATISFIED_KHR;
+        ALOGE("%s: null sync object!", __FUNCTION__);
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
@@ -2506,6 +2535,14 @@ EGLBoolean eglGetSyncAttribKHR(EGLDisplay dpy, EGLSyncKHR eglsync,
     (void)dpy;
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
+
+    if (!sync) {
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+    }
+
+    if (!value) {
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+    }
 
     switch (attribute) {
     case EGL_SYNC_TYPE_KHR:
@@ -2554,12 +2591,12 @@ EGLint eglWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags) {
 
     if (!eglsync) {
         ALOGE("%s: null sync object!", __FUNCTION__);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     if (flags) {
         ALOGE("%s: flags must be 0, got 0x%x", __FUNCTION__, flags);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     DEFINE_HOST_CONNECTION;

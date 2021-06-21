@@ -87,13 +87,13 @@ typedef VkResult (VKAPI_PTR *PFN_vkQueueSignalReleaseImageANDROID)(VkQueue queue
 
 typedef VkResult (VKAPI_PTR *PFN_vkMapMemoryIntoAddressSpaceGOOGLE)(VkDevice device, VkDeviceMemory memory, uint64_t* pAddress);
 
-#define VK_GOOGLE_color_buffer 1
-#define VK_GOOGLE_COLOR_BUFFER_EXTENSION_NUMBER 219
+#define VK_GOOGLE_gfxstream 1
+#define VK_GOOGLE_GFXSTREAM_EXTENSION_NUMBER 386
 
-#define VK_GOOGLE_COLOR_BUFFER_ENUM(type,id)    ((type)(1000000000 + (1000 * (VK_GOOGLE_COLOR_BUFFER_EXTENSION_NUMBER - 1)) + (id)))
-#define VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 0)
-#define VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 1)
-#define VK_STRUCTURE_TYPE_IMPORT_BUFFER_GOOGLE   VK_GOOGLE_COLOR_BUFFER_ENUM(VkStructureType, 2)
+#define VK_GOOGLE_GFXSTREAM_ENUM(type,id)    ((type)(1000000000 + (1000 * (VK_GOOGLE_GFXSTREAM_EXTENSION_NUMBER - 1)) + (id)))
+#define VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE   VK_GOOGLE_GFXSTREAM_ENUM(VkStructureType, 0)
+#define VK_STRUCTURE_TYPE_IMPORT_PHYSICAL_ADDRESS_GOOGLE   VK_GOOGLE_GFXSTREAM_ENUM(VkStructureType, 1)
+#define VK_STRUCTURE_TYPE_IMPORT_BUFFER_GOOGLE   VK_GOOGLE_GFXSTREAM_ENUM(VkStructureType, 2)
 
 typedef struct {
     VkStructureType sType; // must be VK_STRUCTURE_TYPE_IMPORT_COLOR_BUFFER_GOOGLE
@@ -533,13 +533,43 @@ typedef struct VkMemoryGetZirconHandleInfoFUCHSIA {
 
 #define VK_STRUCTURE_TYPE_BUFFER_COLLECTION_BUFFER_CREATE_INFO_FUCHSIA \
     ((VkStructureType)1001004008)
+
+#if VK_HEADER_VERSION < 174
+#define VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA \
+    ((VkStructureType)1000364000)
+#define VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA \
+    ((VkExternalMemoryHandleTypeFlagBits)0x00000800)
+#endif
+
+// Deprecated
 #define VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA \
     ((VkStructureType)1001005000)
-#define VK_STRUCTURE_TYPE_TEMP_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA \
-    ((VkStructureType)1001005001)
 #define VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA \
     ((VkExternalMemoryHandleTypeFlagBits)0x00100000)
+
+#else // VK_FUCHSIA_external_memory
+
+// For backward compatibility
+#if VK_HEADER_VERSION >= 174
+#define VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA \
+    ((VkStructureType)1001005000)
+#define VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA \
+    ((VkExternalMemoryHandleTypeFlagBits)0x00100000)
+#endif  // VK_HEADER_VERSION >= 174
+
+// For forward compatibility
+#ifndef VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA
+#define VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA ((VkStructureType)1000364000)
+#endif  // VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA
+
+// For forward compatibility
+#ifndef VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA
+#define VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA \
+    ((VkExternalMemoryHandleTypeFlagBits)0x00000800)
+#endif  // VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA
+
 #endif  // VK_FUCHSIA_external_memory
+
 
 #ifndef VK_FUCHSIA_external_semaphore
 #define VK_FUCHSIA_external_semaphore 1
@@ -552,7 +582,11 @@ typedef struct VkImportSemaphoreZirconHandleInfoFUCHSIA {
     VkSemaphore                              semaphore;
     VkSemaphoreImportFlags                   flags;
     VkExternalSemaphoreHandleTypeFlagBits    handleType;
+#if VK_HEADER_VERSION < 174
     uint32_t                                 handle;
+#else // VK_HEADER_VERSION >= 174
+    uint32_t                                 zirconHandle;
+#endif // VK_HEADER_VERSION < 174
 } VkImportSemaphoreZirconHandleInfoFUCHSIA;
 
 typedef struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
@@ -562,9 +596,31 @@ typedef struct VkSemaphoreGetZirconHandleInfoFUCHSIA {
     VkExternalSemaphoreHandleTypeFlagBits    handleType;
 } VkSemaphoreGetZirconHandleInfoFUCHSIA;
 
+#if VK_HEADER_VERSION < 174
+#define VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA \
+    ((VkExternalMemoryHandleTypeFlagBits)0x00000080)
+#endif
+
+// Deprecated
 #define VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA \
     ((VkExternalSemaphoreHandleTypeFlagBits)0x00100000)
+
+#else // VK_FUCHSIA_external_semaphore
+
+// For backward compatibility
+#if VK_HEADER_VERSION >= 174
+#define VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA \
+    ((VkExternalSemaphoreHandleTypeFlagBits)0x00100000)
+#endif  // VK_HEADER_VERSION >= 174
+
+// For forward compatibility
+#ifndef VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA
+#define VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA \
+    ((VkExternalMemoryHandleTypeFlagBits)0x00000080)
+#endif  // VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA
+
 #endif  // VK_FUCHSIA_external_semaphore
+
 
 // VulkanStream features
 #define VULKAN_STREAM_FEATURE_NULL_OPTIONAL_STRINGS_BIT (1 << 0)

@@ -178,6 +178,7 @@ using android::aligned_buf_alloc;
 using android::aligned_buf_free;
 using android::base::Optional;
 using android::base::guest::AutoLock;
+using android::base::guest::RecursiveLock;
 using android::base::guest::Lock;
 using android::base::guest::WorkPool;
 
@@ -338,7 +339,7 @@ public:
     };
 
     struct VkQueue_Info {
-        uint32_t placeholder;
+        VkDevice device;
     };
 
     // custom guest-side structs for images/buffers because of AHardwareBuffer :((
@@ -419,6 +420,10 @@ public:
         uint32_t unused;
     };
 
+    struct VkSampler_Info {
+        uint32_t unused;
+    };
+
     struct VkBufferCollectionFUCHSIA_Info {
 #ifdef VK_USE_PLATFORM_FUCHSIA
         android::base::Optional<
@@ -476,6 +481,13 @@ public:
 
         AutoLock lock(mLock);
         info_VkCommandPool.erase(pool);
+    }
+
+    void unregister_VkSampler(VkSampler sampler) {
+        if (!sampler) return;
+
+        AutoLock lock(mLock);
+        info_VkSampler.erase(sampler);
     }
 
     void unregister_VkCommandBuffer(VkCommandBuffer commandBuffer) {
@@ -709,33 +721,31 @@ public:
         return res;
     }
 
-    VkWriteDescriptorSet
-    createImmutableSamplersFilteredWriteDescriptorSetLocked(
-        const VkWriteDescriptorSet* descriptorWrite,
-        std::vector<VkDescriptorImageInfo>* imageInfoArray) {
+    bool descriptorBindingIsImmutableSampler(
+        VkDescriptorSet dstSet,
+        uint32_t dstBinding) {
 
-        VkWriteDescriptorSet res = *descriptorWrite;
+        return as_goldfish_VkDescriptorSet(dstSet)->reified->bindingIsImmutableSampler[dstBinding];
+    }
 
-        if  (descriptorWrite->descriptorCount == 0) return res;
+    VkDescriptorImageInfo
+    filterNonexistentSampler(
+        const VkDescriptorImageInfo& inputInfo) {
 
-        if  (descriptorWrite->descriptorType != VK_DESCRIPTOR_TYPE_SAMPLER &&
-             descriptorWrite->descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) return res;
+        VkSampler sampler =
+            inputInfo.sampler;
 
-        bool immutableSampler =
-            as_goldfish_VkDescriptorSet(descriptorWrite->dstSet)->reified->bindingIsImmutableSampler[descriptorWrite->dstBinding];
+        VkDescriptorImageInfo res = inputInfo;
 
-        if (!immutableSampler) return res;
-
-        for (uint32_t i = 0; i < descriptorWrite->descriptorCount; ++i) {
-            VkDescriptorImageInfo imageInfo = descriptorWrite->pImageInfo[i];
-            imageInfo.sampler = 0;
-            imageInfoArray->push_back(imageInfo);
+        if (sampler) {
+            auto it = info_VkSampler.find(sampler);
+            bool samplerExists = it != info_VkSampler.end();
+            if (!samplerExists) res.sampler = 0;
         }
-
-        res.pImageInfo = imageInfoArray->data();
 
         return res;
     }
+
 
     void freeDescriptorSetsIfHostAllocated(VkEncoder* enc, VkDevice device, uint32_t descriptorSetCount, const VkDescriptorSet* sets) {
         for (uint32_t i = 0; i < descriptorSetCount; ++i) {
@@ -931,7 +941,7 @@ public:
                 abort();
             }
             mControlDevice = std::make_unique<
-                fuchsia_hardware_goldfish::ControlDevice::SyncClient>(
+                fidl::WireSyncClient<fuchsia_hardware_goldfish::ControlDevice>>(
                 std::move(channel));
 
             fidl::ClientEnd<fuchsia_sysmem::Allocator> sysmem_channel{
@@ -940,7 +950,7 @@ public:
                 ALOGE("failed to open sysmem connection");
             }
             mSysmemAllocator =
-                std::make_unique<fuchsia_sysmem::Allocator::SyncClient>(
+                std::make_unique<fidl::WireSyncClient<fuchsia_sysmem::Allocator>>(
                     std::move(sysmem_channel));
             char name[ZX_MAX_NAME_LEN] = {};
             zx_object_get_property(zx_process_self(), ZX_PROP_NAME, name, sizeof(name));
@@ -949,7 +959,8 @@ public:
             zx_info_handle_basic_t info;
             zx_object_get_info(zx_process_self(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
                                nullptr, nullptr);
-            mSysmemAllocator->SetDebugClientInfo(fidl::unowned_str(client_name), info.koid);
+            mSysmemAllocator->SetDebugClientInfo(fidl::StringView::FromExternal(client_name),
+                                                 info.koid);
         }
 #endif
 
@@ -1145,6 +1156,7 @@ public:
         VkExternalMemoryHandleTypeFlags supportedHandleType = 0u;
 #ifdef VK_USE_PLATFORM_FUCHSIA
         supportedHandleType |=
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA |
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA;
 #endif  // VK_USE_PLATFORM_FUCHSIA
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -1259,6 +1271,8 @@ public:
         VkExtensionProperties* pProperties) {
 
         std::vector<const char*> allowedExtensionNames = {
+            "VK_KHR_vulkan_memory_model",
+            "VK_KHR_buffer_device_address",
             "VK_KHR_maintenance1",
             "VK_KHR_maintenance2",
             "VK_KHR_maintenance3",
@@ -1271,6 +1285,9 @@ public:
             "VK_KHR_timeline_semaphore",
             "VK_AMD_gpu_shader_half_float",
             "VK_NV_shader_subgroup_partitioned",
+            "VK_KHR_shader_subgroup_extended_types",
+            "VK_EXT_subgroup_size_control",
+            "VK_KHR_pipeline_executable_properties",
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
             "VK_KHR_external_semaphore",
             "VK_KHR_external_semaphore_fd",
@@ -1576,6 +1593,23 @@ public:
         }
     }
 
+    void on_vkGetDeviceQueue(void*,
+                             VkDevice device,
+                             uint32_t,
+                             uint32_t,
+                             VkQueue* pQueue) {
+        AutoLock lock(mLock);
+        info_VkQueue[*pQueue].device = device;
+    }
+
+    void on_vkGetDeviceQueue2(void*,
+                              VkDevice device,
+                              const VkDeviceQueueInfo2*,
+                              VkQueue* pQueue) {
+        AutoLock lock(mLock);
+        info_VkQueue[*pQueue].device = device;
+    }
+
     VkResult on_vkCreateInstance(
         void* context,
         VkResult input_result,
@@ -1740,10 +1774,11 @@ public:
         VkExternalMemoryHandleTypeFlagBits handleType,
         uint32_t handle,
         VkMemoryZirconHandlePropertiesFUCHSIA* pProperties) {
-        using fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_DEVICE_LOCAL;
-        using fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_HOST_VISIBLE;
+        using fuchsia_hardware_goldfish::wire::kMemoryPropertyDeviceLocal;
+        using fuchsia_hardware_goldfish::wire::kMemoryPropertyHostVisible;
 
-        if (handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) {
+        if (handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA &&
+            handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA) {
             return VK_ERROR_INITIALIZATION_FAILED;
         }
 
@@ -1788,7 +1823,7 @@ public:
             // If an VMO is allocated while ColorBuffer/Buffer is not created,
             // it must be a device-local buffer, since for host-visible buffers,
             // ColorBuffer/Buffer is created at sysmem allocation time.
-            memoryProperty = MEMORY_PROPERTY_DEVICE_LOCAL;
+            memoryProperty = kMemoryPropertyDeviceLocal;
         } else {
             // Importing read-only host memory into the Vulkan driver should not
             // work, but it is not an error to try to do so. Returning a
@@ -1802,10 +1837,10 @@ public:
 
         pProperties->memoryTypeBits = 0;
         for (uint32_t i = 0; i < info.memProps.memoryTypeCount; ++i) {
-            if (((memoryProperty & MEMORY_PROPERTY_DEVICE_LOCAL) &&
+            if (((memoryProperty & kMemoryPropertyDeviceLocal) &&
                  (info.memProps.memoryTypes[i].propertyFlags &
                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) ||
-                ((memoryProperty & MEMORY_PROPERTY_HOST_VISIBLE) &&
+                ((memoryProperty & kMemoryPropertyHostVisible) &&
                  (info.memProps.memoryTypes[i].propertyFlags &
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))) {
                 pProperties->memoryTypeBits |= 1ull << i;
@@ -1858,7 +1893,11 @@ public:
         if (info.eventHandle != ZX_HANDLE_INVALID) {
             zx_handle_close(info.eventHandle);
         }
+#if VK_HEADER_VERSION < 174
         info.eventHandle = pInfo->handle;
+#else // VK_HEADER_VERSION >= 174
+        info.eventHandle = pInfo->zirconHandle;
+#endif // VK_HEADER_VERSION < 174
         if (info.eventHandle != ZX_HANDLE_INVALID) {
             info.eventKoid = getEventKoid(info.eventHandle);
         }
@@ -1942,7 +1981,7 @@ public:
         }
 
         auto* sysmem_collection =
-            new fuchsia_sysmem::BufferCollection::SyncClient(
+            new fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>(
                 std::move(collection_client));
         *pCollection = reinterpret_cast<VkBufferCollectionFUCHSIA>(sysmem_collection);
 
@@ -1955,7 +1994,7 @@ public:
         VkBufferCollectionFUCHSIA collection,
         const VkAllocationCallbacks*) {
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         if (sysmem_collection) {
             sysmem_collection->Close();
         }
@@ -1999,9 +2038,9 @@ public:
         buffer_constraints.inaccessible_domain_supported = true;
         buffer_constraints.heap_permitted_count = 2;
         buffer_constraints.heap_permitted[0] =
-            fuchsia_sysmem::wire::HeapType::GOLDFISH_DEVICE_LOCAL;
+            fuchsia_sysmem::wire::HeapType::kGoldfishDeviceLocal;
         buffer_constraints.heap_permitted[1] =
-            fuchsia_sysmem::wire::HeapType::GOLDFISH_HOST_VISIBLE;
+            fuchsia_sysmem::wire::HeapType::kGoldfishHostVisible;
 
         return constraints;
     }
@@ -2011,15 +2050,15 @@ public:
         uint32_t usage = 0u;
         VkImageUsageFlags imageUsage = pImageInfo->usage;
 
-#define SetUsageBit(USAGE)                                           \
-    if (imageUsage & VK_IMAGE_USAGE_##USAGE##_BIT) {                 \
-        usage |= fuchsia_sysmem::wire::VULKAN_IMAGE_USAGE_##USAGE; \
+#define SetUsageBit(BIT, VALUE)                                           \
+    if (imageUsage & VK_IMAGE_USAGE_##BIT##_BIT) {                 \
+        usage |= fuchsia_sysmem::wire::kVulkanImageUsage##VALUE; \
     }
 
-        SetUsageBit(COLOR_ATTACHMENT);
-        SetUsageBit(TRANSFER_SRC);
-        SetUsageBit(TRANSFER_DST);
-        SetUsageBit(SAMPLED);
+        SetUsageBit(COLOR_ATTACHMENT, ColorAttachment);
+        SetUsageBit(TRANSFER_SRC, TransferSrc);
+        SetUsageBit(TRANSFER_DST, TransferDst);
+        SetUsageBit(SAMPLED, Sampled);
 
 #undef SetUsageBit
         return usage;
@@ -2031,20 +2070,20 @@ public:
         VkBufferUsageFlags bufferUsage =
             pBufferConstraintsInfo->pBufferCreateInfo->usage;
 
-#define SetUsageBit(USAGE)                                            \
-    if (bufferUsage & VK_BUFFER_USAGE_##USAGE##_BIT) {                \
-        usage |= fuchsia_sysmem::wire::VULKAN_BUFFER_USAGE_##USAGE; \
+#define SetUsageBit(BIT, VALUE)                                            \
+    if (bufferUsage & VK_BUFFER_USAGE_##BIT##_BIT) {                \
+        usage |= fuchsia_sysmem::wire::kVulkanBufferUsage##VALUE; \
     }
 
-        SetUsageBit(TRANSFER_SRC);
-        SetUsageBit(TRANSFER_DST);
-        SetUsageBit(UNIFORM_TEXEL_BUFFER);
-        SetUsageBit(STORAGE_TEXEL_BUFFER);
-        SetUsageBit(UNIFORM_BUFFER);
-        SetUsageBit(STORAGE_BUFFER);
-        SetUsageBit(INDEX_BUFFER);
-        SetUsageBit(VERTEX_BUFFER);
-        SetUsageBit(INDIRECT_BUFFER);
+        SetUsageBit(TRANSFER_SRC, TransferSrc);
+        SetUsageBit(TRANSFER_DST, TransferDst);
+        SetUsageBit(UNIFORM_TEXEL_BUFFER, UniformTexelBuffer);
+        SetUsageBit(STORAGE_TEXEL_BUFFER, StorageTexelBuffer);
+        SetUsageBit(UNIFORM_BUFFER, UniformBuffer);
+        SetUsageBit(STORAGE_BUFFER, StorageBuffer);
+        SetUsageBit(INDEX_BUFFER, IndexBuffer);
+        SetUsageBit(VERTEX_BUFFER, VertexBuffer);
+        SetUsageBit(INDIRECT_BUFFER, IndirectBuffer);
 
 #undef SetUsageBit
         return usage;
@@ -2059,14 +2098,14 @@ public:
             case VK_FORMAT_B8G8R8A8_SNORM:
             case VK_FORMAT_B8G8R8A8_SSCALED:
             case VK_FORMAT_B8G8R8A8_USCALED:
-                return fuchsia_sysmem::wire::PixelFormatType::BGRA32;
+                return fuchsia_sysmem::wire::PixelFormatType::kBgra32;
             case VK_FORMAT_R8G8B8A8_SINT:
             case VK_FORMAT_R8G8B8A8_UNORM:
             case VK_FORMAT_R8G8B8A8_SRGB:
             case VK_FORMAT_R8G8B8A8_SNORM:
             case VK_FORMAT_R8G8B8A8_SSCALED:
             case VK_FORMAT_R8G8B8A8_USCALED:
-                return fuchsia_sysmem::wire::PixelFormatType::R8G8B8A8;
+                return fuchsia_sysmem::wire::PixelFormatType::kR8G8B8A8;
             case VK_FORMAT_R8_UNORM:
             case VK_FORMAT_R8_UINT:
             case VK_FORMAT_R8_USCALED:
@@ -2074,7 +2113,7 @@ public:
             case VK_FORMAT_R8_SINT:
             case VK_FORMAT_R8_SSCALED:
             case VK_FORMAT_R8_SRGB:
-                return fuchsia_sysmem::wire::PixelFormatType::R8;
+                return fuchsia_sysmem::wire::PixelFormatType::kR8;
             case VK_FORMAT_R8G8_UNORM:
             case VK_FORMAT_R8G8_UINT:
             case VK_FORMAT_R8G8_USCALED:
@@ -2082,9 +2121,9 @@ public:
             case VK_FORMAT_R8G8_SINT:
             case VK_FORMAT_R8G8_SSCALED:
             case VK_FORMAT_R8G8_SRGB:
-                return fuchsia_sysmem::wire::PixelFormatType::R8G8;
+                return fuchsia_sysmem::wire::PixelFormatType::kR8G8;
             default:
-                return fuchsia_sysmem::wire::PixelFormatType::INVALID;
+                return fuchsia_sysmem::wire::PixelFormatType::kInvalid;
         }
     }
 
@@ -2099,7 +2138,7 @@ public:
             case VK_FORMAT_B8G8R8A8_SSCALED:
             case VK_FORMAT_B8G8R8A8_USCALED:
                 return sysmemFormat ==
-                       fuchsia_sysmem::wire::PixelFormatType::BGRA32;
+                       fuchsia_sysmem::wire::PixelFormatType::kBgra32;
             case VK_FORMAT_R8G8B8A8_SINT:
             case VK_FORMAT_R8G8B8A8_UNORM:
             case VK_FORMAT_R8G8B8A8_SRGB:
@@ -2107,7 +2146,7 @@ public:
             case VK_FORMAT_R8G8B8A8_SSCALED:
             case VK_FORMAT_R8G8B8A8_USCALED:
                 return sysmemFormat ==
-                       fuchsia_sysmem::wire::PixelFormatType::R8G8B8A8;
+                       fuchsia_sysmem::wire::PixelFormatType::kR8G8B8A8;
             case VK_FORMAT_R8_UNORM:
             case VK_FORMAT_R8_UINT:
             case VK_FORMAT_R8_USCALED:
@@ -2116,9 +2155,9 @@ public:
             case VK_FORMAT_R8_SSCALED:
             case VK_FORMAT_R8_SRGB:
                 return sysmemFormat ==
-                           fuchsia_sysmem::wire::PixelFormatType::R8 ||
+                           fuchsia_sysmem::wire::PixelFormatType::kR8 ||
                        sysmemFormat ==
-                           fuchsia_sysmem::wire::PixelFormatType::L8;
+                           fuchsia_sysmem::wire::PixelFormatType::kL8;
             case VK_FORMAT_R8G8_UNORM:
             case VK_FORMAT_R8G8_UINT:
             case VK_FORMAT_R8G8_USCALED:
@@ -2127,7 +2166,7 @@ public:
             case VK_FORMAT_R8G8_SSCALED:
             case VK_FORMAT_R8G8_SRGB:
                 return sysmemFormat ==
-                       fuchsia_sysmem::wire::PixelFormatType::R8G8;
+                       fuchsia_sysmem::wire::PixelFormatType::kR8G8;
             default:
                 return false;
         }
@@ -2136,14 +2175,14 @@ public:
     static VkFormat sysmemPixelFormatTypeToVk(
         fuchsia_sysmem::wire::PixelFormatType format) {
         switch (format) {
-            case fuchsia_sysmem::wire::PixelFormatType::BGRA32:
+            case fuchsia_sysmem::wire::PixelFormatType::kBgra32:
                 return VK_FORMAT_B8G8R8A8_SRGB;
-            case fuchsia_sysmem::wire::PixelFormatType::R8G8B8A8:
+            case fuchsia_sysmem::wire::PixelFormatType::kR8G8B8A8:
                 return VK_FORMAT_R8G8B8A8_SRGB;
-            case fuchsia_sysmem::wire::PixelFormatType::L8:
-            case fuchsia_sysmem::wire::PixelFormatType::R8:
+            case fuchsia_sysmem::wire::PixelFormatType::kL8:
+            case fuchsia_sysmem::wire::PixelFormatType::kR8:
                 return VK_FORMAT_R8_UNORM;
-            case fuchsia_sysmem::wire::PixelFormatType::R8G8:
+            case fuchsia_sysmem::wire::PixelFormatType::kR8G8:
                 return VK_FORMAT_R8G8_UNORM;
             default:
                 return VK_FORMAT_UNDEFINED;
@@ -2152,7 +2191,7 @@ public:
 
     VkResult setBufferCollectionConstraints(
         VkEncoder* enc, VkDevice device,
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkImageCreateInfo* pImageInfo) {
         if (pImageInfo == nullptr) {
             ALOGE("setBufferCollectionConstraints: pImageInfo cannot be null.");
@@ -2262,7 +2301,7 @@ public:
         } else {
             auto pixel_format = vkFormatTypeToSysmem(createInfo->format);
             if (pixel_format ==
-                fuchsia_sysmem::wire::PixelFormatType::INVALID) {
+                fuchsia_sysmem::wire::PixelFormatType::kInvalid) {
                 ALOGW("%s: Unsupported VkFormat %u", __func__,
                       static_cast<uint32_t>(createInfo->format));
                 return VK_ERROR_FORMAT_NOT_SUPPORTED;
@@ -2273,7 +2312,7 @@ public:
         if (!formatConstraints || formatConstraints->colorSpaceCount == 0u) {
             imageConstraints.color_spaces_count = 1;
             imageConstraints.color_space[0].type =
-                fuchsia_sysmem::wire::ColorSpaceType::SRGB;
+                fuchsia_sysmem::wire::ColorSpaceType::kSrgb;
         } else {
             imageConstraints.color_spaces_count =
                 formatConstraints->colorSpaceCount;
@@ -2315,9 +2354,8 @@ public:
         imageConstraints.pixel_format.has_format_modifier = true;
         imageConstraints.pixel_format.format_modifier.value =
             (tiling == VK_IMAGE_TILING_LINEAR)
-                ? fuchsia_sysmem::wire::FORMAT_MODIFIER_LINEAR
-                : fuchsia_sysmem::wire::
-                      FORMAT_MODIFIER_GOOGLE_GOLDFISH_OPTIMAL;
+                ? fuchsia_sysmem::wire::kFormatModifierLinear
+                : fuchsia_sysmem::wire::kFormatModifierGoogleGoldfishOptimal;
 
         constraints->image_format_constraints
             [constraints->image_format_constraints_count++] =
@@ -2328,7 +2366,7 @@ public:
     VkResult setBufferCollectionImageConstraints(
         VkEncoder* enc,
         VkDevice device,
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
         if (!pImageConstraintsInfo ||
             pImageConstraintsInfo->sType !=
@@ -2413,13 +2451,13 @@ public:
         // and flags.
         VkImageConstraintsInfoFlagsFUCHSIA flags = pImageConstraintsInfo->flags;
         if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_RARELY_FUCHSIA)
-            constraints.usage.cpu |= fuchsia_sysmem::wire::cpuUsageRead;
+            constraints.usage.cpu |= fuchsia_sysmem::wire::kCpuUsageRead;
         if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_READ_OFTEN_FUCHSIA)
-            constraints.usage.cpu |= fuchsia_sysmem::wire::cpuUsageReadOften;
+            constraints.usage.cpu |= fuchsia_sysmem::wire::kCpuUsageReadOften;
         if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_RARELY_FUCHSIA)
-            constraints.usage.cpu |= fuchsia_sysmem::wire::cpuUsageWrite;
+            constraints.usage.cpu |= fuchsia_sysmem::wire::kCpuUsageWrite;
         if (flags & VK_IMAGE_CONSTRAINTS_INFO_CPU_WRITE_OFTEN_FUCHSIA)
-            constraints.usage.cpu |= fuchsia_sysmem::wire::cpuUsageWriteOften;
+            constraints.usage.cpu |= fuchsia_sysmem::wire::kCpuUsageWriteOften;
 
         constraints.has_buffer_memory_constraints = true;
         auto& memory_constraints = constraints.buffer_memory_constraints;
@@ -2435,13 +2473,13 @@ public:
         if (memory_constraints.inaccessible_domain_supported) {
             memory_constraints.heap_permitted_count = 2;
             memory_constraints.heap_permitted[0] =
-                fuchsia_sysmem::wire::HeapType::GOLDFISH_DEVICE_LOCAL;
+                fuchsia_sysmem::wire::HeapType::kGoldfishDeviceLocal;
             memory_constraints.heap_permitted[1] =
-                fuchsia_sysmem::wire::HeapType::GOLDFISH_HOST_VISIBLE;
+                fuchsia_sysmem::wire::HeapType::kGoldfishHostVisible;
         } else {
             memory_constraints.heap_permitted_count = 1;
             memory_constraints.heap_permitted[0] =
-                fuchsia_sysmem::wire::HeapType::GOLDFISH_HOST_VISIBLE;
+                fuchsia_sysmem::wire::HeapType::kGoldfishHostVisible;
         }
 
         if (constraints.image_format_constraints_count == 0) {
@@ -2451,9 +2489,8 @@ public:
         }
 
         constexpr uint32_t kVulkanPriority = 5;
-        const char* kName = "GoldfishSysmemShared";
-        collection->SetName(kVulkanPriority,
-                            fidl::unowned_str(kName, strlen(kName)));
+        const char kName[] = "GoldfishSysmemShared";
+        collection->SetName(kVulkanPriority, fidl::StringView(kName));
 
         auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
@@ -2479,7 +2516,7 @@ public:
     }
 
     VkResult setBufferCollectionBufferConstraints(
-        fuchsia_sysmem::BufferCollection::SyncClient* collection,
+        fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>* collection,
         const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) {
         if (pBufferConstraintsInfo == nullptr) {
             ALOGE(
@@ -2497,8 +2534,8 @@ public:
                 pBufferConstraintsInfo);
 
         constexpr uint32_t kVulkanPriority = 5;
-        const char* kName = "GoldfishBufferSysmemShared";
-        collection->SetName(kVulkanPriority, fidl::unowned_str(kName, strlen(kName)));
+        const char kName[] = "GoldfishBufferSysmemShared";
+        collection->SetName(kVulkanPriority, fidl::StringView(kName));
 
         auto result = collection->SetConstraints(true, constraints);
         if (!result.ok()) {
@@ -2527,7 +2564,7 @@ public:
         const VkImageCreateInfo* pImageInfo) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionConstraints(enc, device, sysmem_collection, pImageInfo);
     }
 
@@ -2539,7 +2576,7 @@ public:
         const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionImageConstraints(
             enc, device, sysmem_collection, pImageConstraintsInfo);
     }
@@ -2551,7 +2588,7 @@ public:
         VkBufferCollectionFUCHSIA collection,
         const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) {
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
         return setBufferCollectionBufferConstraints(sysmem_collection,
                                                     pBufferConstraintsInfo);
     }
@@ -2578,7 +2615,7 @@ public:
 
     VkResult getBufferCollectionImageCreateInfoIndexLocked(
         VkBufferCollectionFUCHSIA collection,
-        fuchsia_sysmem::wire::BufferCollectionInfo_2& info,
+        fuchsia_sysmem::wire::BufferCollectionInfo2& info,
         uint32_t* outCreateInfoIndex) {
         if (!info_VkBufferCollectionFUCHSIA[collection]
                  .constraints.hasValue()) {
@@ -2655,7 +2692,7 @@ public:
         VkBufferCollectionProperties2FUCHSIA* pProperties) {
         VkEncoder* enc = (VkEncoder*)context;
         auto sysmem_collection = reinterpret_cast<
-            fuchsia_sysmem::BufferCollection::SyncClient*>(collection);
+            fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(collection);
 
         auto result = sysmem_collection->WaitForBuffersAllocated();
         if (!result.ok() || result.Unwrap()->status != ZX_OK) {
@@ -2663,13 +2700,13 @@ public:
                   GET_STATUS_SAFE(result, status));
             return VK_ERROR_INITIALIZATION_FAILED;
         }
-        fuchsia_sysmem::wire::BufferCollectionInfo_2 info =
+        fuchsia_sysmem::wire::BufferCollectionInfo2 info =
             std::move(result.Unwrap()->buffer_collection_info);
 
         bool is_host_visible = info.settings.buffer_settings.heap ==
-                               fuchsia_sysmem::wire::HeapType::GOLDFISH_HOST_VISIBLE;
+                               fuchsia_sysmem::wire::HeapType::kGoldfishHostVisible;
         bool is_device_local = info.settings.buffer_settings.heap ==
-                               fuchsia_sysmem::wire::HeapType::GOLDFISH_DEVICE_LOCAL;
+                               fuchsia_sysmem::wire::HeapType::kGoldfishDeviceLocal;
         if (!is_host_visible && !is_device_local) {
             ALOGE("buffer collection uses a non-goldfish heap (type 0x%lu)",
                 static_cast<uint64_t>(info.settings.buffer_settings.heap));
@@ -3024,6 +3061,11 @@ public:
 
         const VkImportMemoryZirconHandleInfoFUCHSIA* importVmoInfoPtr =
             vk_find_struct<VkImportMemoryZirconHandleInfoFUCHSIA>(pAllocateInfo);
+        if (!importVmoInfoPtr) {
+            importVmoInfoPtr = reinterpret_cast<const VkImportMemoryZirconHandleInfoFUCHSIA*>(
+                __vk_find_struct(const_cast<void*>(pAllocateInfo->pNext),
+                    VK_STRUCTURE_TYPE_TEMP_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA));
+        }
 
         const VkMemoryDedicatedAllocateInfo* dedicatedAllocInfoPtr =
             vk_find_struct<VkMemoryDedicatedAllocateInfo>(pAllocateInfo);
@@ -3080,8 +3122,10 @@ public:
                 exportAllocateInfoPtr->handleTypes &
                 VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
             exportVmo =
-                exportAllocateInfoPtr->handleTypes &
-                VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA;
+                (exportAllocateInfoPtr->handleTypes &
+                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
+                (exportAllocateInfoPtr->handleTypes &
+                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA);
         } else if (importAhbInfoPtr) {
             importAhb = true;
         } else if (importBufferCollectionInfoPtr) {
@@ -3172,7 +3216,7 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 importBufferCollectionInfoPtr->collection);
             auto result = collection->WaitForBuffersAllocated();
             if (!result.ok() || result.Unwrap()->status != ZX_OK) {
@@ -3180,7 +3224,7 @@ public:
                       GET_STATUS_SAFE(result, status));
                 return VK_ERROR_INITIALIZATION_FAILED;
             }
-            fuchsia_sysmem::wire::BufferCollectionInfo_2& info =
+            fuchsia_sysmem::wire::BufferCollectionInfo2& info =
                 result.Unwrap()->buffer_collection_info;
             uint32_t index = importBufferCollectionInfoPtr->index;
             if (info.buffer_count < index) {
@@ -3290,7 +3334,7 @@ public:
                     }
                 }
 
-                fuchsia_sysmem::BufferCollection::SyncClient collection(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection> collection(
                     std::move(collection_ends->client));
                 if (hasDedicatedImage) {
                     VkResult res = setBufferCollectionConstraints(
@@ -3319,7 +3363,7 @@ public:
                 {
                     auto result = collection.WaitForBuffersAllocated();
                     if (result.ok() && result.Unwrap()->status == ZX_OK) {
-                        fuchsia_sysmem::wire::BufferCollectionInfo_2& info =
+                        fuchsia_sysmem::wire::BufferCollectionInfo2& info =
                             result.Unwrap()->buffer_collection_info;
                         if (!info.buffer_count) {
                             ALOGE(
@@ -3365,7 +3409,7 @@ public:
                             case VK_FORMAT_B8G8R8A8_SSCALED:
                             case VK_FORMAT_B8G8R8A8_USCALED:
                                 format = fuchsia_hardware_goldfish::wire::
-                                    ColorBufferFormatType::BGRA;
+                                    ColorBufferFormatType::kBgra;
                                 break;
                             case VK_FORMAT_R8G8B8A8_SINT:
                             case VK_FORMAT_R8G8B8A8_UNORM:
@@ -3374,7 +3418,7 @@ public:
                             case VK_FORMAT_R8G8B8A8_SSCALED:
                             case VK_FORMAT_R8G8B8A8_USCALED:
                                 format = fuchsia_hardware_goldfish::wire::
-                                    ColorBufferFormatType::RGBA;
+                                    ColorBufferFormatType::kRgba;
                                 break;
                             case VK_FORMAT_R8_UNORM:
                             case VK_FORMAT_R8_UINT:
@@ -3384,7 +3428,7 @@ public:
                             case VK_FORMAT_R8_SSCALED:
                             case VK_FORMAT_R8_SRGB:
                                 format = fuchsia_hardware_goldfish::wire::
-                                    ColorBufferFormatType::LUMINANCE;
+                                    ColorBufferFormatType::kLuminance;
                                 break;
                             case VK_FORMAT_R8G8_UNORM:
                             case VK_FORMAT_R8G8_UINT:
@@ -3394,7 +3438,7 @@ public:
                             case VK_FORMAT_R8G8_SSCALED:
                             case VK_FORMAT_R8G8_SRGB:
                                 format = fuchsia_hardware_goldfish::wire::
-                                    ColorBufferFormatType::RG;
+                                    ColorBufferFormatType::kRg;
                                 break;
                             default:
                                 ALOGE("Unsupported format: %d",
@@ -3402,25 +3446,14 @@ public:
                                 abort();
                         }
 
-                        auto createParams =
-                            fuchsia_hardware_goldfish::wire::
-                                CreateColorBuffer2Params::Builder(
-                                    std::make_unique<
-                                        fuchsia_hardware_goldfish::wire::
-                                            CreateColorBuffer2Params::Frame>())
-                                    .set_width(std::make_unique<uint32_t>(
-                                        pImageCreateInfo->extent.width))
-                                    .set_height(std::make_unique<uint32_t>(
-                                        pImageCreateInfo->extent.height))
-                                    .set_format(
-                                        std::make_unique<
-                                            fuchsia_hardware_goldfish::wire::
-                                                ColorBufferFormatType>(format))
-                                    .set_memory_property(
-                                        std::make_unique<uint32_t>(
-                                            fuchsia_hardware_goldfish::wire::
-                                                MEMORY_PROPERTY_DEVICE_LOCAL))
-                                    .build();
+                        fidl::FidlAllocator allocator;
+                        fuchsia_hardware_goldfish::wire::CreateColorBuffer2Params createParams(
+                            allocator);
+                        createParams.set_width(allocator, pImageCreateInfo->extent.width)
+                            .set_height(allocator, pImageCreateInfo->extent.height)
+                            .set_format(allocator, format)
+                            .set_memory_property(allocator,
+                                fuchsia_hardware_goldfish::wire::kMemoryPropertyDeviceLocal);
 
                         auto result = mControlDevice->CreateColorBuffer2(
                             std::move(vmo_copy), std::move(createParams));
@@ -3441,15 +3474,12 @@ public:
                 }
 
                 if (pBufferConstraintsInfo) {
-                    auto createParams =
-                        fuchsia_hardware_goldfish::wire::CreateBuffer2Params::Builder(
-                            std::make_unique<
-                                fuchsia_hardware_goldfish::wire::CreateBuffer2Params::Frame>())
-                            .set_size(std::make_unique<uint64_t>(
-                                pBufferConstraintsInfo->pBufferCreateInfo->size))
-                            .set_memory_property(std::make_unique<uint32_t>(
-                                fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_DEVICE_LOCAL))
-                            .build();
+                    fidl::FidlAllocator allocator;
+                    fuchsia_hardware_goldfish::wire::CreateBuffer2Params createParams(allocator);
+                    createParams.set_size(allocator,
+                            pBufferConstraintsInfo->pBufferCreateInfo->size)
+                        .set_memory_property(allocator,
+                            fuchsia_hardware_goldfish::wire::kMemoryPropertyDeviceLocal);
 
                     auto result =
                         mControlDevice->CreateBuffer2(std::move(vmo_copy), std::move(createParams));
@@ -3483,7 +3513,7 @@ public:
                 uint32_t buffer_handle = result.Unwrap()->id;
 
                 if (handle_type == fuchsia_hardware_goldfish::wire::
-                                       BufferHandleType::BUFFER) {
+                                       BufferHandleType::kBuffer) {
                     importBufferInfo.buffer = buffer_handle;
                     vk_append_struct(&structChainIter, &importBufferInfo);
                 } else {
@@ -3913,19 +3943,21 @@ public:
         bool isSysmemBackedMemory = false;
 
         if (extImgCiPtr &&
+            ((extImgCiPtr->handleTypes &
+                VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
             (extImgCiPtr->handleTypes &
-             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA)) {
+                VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA))) {
             isSysmemBackedMemory = true;
         }
 
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 extBufferCollectionPtr->collection);
             uint32_t index = extBufferCollectionPtr->index;
             zx::vmo vmo;
 
-            fuchsia_sysmem::wire::BufferCollectionInfo_2 info;
+            fuchsia_sysmem::wire::BufferCollectionInfo2 info;
 
             auto result = collection->WaitForBuffersAllocated();
             if (result.ok() && result.Unwrap()->status == ZX_OK) {
@@ -3956,7 +3988,7 @@ public:
                     // Buffer handle already exists.
                     // If it is a ColorBuffer, no-op; Otherwise return error.
                     if (buffer_handle_result.value().type !=
-                        fuchsia_hardware_goldfish::wire::BufferHandleType::COLOR_BUFFER) {
+                        fuchsia_hardware_goldfish::wire::BufferHandleType::kColorBuffer) {
                         ALOGE("%s: BufferHandle %u is not a ColorBuffer", __func__,
                               buffer_handle_result.value().id);
                         return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -3965,29 +3997,25 @@ public:
                     // Buffer handle not found. Create ColorBuffer based on buffer settings.
                     auto format =
                         info.settings.image_format_constraints.pixel_format.type ==
-                                fuchsia_sysmem::wire::PixelFormatType::R8G8B8A8
-                            ? fuchsia_hardware_goldfish::wire::ColorBufferFormatType::RGBA
-                            : fuchsia_hardware_goldfish::wire::ColorBufferFormatType::BGRA;
+                                fuchsia_sysmem::wire::PixelFormatType::kR8G8B8A8
+                            ? fuchsia_hardware_goldfish::wire::ColorBufferFormatType::kRgba
+                            : fuchsia_hardware_goldfish::wire::ColorBufferFormatType::kBgra;
 
                     uint32_t memory_property =
                         info.settings.buffer_settings.heap ==
-                                fuchsia_sysmem::wire::HeapType::GOLDFISH_DEVICE_LOCAL
-                            ? fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_DEVICE_LOCAL
-                            : fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_HOST_VISIBLE;
+                                fuchsia_sysmem::wire::HeapType::kGoldfishDeviceLocal
+                            ? fuchsia_hardware_goldfish::wire::kMemoryPropertyDeviceLocal
+                            : fuchsia_hardware_goldfish::wire::kMemoryPropertyHostVisible;
 
-                    auto createParams =
-                        fuchsia_hardware_goldfish::wire::CreateColorBuffer2Params::Builder(
-                            std::make_unique<fuchsia_hardware_goldfish::wire::
-                                                 CreateColorBuffer2Params::Frame>())
-                            .set_width(std::make_unique<uint32_t>(
-                                info.settings.image_format_constraints.min_coded_width))
-                            .set_height(std::make_unique<uint32_t>(
-                                info.settings.image_format_constraints.min_coded_height))
-                            .set_format(std::make_unique<
-                                        fuchsia_hardware_goldfish::wire::ColorBufferFormatType>(
-                                format))
-                            .set_memory_property(std::make_unique<uint32_t>(memory_property))
-                            .build();
+                    fidl::FidlAllocator allocator;
+                    fuchsia_hardware_goldfish::wire::CreateColorBuffer2Params createParams(
+                        allocator);
+                    createParams.set_width(allocator,
+                            info.settings.image_format_constraints.min_coded_width)
+                        .set_height(allocator,
+                            info.settings.image_format_constraints.min_coded_height)
+                        .set_format(allocator, format)
+                        .set_memory_property(allocator, memory_property);
 
                     auto result =
                         mControlDevice->CreateColorBuffer2(std::move(vmo), std::move(createParams));
@@ -3998,7 +4026,7 @@ public:
                 }
 
                 if (info.settings.buffer_settings.heap ==
-                    fuchsia_sysmem::wire::HeapType::GOLDFISH_HOST_VISIBLE) {
+                    fuchsia_sysmem::wire::HeapType::kGoldfishHostVisible) {
                     ALOGD(
                         "%s: Image uses host visible memory heap; set tiling "
                         "to linear to match host ImageCreateInfo",
@@ -4007,6 +4035,10 @@ public:
                 }
             }
             isSysmemBackedMemory = true;
+        }
+
+        if (isSysmemBackedMemory) {
+            localCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
         }
 #endif
 
@@ -4785,25 +4817,62 @@ public:
 
         VkEncoder* enc = (VkEncoder*)context;
 
-        std::vector<std::vector<VkDescriptorImageInfo>> imageInfosPerWrite(
-                descriptorWriteCount);
+        std::vector<VkDescriptorImageInfo> transformedImageInfos;
+        std::vector<VkWriteDescriptorSet> transformedWrites(descriptorWriteCount);
 
-        std::vector<VkWriteDescriptorSet> writesWithSuppressedSamplers;
+        memcpy(transformedWrites.data(), pDescriptorWrites, sizeof(VkWriteDescriptorSet) * descriptorWriteCount);
+
+        size_t imageInfosNeeded = 0;
+        for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
+            if (!isDescriptorTypeImageInfo(transformedWrites[i].descriptorType)) continue;
+            if (!transformedWrites[i].pImageInfo) continue;
+
+            imageInfosNeeded += transformedWrites[i].descriptorCount;
+        }
+
+        transformedImageInfos.resize(imageInfosNeeded);
+
+        size_t imageInfoIndex = 0;
+        for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
+            if (!isDescriptorTypeImageInfo(transformedWrites[i].descriptorType)) continue;
+            if (!transformedWrites[i].pImageInfo) continue;
+
+            for (uint32_t j = 0; j < transformedWrites[i].descriptorCount; ++j) {
+                transformedImageInfos[imageInfoIndex] = transformedWrites[i].pImageInfo[j];
+                ++imageInfoIndex;
+            }
+            transformedWrites[i].pImageInfo = &transformedImageInfos[imageInfoIndex - transformedWrites[i].descriptorCount];
+        }
 
         {
+            // Validate and filter samplers
             AutoLock lock(mLock);
+            size_t imageInfoIndex = 0;
             for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
-                writesWithSuppressedSamplers.push_back(
-                        createImmutableSamplersFilteredWriteDescriptorSetLocked(
-                            pDescriptorWrites + i,
-                            imageInfosPerWrite.data() + i));
+
+                if (!isDescriptorTypeImageInfo(transformedWrites[i].descriptorType)) continue;
+                if (!transformedWrites[i].pImageInfo) continue;
+
+                bool isImmutableSampler =
+                    descriptorBindingIsImmutableSampler(
+                        transformedWrites[i].dstSet,
+                        transformedWrites[i].dstBinding);
+
+                for (uint32_t j = 0; j < transformedWrites[i].descriptorCount; ++j) {
+                    if (isImmutableSampler) {
+                        transformedImageInfos[imageInfoIndex].sampler = 0;
+                    }
+                    transformedImageInfos[imageInfoIndex] =
+                        filterNonexistentSampler(transformedImageInfos[imageInfoIndex]);
+                    ++imageInfoIndex;
+                }
             }
         }
 
         if (mFeatureInfo->hasVulkanBatchedDescriptorSetUpdate) {
             for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
-                VkDescriptorSet set = writesWithSuppressedSamplers[i].dstSet;
-                doEmulatedDescriptorWrite(&writesWithSuppressedSamplers[i],
+                VkDescriptorSet set = transformedWrites[i].dstSet;
+                doEmulatedDescriptorWrite(&transformedWrites[i],
                         as_goldfish_VkDescriptorSet(set)->reified);
             }
 
@@ -4814,7 +4883,7 @@ public:
             }
         } else {
             enc->vkUpdateDescriptorSets(
-                    device, descriptorWriteCount, writesWithSuppressedSamplers.data(),
+                    device, descriptorWriteCount, transformedWrites.data(),
                     descriptorCopyCount, pDescriptorCopies, true /* do lock */);
         }
     }
@@ -4932,8 +5001,10 @@ public:
         const VkExternalMemoryBufferCreateInfo* extBufCiPtr =
             vk_find_struct<VkExternalMemoryBufferCreateInfo>(pCreateInfo);
         if (extBufCiPtr &&
+            ((extBufCiPtr->handleTypes &
+             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA) ||
             (extBufCiPtr->handleTypes &
-             VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA)) {
+             VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA))) {
             isSysmemBackedMemory = true;
         }
 
@@ -4943,7 +5014,7 @@ public:
 
         if (extBufferCollectionPtr) {
             auto collection = reinterpret_cast<
-                fuchsia_sysmem::BufferCollection::SyncClient*>(
+                fidl::WireSyncClient<fuchsia_sysmem::BufferCollection>*>(
                 extBufferCollectionPtr->collection);
             uint32_t index = extBufferCollectionPtr->index;
 
@@ -4960,14 +5031,11 @@ public:
             }
 
             if (vmo && vmo->is_valid()) {
-                auto createParams =
-                    fuchsia_hardware_goldfish::wire::CreateBuffer2Params::Builder(
-                        std::make_unique<
-                            fuchsia_hardware_goldfish::wire::CreateBuffer2Params::Frame>())
-                        .set_size(std::make_unique<uint64_t>(pCreateInfo->size))
-                        .set_memory_property(std::make_unique<uint32_t>(
-                            fuchsia_hardware_goldfish::wire::MEMORY_PROPERTY_DEVICE_LOCAL))
-                        .build();
+                fidl::FidlAllocator allocator;
+                fuchsia_hardware_goldfish::wire::CreateBuffer2Params createParams(allocator);
+                createParams.set_size(allocator, pCreateInfo->size)
+                    .set_memory_property(allocator,
+                        fuchsia_hardware_goldfish::wire::kMemoryPropertyDeviceLocal);
 
                 auto result =
                     mControlDevice->CreateBuffer2(std::move(*vmo), std::move(createParams));
@@ -5134,11 +5202,17 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         bool exportEvent = exportSemaphoreInfoPtr &&
+            ((exportSemaphoreInfoPtr->handleTypes &
+             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA) ||
             (exportSemaphoreInfoPtr->handleTypes &
-             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA);
+             VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA));
 
         if (exportEvent) {
             finalCreateInfo.pNext = nullptr;
+            // If we have timeline semaphores externally, leave it there.
+            const VkSemaphoreTypeCreateInfo* typeCi =
+                vk_find_struct<VkSemaphoreTypeCreateInfo>(pCreateInfo);
+            if (typeCi) finalCreateInfo.pNext = typeCi;
         }
 #endif
 
@@ -5149,6 +5223,10 @@ public:
 
         if (exportSyncFd) {
             finalCreateInfo.pNext = nullptr;
+            // If we have timeline semaphores externally, leave it there.
+            const VkSemaphoreTypeCreateInfo* typeCi =
+                vk_find_struct<VkSemaphoreTypeCreateInfo>(pCreateInfo);
+            if (typeCi) finalCreateInfo.pNext = typeCi;
         }
 #endif
         input_result = enc->vkCreateSemaphore(
@@ -5171,7 +5249,7 @@ public:
 
         info.device = device;
         info.eventHandle = event_handle;
-#ifdef VK_PLATFORM_FUCHSIA
+#ifdef VK_USE_PLATFORM_FUCHSIA
         info.eventKoid = getEventKoid(info.eventHandle);
 #endif
 
@@ -6243,12 +6321,32 @@ public:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
         if (ext_img_properties) {
-            ext_img_properties->externalMemoryProperties = {
-                .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
-                                          VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
-                .exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
-                .compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
-            };
+            const VkPhysicalDeviceExternalImageFormatInfo* ext_img_info =
+                vk_find_struct<VkPhysicalDeviceExternalImageFormatInfo>(pImageFormatInfo);
+            if (ext_img_info) {
+                switch (static_cast<uint32_t>(ext_img_info->handleType)) {
+                case VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA:
+                    ext_img_properties->externalMemoryProperties = {
+                        .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
+                                                  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
+                        .exportFromImportedHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+                        .compatibleHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_TEMP_ZIRCON_VMO_BIT_FUCHSIA,
+                    };
+                    break;
+                case VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA:
+                    ext_img_properties->externalMemoryProperties = {
+                        .externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT |
+                                                  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
+                        .exportFromImportedHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+                        .compatibleHandleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,
+                    };
+                    break;
+                }
+            }
         }
 #endif
 
@@ -6296,6 +6394,16 @@ public:
                 VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
             pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
                 VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_TEMP_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->externalSemaphoreFeatures |=
+                VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
+                VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
+        }
+        if (pExternalSemaphoreInfo->handleType ==
+            static_cast<uint32_t>(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)) {
+            pExternalSemaphoreProperties->compatibleHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA;
+            pExternalSemaphoreProperties->exportFromImportedHandleTypes |=
+                VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA;
             pExternalSemaphoreProperties->externalSemaphoreFeatures |=
                 VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT |
                 VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;
@@ -6411,6 +6519,14 @@ public:
 
         struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(commandBuffer);
         cb->flags = pBeginInfo->flags;
+
+        VkCommandBufferBeginInfo modifiedBeginInfo;
+
+        if (pBeginInfo->pInheritanceInfo && !cb->isSecondary) {
+            modifiedBeginInfo = *pBeginInfo;
+            modifiedBeginInfo.pInheritanceInfo = nullptr;
+            pBeginInfo = &modifiedBeginInfo;
+        }
 
         if (!supportsDeferredCommands()) {
             return enc->vkBeginCommandBuffer(commandBuffer, pBeginInfo, true /* do lock */);
@@ -6573,6 +6689,27 @@ public:
         decDescriptorSetLayoutRef(context, device, descriptorSetLayout, pAllocator);
     }
 
+    VkResult on_vkAllocateCommandBuffers(
+        void* context,
+        VkResult input_result,
+        VkDevice device,
+        const VkCommandBufferAllocateInfo* pAllocateInfo,
+        VkCommandBuffer* pCommandBuffers) {
+
+        (void)input_result;
+
+        VkEncoder* enc = (VkEncoder*)context;
+        VkResult res = enc->vkAllocateCommandBuffers(device, pAllocateInfo, pCommandBuffers, true /* do lock */);
+        if (VK_SUCCESS != res) return res;
+
+        for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
+            struct goldfish_VkCommandBuffer* cb = as_goldfish_VkCommandBuffer(pCommandBuffers[i]);
+            cb->isSecondary = pAllocateInfo->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        }
+
+        return res;
+    }
+
     uint32_t getApiVersionFromInstance(VkInstance instance) const {
         AutoLock lock(mLock);
         uint32_t api = kDefaultApiVersion;
@@ -6687,7 +6824,7 @@ public:
     }
 
 private:
-    mutable Lock mLock;
+    mutable RecursiveLock mLock;
     HostVisibleMemoryVirtualizationInfo mHostVisibleMemoryVirtInfo;
     std::unique_ptr<EmulatorFeatureInfo> mFeatureInfo;
     std::unique_ptr<GoldfishAddressSpaceBlockProvider> mGoldfishAddressSpaceBlockProvider;
@@ -6702,9 +6839,9 @@ private:
 
 #ifdef VK_USE_PLATFORM_FUCHSIA
     std::unique_ptr<
-        fuchsia_hardware_goldfish::ControlDevice::SyncClient>
+        fidl::WireSyncClient<fuchsia_hardware_goldfish::ControlDevice>>
         mControlDevice;
-    std::unique_ptr<fuchsia_sysmem::Allocator::SyncClient>
+    std::unique_ptr<fidl::WireSyncClient<fuchsia_sysmem::Allocator>>
         mSysmemAllocator;
 #endif
 
@@ -6940,6 +7077,22 @@ void ResourceTracker::on_vkGetPhysicalDeviceMemoryProperties2KHR(
     VkPhysicalDeviceMemoryProperties2* pMemoryProperties) {
     mImpl->on_vkGetPhysicalDeviceMemoryProperties2(
         context, physicalDevice, pMemoryProperties);
+}
+
+void ResourceTracker::on_vkGetDeviceQueue(void* context,
+                                          VkDevice device,
+                                          uint32_t queueFamilyIndex,
+                                          uint32_t queueIndex,
+                                          VkQueue* pQueue) {
+    mImpl->on_vkGetDeviceQueue(context, device, queueFamilyIndex, queueIndex,
+                               pQueue);
+}
+
+void ResourceTracker::on_vkGetDeviceQueue2(void* context,
+                                           VkDevice device,
+                                           const VkDeviceQueueInfo2* pQueueInfo,
+                                           VkQueue* pQueue) {
+    mImpl->on_vkGetDeviceQueue2(context, device, pQueueInfo, pQueue);
 }
 
 VkResult ResourceTracker::on_vkCreateInstance(
@@ -7687,6 +7840,15 @@ void ResourceTracker::on_vkDestroyDescriptorSetLayout(
     VkDescriptorSetLayout descriptorSetLayout,
     const VkAllocationCallbacks* pAllocator) {
     mImpl->on_vkDestroyDescriptorSetLayout(context, device, descriptorSetLayout, pAllocator);
+}
+
+VkResult ResourceTracker::on_vkAllocateCommandBuffers(
+    void* context,
+    VkResult input_result,
+    VkDevice device,
+    const VkCommandBufferAllocateInfo* pAllocateInfo,
+    VkCommandBuffer* pCommandBuffers) {
+    return mImpl->on_vkAllocateCommandBuffers(context, input_result, device, pAllocateInfo, pCommandBuffers);
 }
 
 void ResourceTracker::deviceMemoryTransform_tohost(
