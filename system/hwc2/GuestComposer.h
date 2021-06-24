@@ -19,6 +19,7 @@
 
 #include "Common.h"
 #include "Composer.h"
+#include "Display.h"
 #include "DrmPresenter.h"
 #include "Gralloc.h"
 #include "Layer.h"
@@ -35,10 +36,15 @@ class GuestComposer : public Composer {
   GuestComposer(GuestComposer&&) = delete;
   GuestComposer& operator=(GuestComposer&&) = delete;
 
-  HWC2::Error init() override;
+  HWC2::Error init(const HotplugCallback& cb) override;
 
   HWC2::Error createDisplays(
       Device* device,
+      const AddDisplayToDeviceFunction& addDisplayToDeviceFn) override;
+
+  HWC2::Error createDisplay(
+      Device* device, uint32_t displayId, uint32_t width, uint32_t height,
+      uint32_t dpiX, uint32_t dpiY, uint32_t refreshRateHz,
       const AddDisplayToDeviceFunction& addDisplayToDeviceFn) override;
 
   HWC2::Error onDisplayDestroy(Display*) override;
@@ -103,6 +109,13 @@ class GuestComposer : public Composer {
   uint8_t* getRotatingScratchBuffer(std::size_t neededSize,
                                     std::uint32_t order);
   uint8_t* getSpecialScratchBuffer(std::size_t neededSize);
+
+  HWC2::Error applyColorTransformToRGBA(
+      const ColorTransformWithMatrix& colotTransform, //
+      std::uint8_t* buffer,//
+      std::uint32_t bufferWidth,//
+      std::uint32_t bufferHeight,//
+      std::uint32_t bufferStrideBytes);
 
   std::vector<uint8_t> mScratchBuffer;
   std::vector<uint8_t> mSpecialScratchBuffer;

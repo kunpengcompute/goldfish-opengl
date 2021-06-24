@@ -17,8 +17,10 @@
 #ifndef ANDROID_HWC_DISPLAY_H
 #define ANDROID_HWC_DISPLAY_H
 
+#include <android/hardware/graphics/common/1.0/types.h>
 #include <utils/Thread.h>
 
+#include <array>
 #include <optional>
 #include <set>
 #include <thread>
@@ -35,9 +37,14 @@ namespace android {
 class Composer;
 class Device;
 
+struct ColorTransformWithMatrix {
+  android::hardware::graphics::common::V1_0::ColorTransform transformType;
+  std::optional<std::array<float, 16>> transformMatrixOpt;
+};
+
 class Display {
  public:
-  Display(Device& device, Composer* composer);
+  Display(Device& device, Composer* composer, hwc2_display_t id);
   ~Display();
 
   Display(const Display& display) = delete;
@@ -46,14 +53,22 @@ class Display {
   Display(Display&& display) = delete;
   Display& operator=(Display&& display) = delete;
 
-  HWC2::Error init(uint32_t width, uint32_t height, uint32_t dpiX,
-                   uint32_t dpiY, uint32_t refreshRateHz);
+  HWC2::Error init(
+      uint32_t width, uint32_t height, uint32_t dpiX, uint32_t dpiY,
+      uint32_t refreshRateHz,
+      const std::optional<std::vector<uint8_t>>& edid = std::nullopt);
+
+  HWC2::Error updateParameters(
+      uint32_t width, uint32_t height, uint32_t dpiX, uint32_t dpiY,
+      uint32_t refreshRateHz,
+      const std::optional<std::vector<uint8_t>>& edid = std::nullopt);
 
   hwc2_display_t getId() const { return mId; }
 
   Layer* getLayer(hwc2_layer_t layerHandle);
 
   FencedBuffer& getClientTarget() { return mClientTarget; }
+  buffer_handle_t waitAndGetClientTargetBuffer();
 
   const std::vector<Layer*>& getOrderedLayers() { return mOrderedLayers; }
 
@@ -90,8 +105,12 @@ class Display {
   HWC2::Error setClientTarget(buffer_handle_t target, int32_t acquireFence,
                               int32_t dataspace, hwc_region_t damage);
   HWC2::Error setColorMode(int32_t mode);
-  HWC2::Error setColorTransform(const float* matrix, int32_t hint);
-  bool hasColorTransform() const { return mSetColorTransform; }
+  HWC2::Error setColorTransform(const float* matrix, int transform);
+  HWC2::Error setColorTransformEnum(const float* matrix,
+                                    android::hardware::graphics::common::V1_0::ColorTransform transform);
+  bool hasColorTransform() const { return mColorTransform.has_value(); }
+  ColorTransformWithMatrix getColorTransform() const { return *mColorTransform; }
+
   HWC2::Error setOutputBuffer(buffer_handle_t buffer, int32_t releaseFence);
   HWC2::Error setPowerMode(int32_t mode);
   HWC2::Error setVsyncEnabled(int32_t enabled);
@@ -107,6 +126,8 @@ class Display {
                                      uint32_t* outCapabilities);
   HWC2::Error getDisplayBrightnessSupport(bool* out_support);
   HWC2::Error setDisplayBrightness(float brightness);
+  void lock() { mStateMutex.lock(); }
+  void unlock() { mStateMutex.unlock(); }
 
  private:
   class Config {
@@ -219,7 +240,8 @@ class Display {
   std::unordered_map<hwc2_config_t, Config> mConfigs;
   std::set<android_color_mode_t> mColorModes;
   android_color_mode_t mActiveColorMode;
-  bool mSetColorTransform = false;
+  std::optional<ColorTransformWithMatrix> mColorTransform;
+  std::optional<std::vector<uint8_t>> mEdid;
 };
 
 }  // namespace android

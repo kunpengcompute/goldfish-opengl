@@ -19,6 +19,7 @@
 #include <android-base/parseint.h>
 #include <android-base/properties.h>
 #include <android-base/strings.h>
+#include <android/hardware/graphics/common/1.0/types.h>
 #include <device_config_shared.h>
 #include <drm_fourcc.h>
 #include <libyuv.h>
@@ -33,6 +34,8 @@
 
 namespace android {
 namespace {
+
+using android::hardware::graphics::common::V1_0::ColorTransform;
 
 uint64_t AlignToPower2(uint64_t val, uint8_t align_log) {
   uint64_t align = 1ULL << align_log;
@@ -380,10 +383,10 @@ std::optional<BufferSpec> GetBufferSpec(GrallocBuffer& buffer,
 
 }  // namespace
 
-HWC2::Error GuestComposer::init() {
+HWC2::Error GuestComposer::init(const HotplugCallback& cb) {
   DEBUG_LOG("%s", __FUNCTION__);
 
-  if (!mDrmPresenter.init()) {
+  if (!mDrmPresenter.init(cb)) {
     ALOGE("%s: failed to initialize DrmPresenter", __FUNCTION__);
     return HWC2::Error::NoResources;
   }
@@ -410,80 +413,92 @@ HWC2::Error GuestComposer::createDisplays(
     ALOGE("%s failed to get display configs from system prop", __FUNCTION__);
     return error;
   }
-
+  uint32_t id = 0;
   for (const auto& displayConfig : displayConfigs) {
-    auto display = std::make_unique<Display>(*device, this);
-    if (display == nullptr) {
-      ALOGE("%s failed to allocate display", __FUNCTION__);
-      return HWC2::Error::NoResources;
-    }
-
-    auto displayId = display->getId();
-
-    error = display->init(displayConfig.width,   //
-                          displayConfig.height,  //
-                          displayConfig.dpiX,    //
-                          displayConfig.dpiY,    //
-                          displayConfig.refreshRateHz);
+    error = createDisplay(device, id, displayConfig.width, displayConfig.height,
+                          displayConfig.dpiX, displayConfig.dpiY,
+                          displayConfig.refreshRateHz, addDisplayToDeviceFn);
     if (error != HWC2::Error::None) {
-      ALOGE("%s failed to initialize display:%" PRIu64, __FUNCTION__,
-            displayId);
+      ALOGE("%s: failed to create display %d", __FUNCTION__, id);
       return error;
     }
 
-    auto it = mDisplayInfos.find(displayId);
-    if (it != mDisplayInfos.end()) {
-      ALOGE("%s: display:%" PRIu64 " already created?", __FUNCTION__,
-            displayId);
+    ++id;
+  }
+
+  return HWC2::Error::None;
+}
+
+HWC2::Error GuestComposer::createDisplay(
+    Device* device, uint32_t id, uint32_t width, uint32_t height, uint32_t dpiX,
+    uint32_t dpiY, uint32_t refreshRateHz,
+    const AddDisplayToDeviceFunction& addDisplayToDeviceFn) {
+  auto display = std::make_unique<Display>(*device, this, id);
+  if (display == nullptr) {
+    ALOGE("%s failed to allocate display", __FUNCTION__);
+    return HWC2::Error::NoResources;
+  }
+
+  auto displayId = display->getId();
+
+  HWC2::Error error = display->init(width, height, dpiX, dpiY, refreshRateHz);
+  if (error != HWC2::Error::None) {
+    ALOGE("%s failed to initialize display:%" PRIu64, __FUNCTION__, displayId);
+    return error;
+  }
+
+  auto it = mDisplayInfos.find(displayId);
+  if (it != mDisplayInfos.end()) {
+    ALOGE("%s: display:%" PRIu64 " already created?", __FUNCTION__, displayId);
+  }
+
+  GuestComposerDisplayInfo& displayInfo = mDisplayInfos[displayId];
+
+  uint32_t bufferStride;
+  buffer_handle_t bufferHandle;
+
+  auto status = GraphicBufferAllocator::get().allocate(
+      width,                   //
+      height,                  //
+      PIXEL_FORMAT_RGBA_8888,  //
+      /*layerCount=*/1,        //
+      GraphicBuffer::USAGE_HW_COMPOSER | GraphicBuffer::USAGE_SW_READ_OFTEN |
+          GraphicBuffer::USAGE_SW_WRITE_OFTEN,  //
+      &bufferHandle,                            //
+      &bufferStride,                            //
+      "RanchuHwc");
+  if (status != OK) {
+    ALOGE("%s failed to allocate composition buffer for display:%" PRIu64,
+          __FUNCTION__, displayId);
+    return HWC2::Error::NoResources;
+  }
+
+  displayInfo.compositionResultBuffer = bufferHandle;
+
+  displayInfo.compositionResultDrmBuffer = std::make_unique<DrmBuffer>(
+      displayInfo.compositionResultBuffer, mDrmPresenter);
+
+  if (displayId == 0) {
+    int flushSyncFd = -1;
+
+    HWC2::Error flushError =
+        displayInfo.compositionResultDrmBuffer->flushToDisplay(displayId,
+                                                               &flushSyncFd);
+    if (flushError != HWC2::Error::None) {
+      ALOGW(
+          "%s: Initial display flush failed. HWComposer assuming that we are "
+          "running in QEMU without a display and disabling presenting.",
+          __FUNCTION__);
+      mPresentDisabled = true;
+    } else {
+      close(flushSyncFd);
     }
+  }
 
-    GuestComposerDisplayInfo& displayInfo = mDisplayInfos[displayId];
-
-    uint32_t bufferStride;
-    buffer_handle_t bufferHandle;
-
-    auto status = GraphicBufferAllocator::get().allocate(
-        displayConfig.width,     //
-        displayConfig.height,    //
-        PIXEL_FORMAT_RGBA_8888,  //
-        /*layerCount=*/1,        //
-        GraphicBuffer::USAGE_HW_COMPOSER | GraphicBuffer::USAGE_SW_READ_OFTEN |
-            GraphicBuffer::USAGE_SW_WRITE_OFTEN,  //
-        &bufferHandle,                            //
-        &bufferStride,                            //
-        "RanchuHwc");
-    if (status != OK) {
-      ALOGE("%s failed to allocate composition buffer for display:%" PRIu64,
-            __FUNCTION__, displayId);
-      return HWC2::Error::NoResources;
-    }
-
-    displayInfo.compositionResultBuffer = bufferHandle;
-
-    displayInfo.compositionResultDrmBuffer = std::make_unique<DrmBuffer>(
-        displayInfo.compositionResultBuffer, mDrmPresenter);
-
-    if (displayId == 0) {
-      int flushSyncFd = -1;
-
-      HWC2::Error flushError =
-          displayInfo.compositionResultDrmBuffer->flush(&flushSyncFd);
-      if (flushError != HWC2::Error::None) {
-        ALOGW(
-            "%s: Initial display flush failed. HWComposer assuming that we are "
-            "running in QEMU without a display and disabling presenting.",
-            __FUNCTION__);
-        mPresentDisabled = true;
-      } else {
-        close(flushSyncFd);
-      }
-    }
-
-    error = addDisplayToDeviceFn(std::move(display));
-    if (error != HWC2::Error::None) {
-      ALOGE("%s failed to add display:%" PRIu64, __FUNCTION__, displayId);
-      return error;
-    }
+  error = addDisplayToDeviceFn(std::move(display));
+  if (error != HWC2::Error::None) {
+    ALOGE("%s failed to add display:%" PRIu64, __FUNCTION__, displayId);
+    return error;
   }
 
   return HWC2::Error::None;
@@ -619,10 +634,6 @@ HWC2::Error GuestComposer::validateDisplay(
     }
   }
 
-  if (display->hasColorTransform()) {
-    fallbackToClientComposition = true;
-  }
-
   if (fallbackToClientComposition) {
     for (Layer* layer : layers) {
       const auto layerId = layer->getId();
@@ -677,7 +688,6 @@ HWC2::Error GuestComposer::presentDisplay(Display* display,
                                           int32_t* outRetireFence) {
   const auto displayId = display->getId();
   DEBUG_LOG("%s display:%" PRIu64, __FUNCTION__, displayId);
-
 
   if (displayId != 0) {
     // TODO(b/171305898): remove after multi-display fully supported.
@@ -757,22 +767,92 @@ HWC2::Error GuestComposer::presentDisplay(Display* display,
       reinterpret_cast<uint8_t*>(*compositionResultBufferDataOpt);
 
   const std::vector<Layer*>& layers = display->getOrderedLayers();
-  for (Layer* layer : layers) {
-    const auto layerId = layer->getId();
-    const auto layerCompositionType = layer->getCompositionType();
-    if (layerCompositionType != HWC2::Composition::Device) {
-      continue;
+
+  const bool noOpComposition = layers.empty();
+  const bool allLayersClientComposed = std::all_of(
+      layers.begin(),  //
+      layers.end(),    //
+      [](const Layer* layer) {
+        return layer->getCompositionType() == HWC2::Composition::Client;
+      });
+
+  if (noOpComposition) {
+    ALOGW("%s: display:%" PRIu64 " empty composition", __FUNCTION__, displayId);
+  } else if (allLayersClientComposed) {
+    auto clientTargetBufferOpt =
+        mGralloc.Import(display->waitAndGetClientTargetBuffer());
+    if (!clientTargetBufferOpt) {
+      ALOGE("%s: failed to import client target buffer.", __FUNCTION__);
+      return HWC2::Error::NoResources;
+    }
+    GrallocBuffer& clientTargetBuffer = *clientTargetBufferOpt;
+
+    auto clientTargetBufferViewOpt = clientTargetBuffer.Lock();
+    if (!clientTargetBufferViewOpt) {
+      ALOGE("%s: failed to lock client target buffer.", __FUNCTION__);
+      return HWC2::Error::NoResources;
+    }
+    GrallocBufferView& clientTargetBufferView = *clientTargetBufferViewOpt;
+
+    auto clientTargetPlaneLayoutsOpt = clientTargetBuffer.GetPlaneLayouts();
+    if (!clientTargetPlaneLayoutsOpt) {
+      ALOGE("Failed to get client target buffer plane layouts.");
+      return HWC2::Error::NoResources;
+    }
+    auto& clientTargetPlaneLayouts = *clientTargetPlaneLayoutsOpt;
+
+    if (clientTargetPlaneLayouts.size() != 1) {
+      ALOGE("Unexpected number of plane layouts for client target buffer.");
+      return HWC2::Error::NoResources;
     }
 
-    HWC2::Error error = composeLayerInto(layer,                          //
-                                         compositionResultBufferData,    //
-                                         compositionResultBufferWidth,   //
-                                         compositionResultBufferHeight,  //
-                                         compositionResultBufferStride,  //
-                                         4);
+    std::size_t clientTargetPlaneSize =
+        clientTargetPlaneLayouts[0].totalSizeInBytes;
+
+    auto clientTargetDataOpt = clientTargetBufferView.Get();
+    if (!clientTargetDataOpt) {
+      ALOGE("%s failed to lock gralloc buffer.", __FUNCTION__);
+      return HWC2::Error::NoResources;
+    }
+    auto* clientTargetData = reinterpret_cast<uint8_t*>(*clientTargetDataOpt);
+
+    std::memcpy(compositionResultBufferData, clientTargetData,
+                clientTargetPlaneSize);
+  } else {
+    for (Layer* layer : layers) {
+      const auto layerId = layer->getId();
+      const auto layerCompositionType = layer->getCompositionType();
+      if (layerCompositionType != HWC2::Composition::Device) {
+        continue;
+      }
+
+      HWC2::Error error = composeLayerInto(layer,                          //
+                                           compositionResultBufferData,    //
+                                           compositionResultBufferWidth,   //
+                                           compositionResultBufferHeight,  //
+                                           compositionResultBufferStride,  //
+                                           4);
+      if (error != HWC2::Error::None) {
+        ALOGE("%s: display:%" PRIu64 " failed to compose layer:%" PRIu64,
+              __FUNCTION__, displayId, layerId);
+        return error;
+      }
+    }
+  }
+
+  if (display->hasColorTransform()) {
+    const ColorTransformWithMatrix colorTransform =
+        display->getColorTransform();
+
+    HWC2::Error error =
+        applyColorTransformToRGBA(colorTransform,                 //
+                                  compositionResultBufferData,    //
+                                  compositionResultBufferWidth,   //
+                                  compositionResultBufferHeight,  //
+                                  compositionResultBufferStride);
     if (error != HWC2::Error::None) {
-      ALOGE("%s: display:%" PRIu64 " failed to compose layer:%" PRIu64,
-            __FUNCTION__, displayId, layerId);
+      ALOGE("%s: display:%" PRIu64 " failed to apply color transform",
+            __FUNCTION__, displayId);
       return error;
     }
   }
@@ -780,8 +860,8 @@ HWC2::Error GuestComposer::presentDisplay(Display* display,
   DEBUG_LOG("%s display:%" PRIu64 " flushing drm buffer", __FUNCTION__,
             displayId);
 
-  HWC2::Error error =
-      displayInfo.compositionResultDrmBuffer->flush(outRetireFence);
+  HWC2::Error error = displayInfo.compositionResultDrmBuffer->flushToDisplay(
+      static_cast<int>(displayId), outRetireFence);
   if (error != HWC2::Error::None) {
     ALOGE("%s: display:%" PRIu64 " failed to flush drm buffer" PRIu64,
           __FUNCTION__, displayId);
@@ -1003,6 +1083,78 @@ HWC2::Error GuestComposer::composeLayerInto(
     }
     // Don't need to assign destination to source in the last one
     dstBufferStack.pop_back();
+  }
+
+  return HWC2::Error::None;
+}
+
+namespace {
+
+static constexpr const std::array<float, 16> kInvertColorMatrix = {
+    // clang-format off
+  -1.0f,  0.0f,  0.0f, 0.0f,
+   0.0f, -1.0f,  0.0f, 0.0f,
+   0.0f, -1.0f, -1.0f, 0.0f,
+   1.0f,  1.0f,  1.0f, 1.0f,
+    // clang-format on
+};
+
+// Returns a color matrix that can be used with libyuv by converting values
+// in -1 to 1 into -64 to 64 and transposing.
+std::array<std::int8_t, 16> ToLibyuvColorMatrix(
+    const std::array<float, 16>& in) {
+  std::array<std::int8_t, 16> out;
+
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 4; c++) {
+      int indexIn = (4 * r) + c;
+      int indexOut = (4 * c) + r;
+
+      out[indexOut] = std::max(
+          -128, std::min(127, static_cast<int>(in[indexIn] * 64.0f + 0.5f)));
+    }
+  }
+
+  return out;
+}
+
+}  // namespace
+
+HWC2::Error GuestComposer::applyColorTransformToRGBA(
+    const ColorTransformWithMatrix& transform,  //
+    std::uint8_t* buffer,                       //
+    std::uint32_t bufferWidth,                  //
+    std::uint32_t bufferHeight,                 //
+    std::uint32_t bufferStrideBytes) {
+  if (transform.transformType == ColorTransform::ARBITRARY_MATRIX) {
+    if (!transform.transformMatrixOpt.has_value()) {
+      ALOGE("%s: color transform matrix missing", __FUNCTION__);
+      return HWC2::Error::BadParameter;
+    }
+    const auto& transformMatrix = *transform.transformMatrixOpt;
+    const auto transformMatrixLibyuv = ToLibyuvColorMatrix(transformMatrix);
+    libyuv::ARGBColorMatrix(buffer, bufferStrideBytes,     // in buffer params
+                            buffer, bufferStrideBytes,     // out buffer params
+                            transformMatrixLibyuv.data(),  //
+                            bufferWidth,                   //
+                            bufferHeight);
+  } else if (transform.transformType == ColorTransform::VALUE_INVERSE) {
+    const auto transformMatrixLibyuv = ToLibyuvColorMatrix(kInvertColorMatrix);
+    libyuv::ARGBColorMatrix(buffer, bufferStrideBytes,     // in buffer params
+                            buffer, bufferStrideBytes,     // out buffer params
+                            transformMatrixLibyuv.data(),  //
+                            bufferWidth,                   //
+                            bufferHeight);
+  } else if (transform.transformType == ColorTransform::GRAYSCALE) {
+    libyuv::ARGBGrayTo(buffer, bufferStrideBytes,  // in buffer params
+                       buffer, bufferStrideBytes,  // out buffer params
+                       bufferWidth,                //
+                       bufferHeight);
+  } else {
+    const auto transformTypeString = toString(transform.transformType);
+    ALOGE("%s: unhandled color transform type %s", __FUNCTION__,
+          transformTypeString.c_str());
+    return HWC2::Error::BadParameter;
   }
 
   return HWC2::Error::None;

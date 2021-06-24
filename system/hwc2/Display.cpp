@@ -16,6 +16,8 @@
 
 #include "Display.h"
 
+#include <sync/sync.h>
+
 #include <atomic>
 #include <numeric>
 
@@ -24,8 +26,9 @@
 namespace android {
 namespace {
 
+using android::hardware::graphics::common::V1_0::ColorTransform;
+
 std::atomic<hwc2_config_t> sNextConfigId{0};
-std::atomic<hwc2_display_t> sNextDisplayId{0};
 
 bool IsValidColorMode(android_color_mode_t mode) {
   switch (mode) {
@@ -59,19 +62,20 @@ bool isValidPowerMode(HWC2::PowerMode mode) {
 
 }  // namespace
 
-Display::Display(Device& device, Composer* composer)
+Display::Display(Device& device, Composer* composer, hwc2_display_t id)
     : mDevice(device),
       mComposer(composer),
-      mId(sNextDisplayId++),
+      mId(id),
       mVsyncThread(new VsyncThread(*this)) {}
 
 Display::~Display() {}
 
 HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
-                          uint32_t dpiY, uint32_t refreshRateHz) {
-  DEBUG_LOG("%s initializing display:%" PRIu64
-            " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
-            __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
+                          uint32_t dpiY, uint32_t refreshRateHz,
+                          const std::optional<std::vector<uint8_t>>& edid) {
+  ALOGD("%s initializing display:%" PRIu64
+        " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
+        __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
 
   std::unique_lock<std::recursive_mutex> lock(mStateMutex);
 
@@ -91,6 +95,34 @@ HWC2::Error Display::init(uint32_t width, uint32_t height, uint32_t dpiX,
   mActiveConfigId = configId;
   mActiveColorMode = HAL_COLOR_MODE_NATIVE;
   mColorModes.emplace((android_color_mode_t)HAL_COLOR_MODE_NATIVE);
+  mEdid = edid;
+
+  return HWC2::Error::None;
+}
+
+HWC2::Error Display::updateParameters(
+    uint32_t width, uint32_t height, uint32_t dpiX, uint32_t dpiY,
+    uint32_t refreshRateHz, const std::optional<std::vector<uint8_t>>& edid) {
+  DEBUG_LOG("%s updating display:%" PRIu64
+            " width:%d height:%d dpiX:%d dpiY:%d refreshRateHz:%d",
+            __FUNCTION__, mId, width, height, dpiX, dpiY, refreshRateHz);
+
+  std::unique_lock<std::recursive_mutex> lock(mStateMutex);
+
+  mVsyncPeriod = 1000 * 1000 * 1000 / refreshRateHz;
+
+  auto it = mConfigs.find(*mActiveConfigId);
+  if (it == mConfigs.end()) {
+    ALOGE("%s: failed to find config %" PRIu32, __func__, *mActiveConfigId);
+    return HWC2::Error::NoResources;
+  }
+  it->second.setAttribute(HWC2::Attribute::VsyncPeriod, mVsyncPeriod);
+  it->second.setAttribute(HWC2::Attribute::Width, width);
+  it->second.setAttribute(HWC2::Attribute::Height, height);
+  it->second.setAttribute(HWC2::Attribute::DpiX, dpiX * 1000);
+  it->second.setAttribute(HWC2::Attribute::DpiY, dpiY * 1000);
+
+  mEdid = edid;
 
   return HWC2::Error::None;
 }
@@ -103,6 +135,21 @@ Layer* Display::getLayer(hwc2_layer_t layerId) {
   }
 
   return it->second.get();
+}
+
+buffer_handle_t Display::waitAndGetClientTargetBuffer() {
+  DEBUG_LOG("%s: display:%" PRIu64, __FUNCTION__, mId);
+
+  int fence = mClientTarget.getFence();
+  if (fence != -1) {
+    int err = sync_wait(fence, 3000);
+    if (err < 0 && errno == ETIME) {
+      ALOGE("%s waited on fence %" PRId32 " for 3000 ms", __FUNCTION__, fence);
+    }
+    close(fence);
+  }
+
+  return mClientTarget.getBuffer();
 }
 
 HWC2::Error Display::acceptChanges() {
@@ -159,8 +206,13 @@ HWC2::Error Display::destroyLayer(hwc2_layer_t layerId) {
     return HWC2::Error::BadLayer;
   }
 
-  std::remove_if(mOrderedLayers.begin(), mOrderedLayers.end(),
-                 [layerId](Layer* layer) { return layer->getId() == layerId; });
+  mOrderedLayers.erase(std::remove_if(mOrderedLayers.begin(),  //
+                                      mOrderedLayers.end(),    //
+                                      [layerId](Layer* layer) {
+                                        return layer->getId() == layerId;
+                                      }),
+                       mOrderedLayers.end());
+
   mLayers.erase(it);
 
   DEBUG_LOG("%s destroyed layer:%" PRIu64, __FUNCTION__, layerId);
@@ -199,6 +251,8 @@ HWC2::Error Display::getDisplayAttributeEnum(hwc2_config_t configId,
 
   const Config& config = it->second;
   *outValue = config.getAttribute(attribute);
+  DEBUG_LOG("%s: display:%" PRIu64 " attribute:%s value is %" PRIi32,
+            __FUNCTION__, mId, attributeString.c_str(), *outValue);
   return HWC2::Error::None;
 }
 
@@ -257,8 +311,8 @@ HWC2::Error Display::getColorModes(uint32_t* outNumModes, int32_t* outModes) {
   }
 
   // we only support HAL_COLOR_MODE_NATIVE so far
-  uint32_t numModes =
-      std::min(*outNumModes, static_cast<uint32_t>(mColorModes.size()));
+  uint32_t numModes = std::min<uint32_t>(
+      *outNumModes, static_cast<uint32_t>(mColorModes.size()));
   std::copy_n(mColorModes.cbegin(), numModes, outModes);
   *outNumModes = numModes;
   return HWC2::Error::None;
@@ -492,17 +546,38 @@ HWC2::Error Display::setColorMode(int32_t intMode) {
   return HWC2::Error::None;
 }
 
-HWC2::Error Display::setColorTransform(const float* /*matrix*/, int32_t hint) {
-  DEBUG_LOG("%s: display:%" PRIu64 " setting hint to %d", __FUNCTION__, mId,
-            hint);
+HWC2::Error Display::setColorTransform(const float* transformMatrix,
+                                       int transformTypeRaw) {
+  const auto transformType = static_cast<ColorTransform>(transformTypeRaw);
+  return setColorTransformEnum(transformMatrix, transformType);
+}
+
+HWC2::Error Display::setColorTransformEnum(
+    const float* transformMatrix, ColorTransform transformType) {
+  const auto transformTypeString = toString(transformType);
+  DEBUG_LOG("%s: display:%" PRIu64 " color transform type %s", __FUNCTION__, mId,
+            transformTypeString.c_str());
+
+  if (transformType == ColorTransform::ARBITRARY_MATRIX &&
+      transformMatrix == nullptr) {
+    return HWC2::Error::BadParameter;
+  }
 
   std::unique_lock<std::recursive_mutex> lock(mStateMutex);
-  // we force client composition if this is set
-  if (hint == 0) {
-    mSetColorTransform = false;
+
+  if (transformType == ColorTransform::IDENTITY) {
+    mColorTransform.reset();
   } else {
-    mSetColorTransform = true;
+    ColorTransformWithMatrix& colorTransform = mColorTransform.emplace();
+    colorTransform.transformType = transformType;
+
+    if (transformType == ColorTransform::ARBITRARY_MATRIX) {
+      auto& colorTransformMatrix = colorTransform.transformMatrixOpt.emplace();
+      std::copy_n(transformMatrix, colorTransformMatrix.size(),
+                  colorTransformMatrix.begin());
+    }
   }
+
   return HWC2::Error::None;
 }
 
@@ -717,6 +792,18 @@ HWC2::Error Display::getDisplayIdentificationData(uint8_t* outPort,
     return HWC2::Error::BadParameter;
   }
 
+  if (mEdid) {
+    if (outData) {
+      *outDataSize = std::min<uint32_t>(*outDataSize, (*mEdid).size());
+      memcpy(outData, (*mEdid).data(), *outDataSize);
+    } else {
+      *outDataSize = (*mEdid).size();
+    }
+    *outPort = mId;
+    return HWC2::Error::None;
+  }
+
+  // fallback to legacy EDID implementation
   uint32_t len = std::min(*outDataSize, (uint32_t)ARRAY_SIZE(sEDID0));
   if (outData != nullptr && len < (uint32_t)ARRAY_SIZE(sEDID0)) {
     ALOGW("%s: display:%" PRIu64 " small buffer size: %u is specified",
@@ -767,11 +854,10 @@ HWC2::Error Display::getDisplayCapabilities(uint32_t* outNumCapabilities,
     return HWC2::Error::None;
   }
 
-  bool brightness_support = true;
-  bool doze_support = true;
+  bool brightness_support = false;
+  bool doze_support = false;
 
-  uint32_t count =
-      1 + static_cast<uint32_t>(doze_support) + (brightness_support ? 1 : 0);
+  uint32_t count = 1 + (doze_support ? 1 : 0) + (brightness_support ? 1 : 0);
   int index = 0;
   if (outCapabilities != nullptr && (*outNumCapabilities >= count)) {
     outCapabilities[index++] =
@@ -801,7 +887,7 @@ HWC2::Error Display::setDisplayBrightness(float brightness) {
 
   ALOGW("TODO: setDisplayBrightness() is not implemented yet: brightness=%f",
         brightness);
-  return HWC2::Error::None;
+  return HWC2::Error::Unsupported;
 }
 
 void Display::Config::setAttribute(HWC2::Attribute attribute, int32_t value) {

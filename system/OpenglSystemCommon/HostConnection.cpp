@@ -40,6 +40,7 @@ public:
     void setNoHostError(bool) { }
     void setDrawCallFlushInterval(uint32_t) { }
     void setHasAsyncUnmapBuffer(int) { }
+    void setHasSyncBufferData(int) { }
 };
 #else
 #include "GLEncoder.h"
@@ -105,16 +106,18 @@ static HostConnectionType getConnectionTypeFromProperty() {
     return HOST_CONNECTION_ADDRESS_SPACE;
 #else
     char transportValue[PROPERTY_VALUE_MAX] = "";
-    property_get("ro.kernel.qemu.gltransport", transportValue, "");
 
-    bool isValid = transportValue[0] != '\0';
+    do {
+        property_get("ro.boot.qemu.gltransport.name", transportValue, "");
+        if (transportValue[0]) { break; }
 
-    if (!isValid) {
+        property_get("ro.boot.qemu.gltransport", transportValue, "");
+        if (transportValue[0]) { break; }
+
         property_get("ro.boot.hardware.gltransport", transportValue, "");
-        isValid = transportValue[0] != '\0';
-    }
+    } while (false);
 
-    if (!isValid) return HOST_CONNECTION_QEMU_PIPE;
+    if (!transportValue[0]) return HOST_CONNECTION_QEMU_PIPE;
 
     if (!strcmp("tcp", transportValue)) return HOST_CONNECTION_TCP;
     if (!strcmp("pipe", transportValue)) return HOST_CONNECTION_QEMU_PIPE;
@@ -128,29 +131,24 @@ static HostConnectionType getConnectionTypeFromProperty() {
 }
 
 static uint32_t getDrawCallFlushIntervalFromProperty() {
+    constexpr uint32_t kDefaultValue = 800;
+
     char flushValue[PROPERTY_VALUE_MAX] = "";
-    property_get("ro.kernel.qemu.gltransport.drawFlushInterval", flushValue, "");
+    property_get("ro.boot.qemu.gltransport.drawFlushInterval", flushValue, "");
+    if (!flushValue[0]) return kDefaultValue;
 
-    bool isValid = flushValue[0] != '\0';
-    if (!isValid) return 800;
-
-    long interval = strtol(flushValue, 0, 10);
-
-    if (!interval) return 800;
-
-    return (uint32_t)interval;
+    const long interval = strtol(flushValue, 0, 10);
+    return (interval > 0) ? uint32_t(interval) : kDefaultValue;
 }
 
 static GrallocType getGrallocTypeFromProperty() {
-    char prop[PROPERTY_VALUE_MAX] = "";
-    property_get("ro.hardware.gralloc", prop, "");
+    char value[PROPERTY_VALUE_MAX] = "";
+    property_get("ro.hardware.gralloc", value, "");
 
-    bool isValid = prop[0] != '\0';
+    if (!value[0]) return GRALLOC_TYPE_RANCHU;
 
-    if (!isValid) return GRALLOC_TYPE_RANCHU;
-
-    if (!strcmp("ranchu", prop)) return GRALLOC_TYPE_RANCHU;
-    if (!strcmp("minigbm", prop)) return GRALLOC_TYPE_MINIGBM;
+    if (!strcmp("ranchu", value)) return GRALLOC_TYPE_RANCHU;
+    if (!strcmp("minigbm", value)) return GRALLOC_TYPE_MINIGBM;
     return GRALLOC_TYPE_RANCHU;
 }
 
@@ -628,6 +626,7 @@ GL2Encoder *HostConnection::gl2Encoder()
         m_gl2Enc->setDrawCallFlushInterval(
             getDrawCallFlushIntervalFromProperty());
         m_gl2Enc->setHasAsyncUnmapBuffer(m_rcEnc->hasAsyncUnmapBuffer());
+        m_gl2Enc->setHasSyncBufferData(m_rcEnc->hasSyncBufferData());
     }
     return m_gl2Enc.get();
 }
@@ -672,6 +671,8 @@ ExtendedRCEncoderContext *HostConnection::rcEncoder()
         queryAndSetAsyncFrameCommands(rcEnc);
         queryAndSetVulkanQueueSubmitWithCommandsSupport(rcEnc);
         queryAndSetVulkanBatchedDescriptorSetUpdateSupport(rcEnc);
+        queryAndSetSyncBufferData(rcEnc);
+        queryVersion(rcEnc);
         if (m_processPipe) {
             m_processPipe->processPipeInit(m_connectionType, rcEnc);
         }
@@ -961,4 +962,16 @@ void HostConnection::queryAndSetVulkanBatchedDescriptorSetUpdateSupport(Extended
     if (glExtensions.find(kVulkanBatchedDescriptorSetUpdate) != std::string::npos) {
         rcEnc->featureInfo()->hasVulkanBatchedDescriptorSetUpdate = true;
     }
+}
+
+void HostConnection::queryAndSetSyncBufferData(ExtendedRCEncoderContext* rcEnc) {
+    std::string glExtensions = queryGLExtensions(rcEnc);
+    if (glExtensions.find(kSyncBufferData) != std::string::npos) {
+        rcEnc->featureInfo()->hasSyncBufferData = true;
+    }
+}
+
+GLint HostConnection::queryVersion(ExtendedRCEncoderContext* rcEnc) {
+    GLint version = m_rcEnc->rcGetRendererVersion(m_rcEnc.get());
+    return version;
 }
