@@ -2083,6 +2083,10 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
         setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_SYNC_KHR);
     }
 
+    if (type == EGL_SYNC_FENCE_KHR && attrib_list != NULL)
+        setErrorReturn(EGL_BAD_ATTRIBUTE, (EGLSyncKHR)EGL_FALSE);
+
+
     EGLThreadInfo *tInfo = getEGLThreadInfo();
     if (!tInfo || !tInfo->currentContext) {
         setErrorReturn(EGL_BAD_MATCH, EGL_NO_SYNC_KHR);
@@ -2176,7 +2180,7 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync)
 
     if (!eglsync) {
         DPRINT("WARNING: null sync object")
-        return EGL_TRUE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = static_cast<EGLSync_t*>(eglsync);
@@ -2204,7 +2208,7 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags,
 
     if (!eglsync) {
         DPRINT("WARNING: null sync object");
-        return EGL_CONDITION_SATISFIED_KHR;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
@@ -2240,6 +2244,13 @@ EGLBoolean eglGetSyncAttribKHR(EGLDisplay dpy, EGLSyncKHR eglsync,
         EGLint attribute, EGLint *value)
 {
     (void)dpy;
+
+    if(eglsync == 0)
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+
+    if (value == NULL)
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
 
@@ -2277,12 +2288,12 @@ EGLint eglWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags) {
 
     if (!eglsync) {
         ALOGE("%s: null sync object!", __FUNCTION__);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     if (flags) {
         ALOGE("%s: flags must be 0, got 0x%x", __FUNCTION__, flags);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     DEFINE_HOST_CONNECTION;
