@@ -1186,8 +1186,6 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
-    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
-                 GL_INVALID_FRAMEBUFFER_OPERATION);
 
     bool has_client_vertex_arrays = false;
     bool has_indirect_arrays = false;
