@@ -5381,10 +5381,12 @@ void GL2Encoder::s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, 
     GLuint tex = ctx->m_state->getBoundTexture(target);
     GLsizei neededWidth = xoffset + width;
     GLsizei neededHeight = yoffset + height;
-    SET_ERROR_IF(tex &&
-                 (neededWidth > ctx->m_state->queryTexWidth(level, tex) ||
-                  neededHeight > ctx->m_state->queryTexHeight(level, tex)),
-                 GL_INVALID_VALUE);
+    if (tex && !ctx->m_state->queryTexEGLImageBacked(tex)) {
+        SET_ERROR_IF(
+                (neededWidth > ctx->m_state->queryTexWidth(level, tex) ||
+                 neededHeight > ctx->m_state->queryTexHeight(level, tex)),
+                GL_INVALID_VALUE);
+    }
     SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
                  GL_INVALID_FRAMEBUFFER_OPERATION);
     ctx->m_glCopyTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, x, y, width, height);

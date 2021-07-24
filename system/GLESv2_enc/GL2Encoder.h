@@ -729,6 +729,6 @@ private:
     static GLint s_glGetFragDataLocation (void *self , GLuint program, const char* name);
 public:
     glEGLImageTargetTexture2DOES_client_proc_t m_glEGLImageTargetTexture2DOES_enc;
-
+    glEGLImageTargetRenderbufferStorageOES_client_proc_t m_glEGLImageTargetRenderbufferStorageOES_enc;
 };
 #endif

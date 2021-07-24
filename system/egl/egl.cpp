@@ -2012,7 +2012,7 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
 
         return (EGLImageKHR)image;
     }
-    else if (target == EGL_GL_TEXTURE_2D_KHR) {
+    else {
         VALIDATE_CONTEXT_RETURN(ctx, EGL_NO_IMAGE_KHR);
 
         EGLContext_t *context = static_cast<EGLContext_t*>(ctx);
@@ -2055,7 +2055,7 @@ EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR img)
 
         return EGL_TRUE;
     }
-    else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
+    else {
         uint32_t host_egl_image = image->host_egl_image;
         delete image;
         DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
