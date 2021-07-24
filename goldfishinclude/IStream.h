@@ -13,6 +13,7 @@
 class VmiRebuildStream;
 class SnapshotRestore;
 class VmiTransMatrix;
+class VmiTexVideoEncode;
 
 class IStream {
 public:
