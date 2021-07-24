@@ -981,8 +981,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
     if (cb->hostHandle != 0) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Opening host ColorBuffer 0x%x\n", cb->hostHandle);
-        rcEnc->rcOpenColorBuffer2Vmi(cb->hostHandle, cb->width,
-            cb->height, cb->glFormat);
+        rcEnc->rcOpenColorBuffer2(cb->hostHandle);
     }
 
     //
