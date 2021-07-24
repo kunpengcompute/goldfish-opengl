@@ -2984,3 +2984,51 @@ void glCopyImageSubDataEXT(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLi
         dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth,
         srcHeight, srcDepth);
 }
+
+void glTexParameterIivEXT(GLenum target, GLenum pname, const GLint *params)
+{
+	GET_CONTEXT;
+	ctx->glTexParameterIivEXT(ctx, target, pname, params);
+}
+
+void glTexParameterIuivEXT(GLenum target, GLenum pname, const GLuint *params)
+{
+	GET_CONTEXT;
+	ctx->glTexParameterIuivEXT(ctx, target, pname, params);
+}
+
+void glGetTexParameterIivEXT(GLenum target, GLenum pname, GLint *params)
+{
+	GET_CONTEXT;
+	ctx->glGetTexParameterIivEXT(ctx, target, pname, params);
+}
+
+void glGetTexParameterIuivEXT(GLenum target, GLenum pname, GLuint *params)
+{
+	GET_CONTEXT;
+	ctx->glGetTexParameterIuivEXT(ctx, target, pname, params);
+}
+
+void glSamplerParameterIivEXT(GLuint sampler, GLenum pname, const GLint *param)
+{
+	GET_CONTEXT;
+	ctx->glSamplerParameterIivEXT(ctx, sampler, pname, param);
+}
+
+void glSamplerParameterIuivEXT(GLuint sampler, GLenum pname, const GLuint *param)
+{
+	GET_CONTEXT;
+	ctx->glSamplerParameterIuivEXT(ctx, sampler, pname, param);
+}
+
+void glGetSamplerParameterIivEXT(GLuint sampler, GLenum pname, GLint *params)
+{
+	GET_CONTEXT;
+	ctx->glGetSamplerParameterIivEXT(ctx, sampler, pname, params);
+}
+
+void glGetSamplerParameterIuivEXT(GLuint sampler, GLenum pname, GLuint *params)
+{
+	GET_CONTEXT;
+	ctx->glGetSamplerParameterIuivEXT(ctx, sampler, pname, params);
+}
