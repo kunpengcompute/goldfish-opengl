@@ -18,11 +18,27 @@ EMUGL_PATH := $(call my-dir)
 #
 EMUGL_COMMON_INCLUDES := $(EMUGL_PATH)/host/include/libOpenglRender $(EMUGL_PATH)/system/include
 
+EMUGL_COMMON_INCLUDES += \
+    system/core/include \
+    frameworks/native/opengl/include
+
 # common cflags used by several modules
 # This is always set to a module's LOCAL_CFLAGS
 # See the definition of emugl-begin-module in common.mk
 #
 EMUGL_COMMON_CFLAGS := -DWITH_GLES2 -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+
+EMUGL_COMMON_CFLAGS +=\
+    -Wno-unused-variable \
+    -Wno-unused-parameter \
+    -Wno-format \
+    -Wno-mismatched-tags \
+    -Wno-reorder \
+    -Wno-sign-compare \
+    -Wno-unused-private-field \
+    -Wno-gnu-designator \
+    -Wno-unused-function \
+    -Wno-macro-redefined
 
 ifeq (O, $(PLATFORM_VERSION_CODENAME))
 EMUGL_COMMON_CFLAGS += -DGOLDFISH_HIDL_GRALLOC
@@ -77,7 +93,7 @@ include $(EMUGL_PATH)/shared/OpenglCodecCommon/Android.mk
 # System static libraries
 include $(EMUGL_PATH)/system/GLESv1_enc/Android.mk
 include $(EMUGL_PATH)/system/GLESv2_enc/Android.mk
-include $(EMUGL_PATH)/system/renderControl_enc/Android.mk
+#include $(EMUGL_PATH)/system/renderControl_enc/Android.mk
 include $(EMUGL_PATH)/system/OpenglSystemCommon/Android.mk
 
 # System shared libraries

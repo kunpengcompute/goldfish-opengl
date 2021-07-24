@@ -243,14 +243,14 @@ typedef void (gl2_APIENTRY *glGetBufferParameteri64v_client_proc_t) (void * ctx,
 typedef void (gl2_APIENTRY *glGetBufferPointerv_client_proc_t) (void * ctx, GLenum, GLenum, GLvoid**);
 typedef void (gl2_APIENTRY *glUniformBlockBinding_client_proc_t) (void * ctx, GLuint, GLuint, GLuint);
 typedef GLuint (gl2_APIENTRY *glGetUniformBlockIndex_client_proc_t) (void * ctx, GLuint, const GLchar*);
-typedef void (gl2_APIENTRY *glGetUniformIndices_client_proc_t) (void * ctx, GLuint, GLsizei, const GLchar**, GLuint*);
+typedef void (gl2_APIENTRY *glGetUniformIndices_client_proc_t) (void * ctx, GLuint, GLsizei, const GLchar *const*, GLuint*);
 typedef void (gl2_APIENTRY *glGetUniformIndicesAEMU_client_proc_t) (void * ctx, GLuint, GLsizei, const GLchar*, GLsizei, GLuint*);
 typedef void (gl2_APIENTRY *glGetActiveUniformBlockiv_client_proc_t) (void * ctx, GLuint, GLuint, GLenum, GLint*);
 typedef void (gl2_APIENTRY *glGetActiveUniformBlockName_client_proc_t) (void * ctx, GLuint, GLuint, GLsizei, GLsizei*, GLchar*);
 typedef void (gl2_APIENTRY *glUniform1ui_client_proc_t) (void * ctx, GLint, GLuint);
 typedef void (gl2_APIENTRY *glUniform2ui_client_proc_t) (void * ctx, GLint, GLuint, GLuint);
 typedef void (gl2_APIENTRY *glUniform3ui_client_proc_t) (void * ctx, GLint, GLuint, GLuint, GLuint);
-typedef void (gl2_APIENTRY *glUniform4ui_client_proc_t) (void * ctx, GLint, GLint, GLuint, GLuint, GLuint);
+typedef void (gl2_APIENTRY *glUniform4ui_client_proc_t) (void * ctx, GLint, GLuint, GLuint, GLuint, GLuint);
 typedef void (gl2_APIENTRY *glUniform1uiv_client_proc_t) (void * ctx, GLint, GLsizei, const GLuint*);
 typedef void (gl2_APIENTRY *glUniform2uiv_client_proc_t) (void * ctx, GLint, GLsizei, const GLuint*);
 typedef void (gl2_APIENTRY *glUniform3uiv_client_proc_t) (void * ctx, GLint, GLsizei, const GLuint*);
@@ -309,7 +309,7 @@ typedef void (gl2_APIENTRY *glBindTransformFeedback_client_proc_t) (void * ctx, 
 typedef void (gl2_APIENTRY *glPauseTransformFeedback_client_proc_t) (void * ctx);
 typedef void (gl2_APIENTRY *glResumeTransformFeedback_client_proc_t) (void * ctx);
 typedef GLboolean (gl2_APIENTRY *glIsTransformFeedback_client_proc_t) (void * ctx, GLuint);
-typedef void (gl2_APIENTRY *glTransformFeedbackVaryings_client_proc_t) (void * ctx, GLuint, GLsizei, const char**, GLenum);
+typedef void (gl2_APIENTRY *glTransformFeedbackVaryings_client_proc_t) (void * ctx, GLuint, GLsizei, const GLchar *const*, GLenum);
 typedef void (gl2_APIENTRY *glTransformFeedbackVaryingsAEMU_client_proc_t) (void * ctx, GLuint, GLsizei, const char*, GLuint, GLenum);
 typedef void (gl2_APIENTRY *glGetTransformFeedbackVarying_client_proc_t) (void * ctx, GLuint, GLuint, GLsizei, GLsizei*, GLsizei*, GLenum*, char*);
 typedef void (gl2_APIENTRY *glGenSamplers_client_proc_t) (void * ctx, GLsizei, GLuint*);
@@ -359,7 +359,7 @@ typedef void (gl2_APIENTRY *glValidateProgramPipeline_client_proc_t) (void * ctx
 typedef GLboolean (gl2_APIENTRY *glIsProgramPipeline_client_proc_t) (void * ctx, GLuint);
 typedef void (gl2_APIENTRY *glUseProgramStages_client_proc_t) (void * ctx, GLuint, GLbitfield, GLuint);
 typedef void (gl2_APIENTRY *glActiveShaderProgram_client_proc_t) (void * ctx, GLuint, GLuint);
-typedef GLuint (gl2_APIENTRY *glCreateShaderProgramv_client_proc_t) (void * ctx, GLenum, GLsizei, const char**);
+typedef GLuint (gl2_APIENTRY *glCreateShaderProgramv_client_proc_t) (void * ctx, GLenum, GLsizei, const GLchar *const*);
 typedef GLuint (gl2_APIENTRY *glCreateShaderProgramvAEMU_client_proc_t) (void * ctx, GLenum, GLsizei, const char*, GLuint);
 typedef void (gl2_APIENTRY *glProgramUniform1f_client_proc_t) (void * ctx, GLuint, GLint, GLfloat);
 typedef void (gl2_APIENTRY *glProgramUniform2f_client_proc_t) (void * ctx, GLuint, GLint, GLfloat, GLfloat);
@@ -370,9 +370,9 @@ typedef void (gl2_APIENTRY *glProgramUniform2i_client_proc_t) (void * ctx, GLuin
 typedef void (gl2_APIENTRY *glProgramUniform3i_client_proc_t) (void * ctx, GLuint, GLint, GLint, GLint, GLint);
 typedef void (gl2_APIENTRY *glProgramUniform4i_client_proc_t) (void * ctx, GLuint, GLint, GLint, GLint, GLint, GLint);
 typedef void (gl2_APIENTRY *glProgramUniform1ui_client_proc_t) (void * ctx, GLuint, GLint, GLuint);
-typedef void (gl2_APIENTRY *glProgramUniform2ui_client_proc_t) (void * ctx, GLuint, GLint, GLint, GLuint);
-typedef void (gl2_APIENTRY *glProgramUniform3ui_client_proc_t) (void * ctx, GLuint, GLint, GLint, GLint, GLuint);
-typedef void (gl2_APIENTRY *glProgramUniform4ui_client_proc_t) (void * ctx, GLuint, GLint, GLint, GLint, GLint, GLuint);
+typedef void (gl2_APIENTRY *glProgramUniform2ui_client_proc_t) (void * ctx, GLuint, GLint, GLuint, GLuint);
+typedef void (gl2_APIENTRY *glProgramUniform3ui_client_proc_t) (void * ctx, GLuint, GLint, GLuint, GLuint, GLuint);
+typedef void (gl2_APIENTRY *glProgramUniform4ui_client_proc_t) (void * ctx, GLuint, GLint, GLuint, GLuint, GLuint, GLuint);
 typedef void (gl2_APIENTRY *glProgramUniform1fv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, const GLfloat*);
 typedef void (gl2_APIENTRY *glProgramUniform2fv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, const GLfloat*);
 typedef void (gl2_APIENTRY *glProgramUniform3fv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, const GLfloat*);
@@ -402,7 +402,7 @@ typedef void (gl2_APIENTRY *glGetProgramResourceName_client_proc_t) (void * ctx,
 typedef void (gl2_APIENTRY *glBindImageTexture_client_proc_t) (void * ctx, GLuint, GLuint, GLint, GLboolean, GLint, GLenum, GLenum);
 typedef void (gl2_APIENTRY *glDispatchCompute_client_proc_t) (void * ctx, GLuint, GLuint, GLuint);
 typedef void (gl2_APIENTRY *glDispatchComputeIndirect_client_proc_t) (void * ctx, GLintptr);
-typedef void (gl2_APIENTRY *glBindVertexBuffer_client_proc_t) (void * ctx, GLuint, GLuint, GLintptr, GLintptr);
+typedef void (gl2_APIENTRY *glBindVertexBuffer_client_proc_t) (void * ctx, GLuint, GLuint, GLintptr, GLsizei);
 typedef void (gl2_APIENTRY *glVertexAttribBinding_client_proc_t) (void * ctx, GLuint, GLuint);
 typedef void (gl2_APIENTRY *glVertexAttribFormat_client_proc_t) (void * ctx, GLuint, GLint, GLenum, GLboolean, GLuint);
 typedef void (gl2_APIENTRY *glVertexAttribIFormat_client_proc_t) (void * ctx, GLuint, GLint, GLenum, GLuint);

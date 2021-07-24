@@ -21,9 +21,9 @@
  * <hardware/qemu_pipe.h> for more details.
  */
 #include <stdlib.h>
-#include "IOStream.h"
+#include "Include/IStream.h"
 
-class QemuPipeStream : public IOStream {
+class QemuPipeStream : public IStream {
 public:
     typedef enum { ERR_INVALID_SOCKET = -1000 } QemuPipeStreamError;
 
@@ -31,17 +31,19 @@ public:
     ~QemuPipeStream();
     int connect(void);
 
-    virtual void *allocBuffer(size_t minSize);
-    virtual int commitBuffer(size_t size);
-    virtual const unsigned char *readFully( void *buf, size_t len);
-    virtual const unsigned char *read( void *buf, size_t *inout_len);
+    virtual void *AllocBuffer(size_t minSize);
+    virtual int CommitBuffer(size_t size);
+    const uint8_t* ReadFully(uint8_t* buf, size_t len) override;
+    const uint8_t* Read(uint8_t* buf, size_t* len) override;
 
     bool valid() { return m_sock >= 0; }
-    int recv(void *buf, size_t len);
+    int Recv(void *buf, size_t len);
 
-    virtual int writeFully(const void *buf, size_t len);
+    int WriteFully(const uint8_t* buf, size_t len) override;
 
     int getSocket() const;
+
+    virtual int CommitBufferWithoutCompress(size_t size) { return size; }
 private:
     int m_sock;
     size_t m_bufsize;

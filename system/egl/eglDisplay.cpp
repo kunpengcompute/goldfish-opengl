@@ -138,7 +138,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // get renderControl encoder instance
         //
-        renderControl_encoder_context_t *rcEnc = hcon->rcEncoder();
+        IRenderControlEncoder *rcEnc = hcon->rcEncoder();
         if (!rcEnc) {
             pthread_mutex_unlock(&m_lock);
             ALOGE("Failed to get renderControl encoder instance");
@@ -148,8 +148,8 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // Query host reneder and EGL version
         //
-        m_hostRendererVersion = rcEnc->rcGetRendererVersion(rcEnc);
-        EGLint status = rcEnc->rcGetEGLVersion(rcEnc, &m_major, &m_minor);
+        m_hostRendererVersion = rcEnc->rcGetRendererVersion();
+        EGLint status = rcEnc->rcGetEGLVersion(&m_major, &m_minor);
         if (status != EGL_TRUE) {
             // host EGL initialization failed !!
             pthread_mutex_unlock(&m_lock);
@@ -171,7 +171,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // Query the host for the set of configs
         //
-        m_numConfigs = rcEnc->rcGetNumConfigs(rcEnc, (uint32_t*)&m_numConfigAttribs);
+        m_numConfigs = rcEnc->rcGetNumConfigs((uint32_t*)&m_numConfigAttribs);
         if (m_numConfigs <= 0 || m_numConfigAttribs <= 0) {
             // just sanity check - should never happen
             pthread_mutex_unlock(&m_lock);
@@ -187,7 +187,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         }
 
         //EGLint n = rcEnc->rcGetConfigs(rcEnc, nInts*sizeof(EGLint), m_configs);
-        EGLint n = rcEnc->rcGetConfigs(rcEnc, nInts*sizeof(EGLint), (GLuint*)tmp_buf);
+        EGLint n = rcEnc->rcGetConfigs(nInts*sizeof(EGLint), (GLuint*)tmp_buf);
         if (n != m_numConfigs) {
             pthread_mutex_unlock(&m_lock);
             return false;
@@ -286,13 +286,13 @@ static char *queryHostEGLString(EGLint name)
 {
     HostConnection *hcon = HostConnection::get();
     if (hcon) {
-        renderControl_encoder_context_t *rcEnc = hcon->rcEncoder();
+        IRenderControlEncoder *rcEnc = hcon->rcEncoder();
         if (rcEnc) {
-            int n = rcEnc->rcQueryEGLString(rcEnc, name, NULL, 0);
+            int n = rcEnc->rcQueryEGLString(name, NULL, 0);
             if (n < 0) {
                 // allocate space for the string.
                 char *str = (char *)malloc(-n);
-                n = rcEnc->rcQueryEGLString(rcEnc, name, str, -n);
+                n = rcEnc->rcQueryEGLString(name, str, -n);
                 if (n > 0) {
                     return str;
                 }
@@ -345,11 +345,11 @@ static char *buildExtensionString()
 
         std::string dynamicEGLExtensions;
 
-        if (hcon->rcEncoder()->hasNativeSync() &&
+        if (false &&
             !strstr(initialEGLExts, kDynamicEGLExtNativeSync)) {
             dynamicEGLExtensions += kDynamicEGLExtNativeSync;
 
-            if (hcon->rcEncoder()->hasNativeSyncV3()) {
+            if (false) {
                 dynamicEGLExtensions += kDynamicEGLExtWaitSync;
             }
         }
@@ -470,10 +470,10 @@ EGLBoolean eglDisplay::getConfigAttrib(EGLConfig config, EGLint attrib, EGLint *
 void eglDisplay::dumpConfig(EGLConfig config)
 {
     EGLint value = 0;
-    DBG("^^^^^^^^^^ dumpConfig %d ^^^^^^^^^^^^^^^^^^", (int)config);
+    //ALOGD("^^^^^^^^^^ dumpConfig %d ^^^^^^^^^^^^^^^^^^", (int)config);
     for (int i=0; i<m_numConfigAttribs; i++) {
         getAttribValue(config, i, &value);
-        DBG("{%d}[%d] %d\n", (int)config, i, value);
+        //ALOGD("{%d}[%d] %d\n", (int)config, i, value);
     }
 }
 

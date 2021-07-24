@@ -21,9 +21,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <log/log.h>
+#include <ErrorLog.h>
 
 QemuPipeStream::QemuPipeStream(size_t bufSize) :
-    IOStream(bufSize),
+    IStream(bufSize),
     m_sock(-1),
     m_bufsize(bufSize),
     m_buf(NULL)
@@ -31,7 +33,7 @@ QemuPipeStream::QemuPipeStream(size_t bufSize) :
 }
 
 QemuPipeStream::QemuPipeStream(int sock, size_t bufSize) :
-    IOStream(bufSize),
+    IStream(bufSize),
     m_sock(sock),
     m_bufsize(bufSize),
     m_buf(NULL)
@@ -41,7 +43,7 @@ QemuPipeStream::QemuPipeStream(int sock, size_t bufSize) :
 QemuPipeStream::~QemuPipeStream()
 {
     if (m_sock >= 0) {
-        flush();
+        Flush();
         ::close(m_sock);
     }
     if (m_buf != NULL) {
@@ -60,7 +62,7 @@ int QemuPipeStream::connect(void)
     return 0;
 }
 
-void *QemuPipeStream::allocBuffer(size_t minSize)
+void *QemuPipeStream::AllocBuffer(size_t minSize)
 {
     size_t allocSize = (m_bufsize < minSize ? minSize : m_bufsize);
     if (!m_buf) {
@@ -82,12 +84,12 @@ void *QemuPipeStream::allocBuffer(size_t minSize)
     return m_buf;
 };
 
-int QemuPipeStream::commitBuffer(size_t size)
+int QemuPipeStream::CommitBuffer(size_t size)
 {
-    return writeFully(m_buf, size);
+    return WriteFully(m_buf, size);
 }
 
-int QemuPipeStream::writeFully(const void *buf, size_t len)
+int QemuPipeStream::WriteFully(const uint8_t* buf, size_t len)
 {
     //DBG(">> QemuPipeStream::writeFully %d\n", len);
     if (!valid()) return -1;
@@ -132,7 +134,7 @@ int QemuPipeStream::getSocket() const {
     return m_sock;
 }
 
-const unsigned char *QemuPipeStream::readFully(void *buf, size_t len)
+const uint8_t* QemuPipeStream::ReadFully(uint8_t* buf, size_t len)
 {
     //DBG(">> QemuPipeStream::readFully %d\n", len);
     if (!valid()) return NULL;
@@ -166,30 +168,30 @@ const unsigned char *QemuPipeStream::readFully(void *buf, size_t len)
         }
     }
     //DBG("<< QemuPipeStream::readFully %d\n", len);
-    return (const unsigned char *)buf;
+    return (const uint8_t *)buf;
 }
 
-const unsigned char *QemuPipeStream::read( void *buf, size_t *inout_len)
+const uint8_t* QemuPipeStream::Read(uint8_t* buf, size_t* len)
 {
-    //DBG(">> QemuPipeStream::read %d\n", *inout_len);
+    //DBG(">> QemuPipeStream::read %d\n", *len);
     if (!valid()) return NULL;
     if (!buf) {
       ERR("QemuPipeStream::read failed, buf=NULL");
       return NULL;  // do not allow NULL buf in that implementation
     }
 
-    int n = recv(buf, *inout_len);
+    int n = Recv(buf, *len);
 
     if (n > 0) {
-        *inout_len = n;
-        return (const unsigned char *)buf;
+        *len = n;
+        return (const uint8_t*)buf;
     }
 
-    //DBG("<< QemuPipeStream::read %d\n", *inout_len);
+    //DBG("<< QemuPipeStream::read %d\n", *len);
     return NULL;
 }
 
-int QemuPipeStream::recv(void *buf, size_t len)
+int QemuPipeStream::Recv(void *buf, size_t len)
 {
     if (!valid()) return int(ERR_INVALID_SOCKET);
     char* p = (char *)buf;

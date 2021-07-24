@@ -27,8 +27,10 @@
 #endif
 
 // Don't include these in the .h file, or we get weird compile errors.
+#define GL_APIENTRY
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
+#undef GL_APIENTRY
 
 void GLClientState::init() {
     m_initialized = false;

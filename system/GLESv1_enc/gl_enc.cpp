@@ -6,7 +6,7 @@
 #include "gl_opcodes.h"
 
 #include "gl_enc.h"
-
+#include "ErrorLog.h"
 
 #include <stdio.h>
 
@@ -21,7 +21,7 @@ void glAlphaFunc_enc(void *self , GLenum func, GLclampf ref)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -30,7 +30,7 @@ void glAlphaFunc_enc(void *self , GLenum func, GLclampf ref)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glAlphaFunc;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -47,7 +47,7 @@ void glClearColor_enc(void *self , GLclampf red, GLclampf green, GLclampf blue, 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -56,7 +56,7 @@ void glClearColor_enc(void *self , GLclampf red, GLclampf green, GLclampf blue, 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearColor;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -75,7 +75,7 @@ void glClearDepthf_enc(void *self , GLclampf depth)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -84,7 +84,7 @@ void glClearDepthf_enc(void *self , GLclampf depth)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearDepthf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -100,7 +100,7 @@ void glClipPlanef_enc(void *self , GLenum plane, const GLfloat* equation)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -110,7 +110,7 @@ void glClipPlanef_enc(void *self , GLenum plane, const GLfloat* equation)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_equation + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -128,7 +128,7 @@ void glColor4f_enc(void *self , GLfloat red, GLfloat green, GLfloat blue, GLfloa
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -137,7 +137,7 @@ void glColor4f_enc(void *self , GLfloat red, GLfloat green, GLfloat blue, GLfloa
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColor4f;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -156,7 +156,7 @@ void glDepthRangef_enc(void *self , GLclampf zNear, GLclampf zFar)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -165,7 +165,7 @@ void glDepthRangef_enc(void *self , GLclampf zNear, GLclampf zFar)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthRangef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -182,7 +182,7 @@ void glFogf_enc(void *self , GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -191,7 +191,7 @@ void glFogf_enc(void *self , GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -208,7 +208,7 @@ void glFogfv_enc(void *self , GLenum pname, const GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -218,7 +218,7 @@ void glFogfv_enc(void *self , GLenum pname, const GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -236,7 +236,7 @@ void glFrustumf_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, GL
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -245,7 +245,7 @@ void glFrustumf_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, GL
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFrustumf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -266,7 +266,7 @@ void glGetClipPlanef_enc(void *self , GLenum pname, GLfloat* eqn)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -276,7 +276,7 @@ void glGetClipPlanef_enc(void *self , GLenum pname, GLfloat* eqn)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetClipPlanef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -287,13 +287,13 @@ void glGetClipPlanef_enc(void *self , GLenum pname, GLfloat* eqn)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(eqn, __size_eqn);
+	stream->Readback((uint8_t*)eqn, __size_eqn);
 	if (useChecksum) checksumCalculator->addBuffer(eqn, __size_eqn);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetClipPlanef: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -305,7 +305,7 @@ void glGetFloatv_enc(void *self , GLenum pname, GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -315,7 +315,7 @@ void glGetFloatv_enc(void *self , GLenum pname, GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetFloatv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -326,13 +326,13 @@ void glGetFloatv_enc(void *self , GLenum pname, GLfloat* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetFloatv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -344,7 +344,7 @@ void glGetLightfv_enc(void *self , GLenum light, GLenum pname, GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -354,7 +354,7 @@ void glGetLightfv_enc(void *self , GLenum light, GLenum pname, GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetLightfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -366,13 +366,13 @@ void glGetLightfv_enc(void *self , GLenum light, GLenum pname, GLfloat* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetLightfv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -384,7 +384,7 @@ void glGetMaterialfv_enc(void *self , GLenum face, GLenum pname, GLfloat* params
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -394,7 +394,7 @@ void glGetMaterialfv_enc(void *self , GLenum face, GLenum pname, GLfloat* params
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetMaterialfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -406,13 +406,13 @@ void glGetMaterialfv_enc(void *self , GLenum face, GLenum pname, GLfloat* params
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetMaterialfv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -424,7 +424,7 @@ void glGetTexEnvfv_enc(void *self , GLenum env, GLenum pname, GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -434,7 +434,7 @@ void glGetTexEnvfv_enc(void *self , GLenum env, GLenum pname, GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexEnvfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -446,13 +446,13 @@ void glGetTexEnvfv_enc(void *self , GLenum env, GLenum pname, GLfloat* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexEnvfv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -464,7 +464,7 @@ void glGetTexParameterfv_enc(void *self , GLenum target, GLenum pname, GLfloat* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -474,7 +474,7 @@ void glGetTexParameterfv_enc(void *self , GLenum target, GLenum pname, GLfloat* 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexParameterfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -486,13 +486,13 @@ void glGetTexParameterfv_enc(void *self , GLenum target, GLenum pname, GLfloat* 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexParameterfv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -504,7 +504,7 @@ void glLightModelf_enc(void *self , GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -513,7 +513,7 @@ void glLightModelf_enc(void *self , GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -530,7 +530,7 @@ void glLightModelfv_enc(void *self , GLenum pname, const GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -540,7 +540,7 @@ void glLightModelfv_enc(void *self , GLenum pname, const GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -558,7 +558,7 @@ void glLightf_enc(void *self , GLenum light, GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -567,7 +567,7 @@ void glLightf_enc(void *self , GLenum light, GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -585,7 +585,7 @@ void glLightfv_enc(void *self , GLenum light, GLenum pname, const GLfloat* param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -595,7 +595,7 @@ void glLightfv_enc(void *self , GLenum light, GLenum pname, const GLfloat* param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -614,7 +614,7 @@ void glLineWidth_enc(void *self , GLfloat width)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -623,7 +623,7 @@ void glLineWidth_enc(void *self , GLfloat width)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLineWidth;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -639,7 +639,7 @@ void glLoadMatrixf_enc(void *self , const GLfloat* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -649,7 +649,7 @@ void glLoadMatrixf_enc(void *self , const GLfloat* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLoadMatrixf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -666,7 +666,7 @@ void glMaterialf_enc(void *self , GLenum face, GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -675,7 +675,7 @@ void glMaterialf_enc(void *self , GLenum face, GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -693,7 +693,7 @@ void glMaterialfv_enc(void *self , GLenum face, GLenum pname, const GLfloat* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -703,7 +703,7 @@ void glMaterialfv_enc(void *self , GLenum face, GLenum pname, const GLfloat* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -722,7 +722,7 @@ void glMultMatrixf_enc(void *self , const GLfloat* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -732,7 +732,7 @@ void glMultMatrixf_enc(void *self , const GLfloat* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultMatrixf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -749,7 +749,7 @@ void glMultiTexCoord4f_enc(void *self , GLenum target, GLfloat s, GLfloat t, GLf
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -758,7 +758,7 @@ void glMultiTexCoord4f_enc(void *self , GLenum target, GLfloat s, GLfloat t, GLf
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultiTexCoord4f;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -778,7 +778,7 @@ void glNormal3f_enc(void *self , GLfloat nx, GLfloat ny, GLfloat nz)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -787,7 +787,7 @@ void glNormal3f_enc(void *self , GLfloat nx, GLfloat ny, GLfloat nz)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glNormal3f;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -805,7 +805,7 @@ void glOrthof_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, GLfl
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -814,7 +814,7 @@ void glOrthof_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, GLfl
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glOrthof;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -835,7 +835,7 @@ void glPointParameterf_enc(void *self , GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -844,7 +844,7 @@ void glPointParameterf_enc(void *self , GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -861,7 +861,7 @@ void glPointParameterfv_enc(void *self , GLenum pname, const GLfloat* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -871,7 +871,7 @@ void glPointParameterfv_enc(void *self , GLenum pname, const GLfloat* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -889,7 +889,7 @@ void glPointSize_enc(void *self , GLfloat size)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -898,7 +898,7 @@ void glPointSize_enc(void *self , GLfloat size)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointSize;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -914,7 +914,7 @@ void glPolygonOffset_enc(void *self , GLfloat factor, GLfloat units)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -923,7 +923,7 @@ void glPolygonOffset_enc(void *self , GLfloat factor, GLfloat units)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPolygonOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -940,7 +940,7 @@ void glRotatef_enc(void *self , GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -949,7 +949,7 @@ void glRotatef_enc(void *self , GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glRotatef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -968,7 +968,7 @@ void glScalef_enc(void *self , GLfloat x, GLfloat y, GLfloat z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -977,7 +977,7 @@ void glScalef_enc(void *self , GLfloat x, GLfloat y, GLfloat z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glScalef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -995,7 +995,7 @@ void glTexEnvf_enc(void *self , GLenum target, GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1004,7 +1004,7 @@ void glTexEnvf_enc(void *self , GLenum target, GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1022,7 +1022,7 @@ void glTexEnvfv_enc(void *self , GLenum target, GLenum pname, const GLfloat* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1032,7 +1032,7 @@ void glTexEnvfv_enc(void *self , GLenum target, GLenum pname, const GLfloat* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1051,7 +1051,7 @@ void glTexParameterf_enc(void *self , GLenum target, GLenum pname, GLfloat param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1060,7 +1060,7 @@ void glTexParameterf_enc(void *self , GLenum target, GLenum pname, GLfloat param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterf;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1078,7 +1078,7 @@ void glTexParameterfv_enc(void *self , GLenum target, GLenum pname, const GLfloa
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1088,7 +1088,7 @@ void glTexParameterfv_enc(void *self , GLenum target, GLenum pname, const GLfloa
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterfv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1107,7 +1107,7 @@ void glTranslatef_enc(void *self , GLfloat x, GLfloat y, GLfloat z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1116,7 +1116,7 @@ void glTranslatef_enc(void *self , GLfloat x, GLfloat y, GLfloat z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTranslatef;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1134,7 +1134,7 @@ void glActiveTexture_enc(void *self , GLenum texture)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1143,7 +1143,7 @@ void glActiveTexture_enc(void *self , GLenum texture)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glActiveTexture;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1159,7 +1159,7 @@ void glAlphaFuncx_enc(void *self , GLenum func, GLclampx ref)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1168,7 +1168,7 @@ void glAlphaFuncx_enc(void *self , GLenum func, GLclampx ref)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glAlphaFuncx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1185,7 +1185,7 @@ void glBindBuffer_enc(void *self , GLenum target, GLuint buffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1194,7 +1194,7 @@ void glBindBuffer_enc(void *self , GLenum target, GLuint buffer)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBindBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1211,7 +1211,7 @@ void glBindTexture_enc(void *self , GLenum target, GLuint texture)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1220,7 +1220,7 @@ void glBindTexture_enc(void *self , GLenum target, GLuint texture)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBindTexture;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1237,7 +1237,7 @@ void glBlendFunc_enc(void *self , GLenum sfactor, GLenum dfactor)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1246,7 +1246,7 @@ void glBlendFunc_enc(void *self , GLenum sfactor, GLenum dfactor)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBlendFunc;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1263,7 +1263,7 @@ void glBufferData_enc(void *self , GLenum target, GLsizeiptr size, const GLvoid*
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1273,7 +1273,7 @@ void glBufferData_enc(void *self , GLenum target, GLsizeiptr size, const GLvoid*
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBufferData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1293,7 +1293,7 @@ void glBufferSubData_enc(void *self , GLenum target, GLintptr offset, GLsizeiptr
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1303,7 +1303,7 @@ void glBufferSubData_enc(void *self , GLenum target, GLintptr offset, GLsizeiptr
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBufferSubData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1323,7 +1323,7 @@ void glClear_enc(void *self , GLbitfield mask)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1332,7 +1332,7 @@ void glClear_enc(void *self , GLbitfield mask)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClear;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1348,7 +1348,7 @@ void glClearColorx_enc(void *self , GLclampx red, GLclampx green, GLclampx blue,
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1357,7 +1357,7 @@ void glClearColorx_enc(void *self , GLclampx red, GLclampx green, GLclampx blue,
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearColorx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1376,7 +1376,7 @@ void glClearDepthx_enc(void *self , GLclampx depth)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1385,7 +1385,7 @@ void glClearDepthx_enc(void *self , GLclampx depth)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearDepthx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1401,7 +1401,7 @@ void glClearStencil_enc(void *self , GLint s)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1410,7 +1410,7 @@ void glClearStencil_enc(void *self , GLint s)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearStencil;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1426,7 +1426,7 @@ void glClientActiveTexture_enc(void *self , GLenum texture)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1435,7 +1435,7 @@ void glClientActiveTexture_enc(void *self , GLenum texture)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClientActiveTexture;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1451,7 +1451,7 @@ void glColor4ub_enc(void *self , GLubyte red, GLubyte green, GLubyte blue, GLuby
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1460,7 +1460,7 @@ void glColor4ub_enc(void *self , GLubyte red, GLubyte green, GLubyte blue, GLuby
 	 const size_t sizeWithoutChecksum = 8 + 1 + 1 + 1 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColor4ub;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1479,7 +1479,7 @@ void glColor4x_enc(void *self , GLfixed red, GLfixed green, GLfixed blue, GLfixe
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1488,7 +1488,7 @@ void glColor4x_enc(void *self , GLfixed red, GLfixed green, GLfixed blue, GLfixe
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColor4x;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1507,7 +1507,7 @@ void glColorMask_enc(void *self , GLboolean red, GLboolean green, GLboolean blue
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1516,7 +1516,7 @@ void glColorMask_enc(void *self , GLboolean red, GLboolean green, GLboolean blue
 	 const size_t sizeWithoutChecksum = 8 + 1 + 1 + 1 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColorMask;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1535,7 +1535,7 @@ void glCompressedTexImage2D_enc(void *self , GLenum target, GLint level, GLenum 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1545,7 +1545,7 @@ void glCompressedTexImage2D_enc(void *self , GLenum target, GLint level, GLenum 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_data + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCompressedTexImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1569,7 +1569,7 @@ void glCompressedTexSubImage2D_enc(void *self , GLenum target, GLint level, GLin
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1579,7 +1579,7 @@ void glCompressedTexSubImage2D_enc(void *self , GLenum target, GLint level, GLin
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_data + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCompressedTexSubImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1604,7 +1604,7 @@ void glCopyTexImage2D_enc(void *self , GLenum target, GLint level, GLenum intern
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1613,7 +1613,7 @@ void glCopyTexImage2D_enc(void *self , GLenum target, GLint level, GLenum intern
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCopyTexImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1636,7 +1636,7 @@ void glCopyTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoff
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1645,7 +1645,7 @@ void glCopyTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoff
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCopyTexSubImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1668,7 +1668,7 @@ void glCullFace_enc(void *self , GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1677,7 +1677,7 @@ void glCullFace_enc(void *self , GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCullFace;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1693,7 +1693,7 @@ void glDeleteBuffers_enc(void *self , GLsizei n, const GLuint* buffers)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1703,7 +1703,7 @@ void glDeleteBuffers_enc(void *self , GLsizei n, const GLuint* buffers)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_buffers + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteBuffers;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1721,7 +1721,7 @@ void glDeleteTextures_enc(void *self , GLsizei n, const GLuint* textures)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1731,7 +1731,7 @@ void glDeleteTextures_enc(void *self , GLsizei n, const GLuint* textures)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_textures + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteTextures;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1749,7 +1749,7 @@ void glDepthFunc_enc(void *self , GLenum func)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1758,7 +1758,7 @@ void glDepthFunc_enc(void *self , GLenum func)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthFunc;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1774,7 +1774,7 @@ void glDepthMask_enc(void *self , GLboolean flag)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1783,7 +1783,7 @@ void glDepthMask_enc(void *self , GLboolean flag)
 	 const size_t sizeWithoutChecksum = 8 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthMask;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1799,7 +1799,7 @@ void glDepthRangex_enc(void *self , GLclampx zNear, GLclampx zFar)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1808,7 +1808,7 @@ void glDepthRangex_enc(void *self , GLclampx zNear, GLclampx zFar)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthRangex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1825,7 +1825,7 @@ void glDisable_enc(void *self , GLenum cap)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1834,7 +1834,7 @@ void glDisable_enc(void *self , GLenum cap)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDisable;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1850,7 +1850,7 @@ void glDisableClientState_enc(void *self , GLenum array)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1859,7 +1859,7 @@ void glDisableClientState_enc(void *self , GLenum array)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDisableClientState;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1875,7 +1875,7 @@ void glDrawArrays_enc(void *self , GLenum mode, GLint first, GLsizei count)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1884,7 +1884,7 @@ void glDrawArrays_enc(void *self , GLenum mode, GLint first, GLsizei count)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawArrays;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1902,7 +1902,7 @@ void glEnable_enc(void *self , GLenum cap)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1911,7 +1911,7 @@ void glEnable_enc(void *self , GLenum cap)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEnable;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1927,7 +1927,7 @@ void glEnableClientState_enc(void *self , GLenum array)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1936,7 +1936,7 @@ void glEnableClientState_enc(void *self , GLenum array)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEnableClientState;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1952,7 +1952,7 @@ void glFinish_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1961,7 +1961,7 @@ void glFinish_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFinish;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -1976,7 +1976,7 @@ void glFlush_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -1985,7 +1985,7 @@ void glFlush_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFlush;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2000,7 +2000,7 @@ void glFogx_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2009,7 +2009,7 @@ void glFogx_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2026,7 +2026,7 @@ void glFogxv_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2036,7 +2036,7 @@ void glFogxv_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2054,7 +2054,7 @@ void glFrontFace_enc(void *self , GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2063,7 +2063,7 @@ void glFrontFace_enc(void *self , GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFrontFace;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2079,7 +2079,7 @@ void glFrustumx_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, GL
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2088,7 +2088,7 @@ void glFrustumx_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, GL
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFrustumx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2109,7 +2109,7 @@ void glGetBooleanv_enc(void *self , GLenum pname, GLboolean* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2119,7 +2119,7 @@ void glGetBooleanv_enc(void *self , GLenum pname, GLboolean* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetBooleanv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2130,13 +2130,13 @@ void glGetBooleanv_enc(void *self , GLenum pname, GLboolean* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback(params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetBooleanv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2148,7 +2148,7 @@ void glGetBufferParameteriv_enc(void *self , GLenum target, GLenum pname, GLint*
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2158,7 +2158,7 @@ void glGetBufferParameteriv_enc(void *self , GLenum target, GLenum pname, GLint*
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetBufferParameteriv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2170,13 +2170,13 @@ void glGetBufferParameteriv_enc(void *self , GLenum target, GLenum pname, GLint*
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetBufferParameteriv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2188,7 +2188,7 @@ void glClipPlanex_enc(void *self , GLenum pname, const GLfixed* eqn)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2198,7 +2198,7 @@ void glClipPlanex_enc(void *self , GLenum pname, const GLfixed* eqn)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_eqn + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2216,7 +2216,7 @@ void glGenBuffers_enc(void *self , GLsizei n, GLuint* buffers)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2226,7 +2226,7 @@ void glGenBuffers_enc(void *self , GLsizei n, GLuint* buffers)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenBuffers;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2237,13 +2237,13 @@ void glGenBuffers_enc(void *self , GLsizei n, GLuint* buffers)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(buffers, __size_buffers);
+	stream->Readback((uint8_t*)buffers, __size_buffers);
 	if (useChecksum) checksumCalculator->addBuffer(buffers, __size_buffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGenBuffers: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2255,7 +2255,7 @@ void glGenTextures_enc(void *self , GLsizei n, GLuint* textures)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2265,7 +2265,7 @@ void glGenTextures_enc(void *self , GLsizei n, GLuint* textures)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenTextures;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2276,13 +2276,13 @@ void glGenTextures_enc(void *self , GLsizei n, GLuint* textures)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(textures, __size_textures);
+	stream->Readback((uint8_t*)textures, __size_textures);
 	if (useChecksum) checksumCalculator->addBuffer(textures, __size_textures);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGenTextures: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2294,7 +2294,7 @@ GLenum glGetError_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2303,7 +2303,7 @@ GLenum glGetError_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetError;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2314,13 +2314,13 @@ GLenum glGetError_enc(void *self )
 
 
 	GLenum retval;
-	stream->readback(&retval, 4);
+	stream->Readback((uint8_t*)&retval, 4);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 4);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetError: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2333,7 +2333,7 @@ void glGetFixedv_enc(void *self , GLenum pname, GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2343,7 +2343,7 @@ void glGetFixedv_enc(void *self , GLenum pname, GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetFixedv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2354,13 +2354,13 @@ void glGetFixedv_enc(void *self , GLenum pname, GLfixed* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetFixedv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2372,7 +2372,7 @@ void glGetIntegerv_enc(void *self , GLenum pname, GLint* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2382,7 +2382,7 @@ void glGetIntegerv_enc(void *self , GLenum pname, GLint* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetIntegerv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2393,13 +2393,13 @@ void glGetIntegerv_enc(void *self , GLenum pname, GLint* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetIntegerv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2411,7 +2411,7 @@ void glGetLightxv_enc(void *self , GLenum light, GLenum pname, GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2421,7 +2421,7 @@ void glGetLightxv_enc(void *self , GLenum light, GLenum pname, GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetLightxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2433,13 +2433,13 @@ void glGetLightxv_enc(void *self , GLenum light, GLenum pname, GLfixed* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetLightxv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2451,7 +2451,7 @@ void glGetMaterialxv_enc(void *self , GLenum face, GLenum pname, GLfixed* params
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2461,7 +2461,7 @@ void glGetMaterialxv_enc(void *self , GLenum face, GLenum pname, GLfixed* params
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetMaterialxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2473,13 +2473,13 @@ void glGetMaterialxv_enc(void *self , GLenum face, GLenum pname, GLfixed* params
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetMaterialxv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2491,7 +2491,7 @@ void glGetTexEnviv_enc(void *self , GLenum env, GLenum pname, GLint* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2501,7 +2501,7 @@ void glGetTexEnviv_enc(void *self , GLenum env, GLenum pname, GLint* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexEnviv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2513,13 +2513,13 @@ void glGetTexEnviv_enc(void *self , GLenum env, GLenum pname, GLint* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexEnviv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2531,7 +2531,7 @@ void glGetTexEnvxv_enc(void *self , GLenum env, GLenum pname, GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2541,7 +2541,7 @@ void glGetTexEnvxv_enc(void *self , GLenum env, GLenum pname, GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexEnvxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2553,13 +2553,13 @@ void glGetTexEnvxv_enc(void *self , GLenum env, GLenum pname, GLfixed* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexEnvxv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2571,7 +2571,7 @@ void glGetTexParameteriv_enc(void *self , GLenum target, GLenum pname, GLint* pa
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2581,7 +2581,7 @@ void glGetTexParameteriv_enc(void *self , GLenum target, GLenum pname, GLint* pa
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexParameteriv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2593,13 +2593,13 @@ void glGetTexParameteriv_enc(void *self , GLenum target, GLenum pname, GLint* pa
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexParameteriv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2611,7 +2611,7 @@ void glGetTexParameterxv_enc(void *self , GLenum target, GLenum pname, GLfixed* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2621,7 +2621,7 @@ void glGetTexParameterxv_enc(void *self , GLenum target, GLenum pname, GLfixed* 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexParameterxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2633,13 +2633,13 @@ void glGetTexParameterxv_enc(void *self , GLenum target, GLenum pname, GLfixed* 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexParameterxv: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2651,7 +2651,7 @@ void glHint_enc(void *self , GLenum target, GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2660,7 +2660,7 @@ void glHint_enc(void *self , GLenum target, GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glHint;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2677,7 +2677,7 @@ GLboolean glIsBuffer_enc(void *self , GLuint buffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2686,7 +2686,7 @@ GLboolean glIsBuffer_enc(void *self , GLuint buffer)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2698,13 +2698,13 @@ GLboolean glIsBuffer_enc(void *self , GLuint buffer)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsBuffer: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2717,7 +2717,7 @@ GLboolean glIsEnabled_enc(void *self , GLenum cap)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2726,7 +2726,7 @@ GLboolean glIsEnabled_enc(void *self , GLenum cap)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsEnabled;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2738,13 +2738,13 @@ GLboolean glIsEnabled_enc(void *self , GLenum cap)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsEnabled: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2757,7 +2757,7 @@ GLboolean glIsTexture_enc(void *self , GLuint texture)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2766,7 +2766,7 @@ GLboolean glIsTexture_enc(void *self , GLuint texture)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsTexture;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2778,13 +2778,13 @@ GLboolean glIsTexture_enc(void *self , GLuint texture)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsTexture: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -2797,7 +2797,7 @@ void glLightModelx_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2806,7 +2806,7 @@ void glLightModelx_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2823,7 +2823,7 @@ void glLightModelxv_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2833,7 +2833,7 @@ void glLightModelxv_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2851,7 +2851,7 @@ void glLightx_enc(void *self , GLenum light, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2860,7 +2860,7 @@ void glLightx_enc(void *self , GLenum light, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2878,7 +2878,7 @@ void glLightxv_enc(void *self , GLenum light, GLenum pname, const GLfixed* param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2888,7 +2888,7 @@ void glLightxv_enc(void *self , GLenum light, GLenum pname, const GLfixed* param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2907,7 +2907,7 @@ void glLineWidthx_enc(void *self , GLfixed width)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2916,7 +2916,7 @@ void glLineWidthx_enc(void *self , GLfixed width)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLineWidthx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2932,7 +2932,7 @@ void glLoadIdentity_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2941,7 +2941,7 @@ void glLoadIdentity_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLoadIdentity;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2956,7 +2956,7 @@ void glLoadMatrixx_enc(void *self , const GLfixed* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2966,7 +2966,7 @@ void glLoadMatrixx_enc(void *self , const GLfixed* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLoadMatrixx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -2983,7 +2983,7 @@ void glLogicOp_enc(void *self , GLenum opcode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -2992,7 +2992,7 @@ void glLogicOp_enc(void *self , GLenum opcode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLogicOp;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3008,7 +3008,7 @@ void glMaterialx_enc(void *self , GLenum face, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3017,7 +3017,7 @@ void glMaterialx_enc(void *self , GLenum face, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3035,7 +3035,7 @@ void glMaterialxv_enc(void *self , GLenum face, GLenum pname, const GLfixed* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3045,7 +3045,7 @@ void glMaterialxv_enc(void *self , GLenum face, GLenum pname, const GLfixed* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3064,7 +3064,7 @@ void glMatrixMode_enc(void *self , GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3073,7 +3073,7 @@ void glMatrixMode_enc(void *self , GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMatrixMode;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3089,7 +3089,7 @@ void glMultMatrixx_enc(void *self , const GLfixed* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3099,7 +3099,7 @@ void glMultMatrixx_enc(void *self , const GLfixed* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultMatrixx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3116,7 +3116,7 @@ void glMultiTexCoord4x_enc(void *self , GLenum target, GLfixed s, GLfixed t, GLf
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3125,7 +3125,7 @@ void glMultiTexCoord4x_enc(void *self , GLenum target, GLfixed s, GLfixed t, GLf
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultiTexCoord4x;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3145,7 +3145,7 @@ void glNormal3x_enc(void *self , GLfixed nx, GLfixed ny, GLfixed nz)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3154,7 +3154,7 @@ void glNormal3x_enc(void *self , GLfixed nx, GLfixed ny, GLfixed nz)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glNormal3x;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3172,7 +3172,7 @@ void glOrthox_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, GLfi
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3181,7 +3181,7 @@ void glOrthox_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, GLfi
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glOrthox;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3202,7 +3202,7 @@ void glPixelStorei_enc(void *self , GLenum pname, GLint param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3211,7 +3211,7 @@ void glPixelStorei_enc(void *self , GLenum pname, GLint param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPixelStorei;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3228,7 +3228,7 @@ void glPointParameterx_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3237,7 +3237,7 @@ void glPointParameterx_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3254,7 +3254,7 @@ void glPointParameterxv_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3264,7 +3264,7 @@ void glPointParameterxv_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3282,7 +3282,7 @@ void glPointSizex_enc(void *self , GLfixed size)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3291,7 +3291,7 @@ void glPointSizex_enc(void *self , GLfixed size)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointSizex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3307,7 +3307,7 @@ void glPolygonOffsetx_enc(void *self , GLfixed factor, GLfixed units)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3316,7 +3316,7 @@ void glPolygonOffsetx_enc(void *self , GLfixed factor, GLfixed units)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPolygonOffsetx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3333,7 +3333,7 @@ void glPopMatrix_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3342,7 +3342,7 @@ void glPopMatrix_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPopMatrix;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3357,7 +3357,7 @@ void glPushMatrix_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3366,7 +3366,7 @@ void glPushMatrix_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPushMatrix;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3381,7 +3381,7 @@ void glReadPixels_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei heig
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3391,7 +3391,7 @@ void glReadPixels_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei heig
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glReadPixels;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3407,13 +3407,13 @@ void glReadPixels_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei heig
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(pixels, __size_pixels);
+	stream->Readback((uint8_t*)pixels, __size_pixels);
 	if (useChecksum) checksumCalculator->addBuffer(pixels, __size_pixels);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glReadPixels: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -3425,7 +3425,7 @@ void glRotatex_enc(void *self , GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3434,7 +3434,7 @@ void glRotatex_enc(void *self , GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glRotatex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3453,7 +3453,7 @@ void glSampleCoverage_enc(void *self , GLclampf value, GLboolean invert)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3462,7 +3462,7 @@ void glSampleCoverage_enc(void *self , GLclampf value, GLboolean invert)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glSampleCoverage;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3479,7 +3479,7 @@ void glSampleCoveragex_enc(void *self , GLclampx value, GLboolean invert)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3488,7 +3488,7 @@ void glSampleCoveragex_enc(void *self , GLclampx value, GLboolean invert)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glSampleCoveragex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3505,7 +3505,7 @@ void glScalex_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3514,7 +3514,7 @@ void glScalex_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glScalex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3532,7 +3532,7 @@ void glScissor_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei height)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3541,7 +3541,7 @@ void glScissor_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei height)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glScissor;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3560,7 +3560,7 @@ void glShadeModel_enc(void *self , GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3569,7 +3569,7 @@ void glShadeModel_enc(void *self , GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glShadeModel;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3585,7 +3585,7 @@ void glStencilFunc_enc(void *self , GLenum func, GLint ref, GLuint mask)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3594,7 +3594,7 @@ void glStencilFunc_enc(void *self , GLenum func, GLint ref, GLuint mask)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glStencilFunc;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3612,7 +3612,7 @@ void glStencilMask_enc(void *self , GLuint mask)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3621,7 +3621,7 @@ void glStencilMask_enc(void *self , GLuint mask)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glStencilMask;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3637,7 +3637,7 @@ void glStencilOp_enc(void *self , GLenum fail, GLenum zfail, GLenum zpass)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3646,7 +3646,7 @@ void glStencilOp_enc(void *self , GLenum fail, GLenum zfail, GLenum zpass)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glStencilOp;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3664,7 +3664,7 @@ void glTexEnvi_enc(void *self , GLenum target, GLenum pname, GLint param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3673,7 +3673,7 @@ void glTexEnvi_enc(void *self , GLenum target, GLenum pname, GLint param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvi;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3691,7 +3691,7 @@ void glTexEnvx_enc(void *self , GLenum target, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3700,7 +3700,7 @@ void glTexEnvx_enc(void *self , GLenum target, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3718,7 +3718,7 @@ void glTexEnviv_enc(void *self , GLenum target, GLenum pname, const GLint* param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3728,7 +3728,7 @@ void glTexEnviv_enc(void *self , GLenum target, GLenum pname, const GLint* param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnviv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3747,7 +3747,7 @@ void glTexEnvxv_enc(void *self , GLenum target, GLenum pname, const GLfixed* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3757,7 +3757,7 @@ void glTexEnvxv_enc(void *self , GLenum target, GLenum pname, const GLfixed* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3776,7 +3776,7 @@ void glTexImage2D_enc(void *self , GLenum target, GLint level, GLint internalfor
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3786,7 +3786,7 @@ void glTexImage2D_enc(void *self , GLenum target, GLint level, GLint internalfor
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+	buf = stream->Alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
 	ptr = buf;
 	int tmp = OP_glTexImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3801,14 +3801,14 @@ void glTexImage2D_enc(void *self , GLenum target, GLint level, GLint internalfor
 		memcpy(ptr, &type, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
-	stream->flush();
-	stream->writeFully(&__size_pixels,4);
+	stream->Flush();
+	stream->WriteFully((uint8_t*)&__size_pixels,4);
 	if (useChecksum) checksumCalculator->addBuffer(&__size_pixels,4);
 	if (pixels != NULL) {
-		stream->writeFully(pixels, __size_pixels);
+		stream->WriteFully((uint8_t*)pixels, __size_pixels);
 		if (useChecksum) checksumCalculator->addBuffer(pixels, __size_pixels);
 	}
-	buf = stream->alloc(checksumSize);
+	buf = stream->Alloc(checksumSize);
 	if (useChecksum) checksumCalculator->writeChecksum(buf, checksumSize);
 
 }
@@ -3817,7 +3817,7 @@ void glTexParameteri_enc(void *self , GLenum target, GLenum pname, GLint param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3826,7 +3826,7 @@ void glTexParameteri_enc(void *self , GLenum target, GLenum pname, GLint param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameteri;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3844,7 +3844,7 @@ void glTexParameterx_enc(void *self , GLenum target, GLenum pname, GLfixed param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3853,7 +3853,7 @@ void glTexParameterx_enc(void *self , GLenum target, GLenum pname, GLfixed param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterx;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3871,7 +3871,7 @@ void glTexParameteriv_enc(void *self , GLenum target, GLenum pname, const GLint*
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3881,7 +3881,7 @@ void glTexParameteriv_enc(void *self , GLenum target, GLenum pname, const GLint*
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameteriv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3900,7 +3900,7 @@ void glTexParameterxv_enc(void *self , GLenum target, GLenum pname, const GLfixe
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3910,7 +3910,7 @@ void glTexParameterxv_enc(void *self , GLenum target, GLenum pname, const GLfixe
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterxv;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3929,7 +3929,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3939,7 +3939,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+	buf = stream->Alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
 	ptr = buf;
 	int tmp = OP_glTexSubImage2D;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3954,14 +3954,14 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 		memcpy(ptr, &type, 4); ptr += 4;
 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
-	stream->flush();
-	stream->writeFully(&__size_pixels,4);
+	stream->Flush();
+	stream->WriteFully((uint8_t*)&__size_pixels,4);
 	if (useChecksum) checksumCalculator->addBuffer(&__size_pixels,4);
 	if (pixels != NULL) {
-		stream->writeFully(pixels, __size_pixels);
+		stream->WriteFully((uint8_t*)pixels, __size_pixels);
 		if (useChecksum) checksumCalculator->addBuffer(pixels, __size_pixels);
 	}
-	buf = stream->alloc(checksumSize);
+	buf = stream->Alloc(checksumSize);
 	if (useChecksum) checksumCalculator->writeChecksum(buf, checksumSize);
 
 }
@@ -3970,7 +3970,7 @@ void glTranslatex_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -3979,7 +3979,7 @@ void glTranslatex_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTranslatex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -3997,7 +3997,7 @@ void glViewport_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei height
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4006,7 +4006,7 @@ void glViewport_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei height
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glViewport;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4025,7 +4025,7 @@ void glVertexPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei str
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4034,7 +4034,7 @@ void glVertexPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei str
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glVertexPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4053,7 +4053,7 @@ void glColorPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei stri
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4062,7 +4062,7 @@ void glColorPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei stri
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColorPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4081,7 +4081,7 @@ void glNormalPointerOffset_enc(void *self , GLenum type, GLsizei stride, GLuint 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4090,7 +4090,7 @@ void glNormalPointerOffset_enc(void *self , GLenum type, GLsizei stride, GLuint 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glNormalPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4108,7 +4108,7 @@ void glPointSizePointerOffset_enc(void *self , GLenum type, GLsizei stride, GLui
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4117,7 +4117,7 @@ void glPointSizePointerOffset_enc(void *self , GLenum type, GLsizei stride, GLui
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointSizePointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4135,7 +4135,7 @@ void glTexCoordPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei s
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4144,7 +4144,7 @@ void glTexCoordPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei s
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexCoordPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4163,7 +4163,7 @@ void glWeightPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei str
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4172,7 +4172,7 @@ void glWeightPointerOffset_enc(void *self , GLint size, GLenum type, GLsizei str
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glWeightPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4191,7 +4191,7 @@ void glMatrixIndexPointerOffset_enc(void *self , GLint size, GLenum type, GLsize
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4200,7 +4200,7 @@ void glMatrixIndexPointerOffset_enc(void *self , GLint size, GLenum type, GLsize
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMatrixIndexPointerOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4219,7 +4219,7 @@ void glVertexPointerData_enc(void *self , GLint size, GLenum type, GLsizei strid
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4229,7 +4229,7 @@ void glVertexPointerData_enc(void *self , GLint size, GLenum type, GLsizei strid
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glVertexPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4250,7 +4250,7 @@ void glColorPointerData_enc(void *self , GLint size, GLenum type, GLsizei stride
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4260,7 +4260,7 @@ void glColorPointerData_enc(void *self , GLint size, GLenum type, GLsizei stride
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColorPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4281,7 +4281,7 @@ void glNormalPointerData_enc(void *self , GLenum type, GLsizei stride, void* dat
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4291,7 +4291,7 @@ void glNormalPointerData_enc(void *self , GLenum type, GLsizei stride, void* dat
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glNormalPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4311,7 +4311,7 @@ void glTexCoordPointerData_enc(void *self , GLint unit, GLint size, GLenum type,
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4321,7 +4321,7 @@ void glTexCoordPointerData_enc(void *self , GLint unit, GLint size, GLenum type,
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexCoordPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4343,7 +4343,7 @@ void glPointSizePointerData_enc(void *self , GLenum type, GLsizei stride, void* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4353,7 +4353,7 @@ void glPointSizePointerData_enc(void *self , GLenum type, GLsizei stride, void* 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointSizePointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4373,7 +4373,7 @@ void glWeightPointerData_enc(void *self , GLint size, GLenum type, GLsizei strid
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4383,7 +4383,7 @@ void glWeightPointerData_enc(void *self , GLint size, GLenum type, GLsizei strid
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glWeightPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4404,7 +4404,7 @@ void glMatrixIndexPointerData_enc(void *self , GLint size, GLenum type, GLsizei 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4414,7 +4414,7 @@ void glMatrixIndexPointerData_enc(void *self , GLint size, GLenum type, GLsizei 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMatrixIndexPointerData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4435,7 +4435,7 @@ void glDrawElementsOffset_enc(void *self , GLenum mode, GLsizei count, GLenum ty
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4444,7 +4444,7 @@ void glDrawElementsOffset_enc(void *self , GLenum mode, GLsizei count, GLenum ty
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawElementsOffset;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4463,7 +4463,7 @@ void glDrawElementsData_enc(void *self , GLenum mode, GLsizei count, GLenum type
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4473,7 +4473,7 @@ void glDrawElementsData_enc(void *self , GLenum mode, GLsizei count, GLenum type
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + __size_data + 4 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawElementsData;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4494,7 +4494,7 @@ void glGetCompressedTextureFormats_enc(void *self , int count, GLint* formats)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4504,7 +4504,7 @@ void glGetCompressedTextureFormats_enc(void *self , int count, GLint* formats)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetCompressedTextureFormats;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4515,13 +4515,13 @@ void glGetCompressedTextureFormats_enc(void *self , int count, GLint* formats)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(formats, __size_formats);
+	stream->Readback((uint8_t*)formats, __size_formats);
 	if (useChecksum) checksumCalculator->addBuffer(formats, __size_formats);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetCompressedTextureFormats: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -4533,7 +4533,7 @@ int glFinishRoundTrip_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4542,7 +4542,7 @@ int glFinishRoundTrip_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFinishRoundTrip;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4553,13 +4553,13 @@ int glFinishRoundTrip_enc(void *self )
 
 
 	int retval;
-	stream->readback(&retval, 4);
+	stream->Readback((uint8_t*)&retval, 4);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 4);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glFinishRoundTrip: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -4572,7 +4572,7 @@ void glBlendEquationSeparateOES_enc(void *self , GLenum modeRGB, GLenum modeAlph
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4581,7 +4581,7 @@ void glBlendEquationSeparateOES_enc(void *self , GLenum modeRGB, GLenum modeAlph
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBlendEquationSeparateOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4598,7 +4598,7 @@ void glBlendFuncSeparateOES_enc(void *self , GLenum srcRGB, GLenum dstRGB, GLenu
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4607,7 +4607,7 @@ void glBlendFuncSeparateOES_enc(void *self , GLenum srcRGB, GLenum dstRGB, GLenu
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBlendFuncSeparateOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4626,7 +4626,7 @@ void glBlendEquationOES_enc(void *self , GLenum mode)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4635,7 +4635,7 @@ void glBlendEquationOES_enc(void *self , GLenum mode)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBlendEquationOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4651,7 +4651,7 @@ void glDrawTexsOES_enc(void *self , GLshort x, GLshort y, GLshort z, GLshort wid
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4660,7 +4660,7 @@ void glDrawTexsOES_enc(void *self , GLshort x, GLshort y, GLshort z, GLshort wid
 	 const size_t sizeWithoutChecksum = 8 + 2 + 2 + 2 + 2 + 2;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexsOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4680,7 +4680,7 @@ void glDrawTexiOES_enc(void *self , GLint x, GLint y, GLint z, GLint width, GLin
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4689,7 +4689,7 @@ void glDrawTexiOES_enc(void *self , GLint x, GLint y, GLint z, GLint width, GLin
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexiOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4709,7 +4709,7 @@ void glDrawTexxOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z, GLfixed wid
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4718,7 +4718,7 @@ void glDrawTexxOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z, GLfixed wid
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4738,7 +4738,7 @@ void glDrawTexsvOES_enc(void *self , const GLshort* coords)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4748,7 +4748,7 @@ void glDrawTexsvOES_enc(void *self , const GLshort* coords)
 	 const size_t sizeWithoutChecksum = 8 + __size_coords + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexsvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4765,7 +4765,7 @@ void glDrawTexivOES_enc(void *self , const GLint* coords)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4775,7 +4775,7 @@ void glDrawTexivOES_enc(void *self , const GLint* coords)
 	 const size_t sizeWithoutChecksum = 8 + __size_coords + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexivOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4792,7 +4792,7 @@ void glDrawTexxvOES_enc(void *self , const GLfixed* coords)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4802,7 +4802,7 @@ void glDrawTexxvOES_enc(void *self , const GLfixed* coords)
 	 const size_t sizeWithoutChecksum = 8 + __size_coords + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4819,7 +4819,7 @@ void glDrawTexfOES_enc(void *self , GLfloat x, GLfloat y, GLfloat z, GLfloat wid
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4828,7 +4828,7 @@ void glDrawTexfOES_enc(void *self , GLfloat x, GLfloat y, GLfloat z, GLfloat wid
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexfOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4848,7 +4848,7 @@ void glDrawTexfvOES_enc(void *self , const GLfloat* coords)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4858,7 +4858,7 @@ void glDrawTexfvOES_enc(void *self , const GLfloat* coords)
 	 const size_t sizeWithoutChecksum = 8 + __size_coords + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDrawTexfvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4875,7 +4875,7 @@ void glEGLImageTargetTexture2DOES_enc(void *self , GLenum target, GLeglImageOES 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4884,7 +4884,7 @@ void glEGLImageTargetTexture2DOES_enc(void *self , GLenum target, GLeglImageOES 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEGLImageTargetTexture2DOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4901,7 +4901,7 @@ void glEGLImageTargetRenderbufferStorageOES_enc(void *self , GLenum target, GLeg
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4910,7 +4910,7 @@ void glEGLImageTargetRenderbufferStorageOES_enc(void *self , GLenum target, GLeg
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEGLImageTargetRenderbufferStorageOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4927,7 +4927,7 @@ void glAlphaFuncxOES_enc(void *self , GLenum func, GLclampx ref)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4936,7 +4936,7 @@ void glAlphaFuncxOES_enc(void *self , GLenum func, GLclampx ref)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glAlphaFuncxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4953,7 +4953,7 @@ void glClearColorxOES_enc(void *self , GLclampx red, GLclampx green, GLclampx bl
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4962,7 +4962,7 @@ void glClearColorxOES_enc(void *self , GLclampx red, GLclampx green, GLclampx bl
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearColorxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -4981,7 +4981,7 @@ void glClearDepthxOES_enc(void *self , GLclampx depth)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -4990,7 +4990,7 @@ void glClearDepthxOES_enc(void *self , GLclampx depth)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearDepthxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5006,7 +5006,7 @@ void glClipPlanexOES_enc(void *self , GLenum plane, const GLfixed* equation)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5016,7 +5016,7 @@ void glClipPlanexOES_enc(void *self , GLenum plane, const GLfixed* equation)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_equation + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5034,7 +5034,7 @@ void glClipPlanexIMG_enc(void *self , GLenum plane, const GLfixed* equation)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5044,7 +5044,7 @@ void glClipPlanexIMG_enc(void *self , GLenum plane, const GLfixed* equation)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_equation + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanexIMG;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5062,7 +5062,7 @@ void glColor4xOES_enc(void *self , GLfixed red, GLfixed green, GLfixed blue, GLf
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5071,7 +5071,7 @@ void glColor4xOES_enc(void *self , GLfixed red, GLfixed green, GLfixed blue, GLf
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glColor4xOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5090,7 +5090,7 @@ void glDepthRangexOES_enc(void *self , GLclampx zNear, GLclampx zFar)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5099,7 +5099,7 @@ void glDepthRangexOES_enc(void *self , GLclampx zNear, GLclampx zFar)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthRangexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5116,7 +5116,7 @@ void glFogxOES_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5125,7 +5125,7 @@ void glFogxOES_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5142,7 +5142,7 @@ void glFogxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5152,7 +5152,7 @@ void glFogxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFogxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5170,7 +5170,7 @@ void glFrustumxOES_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom,
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5179,7 +5179,7 @@ void glFrustumxOES_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom,
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFrustumxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5200,7 +5200,7 @@ void glGetClipPlanexOES_enc(void *self , GLenum pname, GLfixed* eqn)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5210,7 +5210,7 @@ void glGetClipPlanexOES_enc(void *self , GLenum pname, GLfixed* eqn)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetClipPlanexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5221,13 +5221,13 @@ void glGetClipPlanexOES_enc(void *self , GLenum pname, GLfixed* eqn)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(eqn, __size_eqn);
+	stream->Readback((uint8_t*)eqn, __size_eqn);
 	if (useChecksum) checksumCalculator->addBuffer(eqn, __size_eqn);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetClipPlanexOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5239,7 +5239,7 @@ void glGetClipPlanex_enc(void *self , GLenum pname, GLfixed* eqn)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5249,7 +5249,7 @@ void glGetClipPlanex_enc(void *self , GLenum pname, GLfixed* eqn)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetClipPlanex;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5260,13 +5260,13 @@ void glGetClipPlanex_enc(void *self , GLenum pname, GLfixed* eqn)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(eqn, __size_eqn);
+	stream->Readback((uint8_t*)eqn, __size_eqn);
 	if (useChecksum) checksumCalculator->addBuffer(eqn, __size_eqn);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetClipPlanex: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5278,7 +5278,7 @@ void glGetFixedvOES_enc(void *self , GLenum pname, GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5288,7 +5288,7 @@ void glGetFixedvOES_enc(void *self , GLenum pname, GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetFixedvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5299,13 +5299,13 @@ void glGetFixedvOES_enc(void *self , GLenum pname, GLfixed* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetFixedvOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5317,7 +5317,7 @@ void glGetLightxvOES_enc(void *self , GLenum light, GLenum pname, GLfixed* param
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5327,7 +5327,7 @@ void glGetLightxvOES_enc(void *self , GLenum light, GLenum pname, GLfixed* param
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetLightxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5339,13 +5339,13 @@ void glGetLightxvOES_enc(void *self , GLenum light, GLenum pname, GLfixed* param
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetLightxvOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5357,7 +5357,7 @@ void glGetMaterialxvOES_enc(void *self , GLenum face, GLenum pname, GLfixed* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5367,7 +5367,7 @@ void glGetMaterialxvOES_enc(void *self , GLenum face, GLenum pname, GLfixed* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetMaterialxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5379,13 +5379,13 @@ void glGetMaterialxvOES_enc(void *self , GLenum face, GLenum pname, GLfixed* par
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetMaterialxvOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5397,7 +5397,7 @@ void glGetTexEnvxvOES_enc(void *self , GLenum env, GLenum pname, GLfixed* params
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5407,7 +5407,7 @@ void glGetTexEnvxvOES_enc(void *self , GLenum env, GLenum pname, GLfixed* params
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexEnvxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5419,13 +5419,13 @@ void glGetTexEnvxvOES_enc(void *self , GLenum env, GLenum pname, GLfixed* params
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexEnvxvOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5437,7 +5437,7 @@ void glGetTexParameterxvOES_enc(void *self , GLenum target, GLenum pname, GLfixe
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5447,7 +5447,7 @@ void glGetTexParameterxvOES_enc(void *self , GLenum target, GLenum pname, GLfixe
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexParameterxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5459,13 +5459,13 @@ void glGetTexParameterxvOES_enc(void *self , GLenum target, GLenum pname, GLfixe
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetTexParameterxvOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -5477,7 +5477,7 @@ void glLightModelxOES_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5486,7 +5486,7 @@ void glLightModelxOES_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5503,7 +5503,7 @@ void glLightModelxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5513,7 +5513,7 @@ void glLightModelxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightModelxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5531,7 +5531,7 @@ void glLightxOES_enc(void *self , GLenum light, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5540,7 +5540,7 @@ void glLightxOES_enc(void *self , GLenum light, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5558,7 +5558,7 @@ void glLightxvOES_enc(void *self , GLenum light, GLenum pname, const GLfixed* pa
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5568,7 +5568,7 @@ void glLightxvOES_enc(void *self , GLenum light, GLenum pname, const GLfixed* pa
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLightxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5587,7 +5587,7 @@ void glLineWidthxOES_enc(void *self , GLfixed width)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5596,7 +5596,7 @@ void glLineWidthxOES_enc(void *self , GLfixed width)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLineWidthxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5612,7 +5612,7 @@ void glLoadMatrixxOES_enc(void *self , const GLfixed* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5622,7 +5622,7 @@ void glLoadMatrixxOES_enc(void *self , const GLfixed* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLoadMatrixxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5639,7 +5639,7 @@ void glMaterialxOES_enc(void *self , GLenum face, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5648,7 +5648,7 @@ void glMaterialxOES_enc(void *self , GLenum face, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5666,7 +5666,7 @@ void glMaterialxvOES_enc(void *self , GLenum face, GLenum pname, const GLfixed* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5676,7 +5676,7 @@ void glMaterialxvOES_enc(void *self , GLenum face, GLenum pname, const GLfixed* 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMaterialxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5695,7 +5695,7 @@ void glMultMatrixxOES_enc(void *self , const GLfixed* m)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5705,7 +5705,7 @@ void glMultMatrixxOES_enc(void *self , const GLfixed* m)
 	 const size_t sizeWithoutChecksum = 8 + __size_m + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultMatrixxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5722,7 +5722,7 @@ void glMultiTexCoord4xOES_enc(void *self , GLenum target, GLfixed s, GLfixed t, 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5731,7 +5731,7 @@ void glMultiTexCoord4xOES_enc(void *self , GLenum target, GLfixed s, GLfixed t, 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glMultiTexCoord4xOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5751,7 +5751,7 @@ void glNormal3xOES_enc(void *self , GLfixed nx, GLfixed ny, GLfixed nz)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5760,7 +5760,7 @@ void glNormal3xOES_enc(void *self , GLfixed nx, GLfixed ny, GLfixed nz)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glNormal3xOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5778,7 +5778,7 @@ void glOrthoxOES_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, G
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5787,7 +5787,7 @@ void glOrthoxOES_enc(void *self , GLfixed left, GLfixed right, GLfixed bottom, G
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glOrthoxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5808,7 +5808,7 @@ void glPointParameterxOES_enc(void *self , GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5817,7 +5817,7 @@ void glPointParameterxOES_enc(void *self , GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5834,7 +5834,7 @@ void glPointParameterxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5844,7 +5844,7 @@ void glPointParameterxvOES_enc(void *self , GLenum pname, const GLfixed* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointParameterxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5862,7 +5862,7 @@ void glPointSizexOES_enc(void *self , GLfixed size)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5871,7 +5871,7 @@ void glPointSizexOES_enc(void *self , GLfixed size)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPointSizexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5887,7 +5887,7 @@ void glPolygonOffsetxOES_enc(void *self , GLfixed factor, GLfixed units)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5896,7 +5896,7 @@ void glPolygonOffsetxOES_enc(void *self , GLfixed factor, GLfixed units)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glPolygonOffsetxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5913,7 +5913,7 @@ void glRotatexOES_enc(void *self , GLfixed angle, GLfixed x, GLfixed y, GLfixed 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5922,7 +5922,7 @@ void glRotatexOES_enc(void *self , GLfixed angle, GLfixed x, GLfixed y, GLfixed 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glRotatexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5941,7 +5941,7 @@ void glSampleCoveragexOES_enc(void *self , GLclampx value, GLboolean invert)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5950,7 +5950,7 @@ void glSampleCoveragexOES_enc(void *self , GLclampx value, GLboolean invert)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 1;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glSampleCoveragexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5967,7 +5967,7 @@ void glScalexOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -5976,7 +5976,7 @@ void glScalexOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glScalexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -5994,7 +5994,7 @@ void glTexEnvxOES_enc(void *self , GLenum target, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6003,7 +6003,7 @@ void glTexEnvxOES_enc(void *self , GLenum target, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6021,7 +6021,7 @@ void glTexEnvxvOES_enc(void *self , GLenum target, GLenum pname, const GLfixed* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6031,7 +6031,7 @@ void glTexEnvxvOES_enc(void *self , GLenum target, GLenum pname, const GLfixed* 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexEnvxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6050,7 +6050,7 @@ void glTexParameterxOES_enc(void *self , GLenum target, GLenum pname, GLfixed pa
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6059,7 +6059,7 @@ void glTexParameterxOES_enc(void *self , GLenum target, GLenum pname, GLfixed pa
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6077,7 +6077,7 @@ void glTexParameterxvOES_enc(void *self , GLenum target, GLenum pname, const GLf
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6087,7 +6087,7 @@ void glTexParameterxvOES_enc(void *self , GLenum target, GLenum pname, const GLf
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexParameterxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6106,7 +6106,7 @@ void glTranslatexOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6115,7 +6115,7 @@ void glTranslatexOES_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTranslatexOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6133,7 +6133,7 @@ GLboolean glIsRenderbufferOES_enc(void *self , GLuint renderbuffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6142,7 +6142,7 @@ GLboolean glIsRenderbufferOES_enc(void *self , GLuint renderbuffer)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsRenderbufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6154,13 +6154,13 @@ GLboolean glIsRenderbufferOES_enc(void *self , GLuint renderbuffer)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsRenderbufferOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6173,7 +6173,7 @@ void glBindRenderbufferOES_enc(void *self , GLenum target, GLuint renderbuffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6182,7 +6182,7 @@ void glBindRenderbufferOES_enc(void *self , GLenum target, GLuint renderbuffer)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBindRenderbufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6199,7 +6199,7 @@ void glDeleteRenderbuffersOES_enc(void *self , GLsizei n, const GLuint* renderbu
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6209,7 +6209,7 @@ void glDeleteRenderbuffersOES_enc(void *self , GLsizei n, const GLuint* renderbu
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_renderbuffers + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteRenderbuffersOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6227,7 +6227,7 @@ void glGenRenderbuffersOES_enc(void *self , GLsizei n, GLuint* renderbuffers)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6237,7 +6237,7 @@ void glGenRenderbuffersOES_enc(void *self , GLsizei n, GLuint* renderbuffers)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenRenderbuffersOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6248,13 +6248,13 @@ void glGenRenderbuffersOES_enc(void *self , GLsizei n, GLuint* renderbuffers)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(renderbuffers, __size_renderbuffers);
+	stream->Readback((uint8_t*)renderbuffers, __size_renderbuffers);
 	if (useChecksum) checksumCalculator->addBuffer(renderbuffers, __size_renderbuffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGenRenderbuffersOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6266,7 +6266,7 @@ void glRenderbufferStorageOES_enc(void *self , GLenum target, GLenum internalfor
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6275,7 +6275,7 @@ void glRenderbufferStorageOES_enc(void *self , GLenum target, GLenum internalfor
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glRenderbufferStorageOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6294,7 +6294,7 @@ void glGetRenderbufferParameterivOES_enc(void *self , GLenum target, GLenum pnam
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6304,7 +6304,7 @@ void glGetRenderbufferParameterivOES_enc(void *self , GLenum target, GLenum pnam
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetRenderbufferParameterivOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6316,13 +6316,13 @@ void glGetRenderbufferParameterivOES_enc(void *self , GLenum target, GLenum pnam
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetRenderbufferParameterivOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6334,7 +6334,7 @@ GLboolean glIsFramebufferOES_enc(void *self , GLuint framebuffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6343,7 +6343,7 @@ GLboolean glIsFramebufferOES_enc(void *self , GLuint framebuffer)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsFramebufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6355,13 +6355,13 @@ GLboolean glIsFramebufferOES_enc(void *self , GLuint framebuffer)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsFramebufferOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6374,7 +6374,7 @@ void glBindFramebufferOES_enc(void *self , GLenum target, GLuint framebuffer)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6383,7 +6383,7 @@ void glBindFramebufferOES_enc(void *self , GLenum target, GLuint framebuffer)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBindFramebufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6400,7 +6400,7 @@ void glDeleteFramebuffersOES_enc(void *self , GLsizei n, const GLuint* framebuff
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6410,7 +6410,7 @@ void glDeleteFramebuffersOES_enc(void *self , GLsizei n, const GLuint* framebuff
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_framebuffers + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteFramebuffersOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6428,7 +6428,7 @@ void glGenFramebuffersOES_enc(void *self , GLsizei n, GLuint* framebuffers)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6438,7 +6438,7 @@ void glGenFramebuffersOES_enc(void *self , GLsizei n, GLuint* framebuffers)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenFramebuffersOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6449,13 +6449,13 @@ void glGenFramebuffersOES_enc(void *self , GLsizei n, GLuint* framebuffers)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(framebuffers, __size_framebuffers);
+	stream->Readback((uint8_t*)framebuffers, __size_framebuffers);
 	if (useChecksum) checksumCalculator->addBuffer(framebuffers, __size_framebuffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGenFramebuffersOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6467,7 +6467,7 @@ GLenum glCheckFramebufferStatusOES_enc(void *self , GLenum target)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6476,7 +6476,7 @@ GLenum glCheckFramebufferStatusOES_enc(void *self , GLenum target)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCheckFramebufferStatusOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6488,13 +6488,13 @@ GLenum glCheckFramebufferStatusOES_enc(void *self , GLenum target)
 
 
 	GLenum retval;
-	stream->readback(&retval, 4);
+	stream->Readback((uint8_t*)&retval, 4);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 4);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glCheckFramebufferStatusOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6507,7 +6507,7 @@ void glFramebufferRenderbufferOES_enc(void *self , GLenum target, GLenum attachm
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6516,7 +6516,7 @@ void glFramebufferRenderbufferOES_enc(void *self , GLenum target, GLenum attachm
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFramebufferRenderbufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6535,7 +6535,7 @@ void glFramebufferTexture2DOES_enc(void *self , GLenum target, GLenum attachment
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6544,7 +6544,7 @@ void glFramebufferTexture2DOES_enc(void *self , GLenum target, GLenum attachment
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFramebufferTexture2DOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6564,7 +6564,7 @@ void glGetFramebufferAttachmentParameterivOES_enc(void *self , GLenum target, GL
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6574,7 +6574,7 @@ void glGetFramebufferAttachmentParameterivOES_enc(void *self , GLenum target, GL
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetFramebufferAttachmentParameterivOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6587,13 +6587,13 @@ void glGetFramebufferAttachmentParameterivOES_enc(void *self , GLenum target, GL
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetFramebufferAttachmentParameterivOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6605,7 +6605,7 @@ void glGenerateMipmapOES_enc(void *self , GLenum target)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6614,7 +6614,7 @@ void glGenerateMipmapOES_enc(void *self , GLenum target)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenerateMipmapOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6630,7 +6630,7 @@ GLboolean glUnmapBufferOES_enc(void *self , GLenum target)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6639,7 +6639,7 @@ GLboolean glUnmapBufferOES_enc(void *self , GLenum target)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glUnmapBufferOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6651,13 +6651,13 @@ GLboolean glUnmapBufferOES_enc(void *self , GLenum target)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glUnmapBufferOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6670,7 +6670,7 @@ void glCurrentPaletteMatrixOES_enc(void *self , GLuint matrixpaletteindex)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6679,7 +6679,7 @@ void glCurrentPaletteMatrixOES_enc(void *self , GLuint matrixpaletteindex)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glCurrentPaletteMatrixOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6695,7 +6695,7 @@ void glLoadPaletteFromModelViewMatrixOES_enc(void *self )
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6704,7 +6704,7 @@ void glLoadPaletteFromModelViewMatrixOES_enc(void *self )
 	 const size_t sizeWithoutChecksum = 8;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glLoadPaletteFromModelViewMatrixOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6719,7 +6719,7 @@ GLbitfield glQueryMatrixxOES_enc(void *self , GLfixed* mantissa, GLint* exponent
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6730,7 +6730,7 @@ GLbitfield glQueryMatrixxOES_enc(void *self , GLfixed* mantissa, GLint* exponent
 	 const size_t sizeWithoutChecksum = 8 + 0 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glQueryMatrixxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6741,19 +6741,19 @@ GLbitfield glQueryMatrixxOES_enc(void *self , GLfixed* mantissa, GLint* exponent
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(mantissa, __size_mantissa);
+	stream->Readback((uint8_t*)mantissa, __size_mantissa);
 	if (useChecksum) checksumCalculator->addBuffer(mantissa, __size_mantissa);
-	stream->readback(exponent, __size_exponent);
+	stream->Readback((uint8_t*)exponent, __size_exponent);
 	if (useChecksum) checksumCalculator->addBuffer(exponent, __size_exponent);
 
 	GLbitfield retval;
-	stream->readback(&retval, 4);
+	stream->Readback((uint8_t*)&retval, 4);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 4);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glQueryMatrixxOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6766,7 +6766,7 @@ void glDepthRangefOES_enc(void *self , GLclampf zNear, GLclampf zFar)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6775,7 +6775,7 @@ void glDepthRangefOES_enc(void *self , GLclampf zNear, GLclampf zFar)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDepthRangefOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6792,7 +6792,7 @@ void glFrustumfOES_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom,
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6801,7 +6801,7 @@ void glFrustumfOES_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom,
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFrustumfOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6822,7 +6822,7 @@ void glOrthofOES_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, G
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6831,7 +6831,7 @@ void glOrthofOES_enc(void *self , GLfloat left, GLfloat right, GLfloat bottom, G
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glOrthofOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6852,7 +6852,7 @@ void glClipPlanefOES_enc(void *self , GLenum plane, const GLfloat* equation)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6862,7 +6862,7 @@ void glClipPlanefOES_enc(void *self , GLenum plane, const GLfloat* equation)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_equation + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanefOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6880,7 +6880,7 @@ void glClipPlanefIMG_enc(void *self , GLenum plane, const GLfloat* equation)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6890,7 +6890,7 @@ void glClipPlanefIMG_enc(void *self , GLenum plane, const GLfloat* equation)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_equation + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClipPlanefIMG;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6908,7 +6908,7 @@ void glGetClipPlanefOES_enc(void *self , GLenum pname, GLfloat* eqn)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6918,7 +6918,7 @@ void glGetClipPlanefOES_enc(void *self , GLenum pname, GLfloat* eqn)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetClipPlanefOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6929,13 +6929,13 @@ void glGetClipPlanefOES_enc(void *self , GLenum pname, GLfloat* eqn)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(eqn, __size_eqn);
+	stream->Readback((uint8_t*)eqn, __size_eqn);
 	if (useChecksum) checksumCalculator->addBuffer(eqn, __size_eqn);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetClipPlanefOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -6947,7 +6947,7 @@ void glClearDepthfOES_enc(void *self , GLclampf depth)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6956,7 +6956,7 @@ void glClearDepthfOES_enc(void *self , GLclampf depth)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glClearDepthfOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6972,7 +6972,7 @@ void glTexGenfOES_enc(void *self , GLenum coord, GLenum pname, GLfloat param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -6981,7 +6981,7 @@ void glTexGenfOES_enc(void *self , GLenum coord, GLenum pname, GLfloat param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGenfOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -6999,7 +6999,7 @@ void glTexGenfvOES_enc(void *self , GLenum coord, GLenum pname, const GLfloat* p
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7009,7 +7009,7 @@ void glTexGenfvOES_enc(void *self , GLenum coord, GLenum pname, const GLfloat* p
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGenfvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7028,7 +7028,7 @@ void glTexGeniOES_enc(void *self , GLenum coord, GLenum pname, GLint param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7037,7 +7037,7 @@ void glTexGeniOES_enc(void *self , GLenum coord, GLenum pname, GLint param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGeniOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7055,7 +7055,7 @@ void glTexGenivOES_enc(void *self , GLenum coord, GLenum pname, const GLint* par
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7065,7 +7065,7 @@ void glTexGenivOES_enc(void *self , GLenum coord, GLenum pname, const GLint* par
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGenivOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7084,7 +7084,7 @@ void glTexGenxOES_enc(void *self , GLenum coord, GLenum pname, GLfixed param)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7093,7 +7093,7 @@ void glTexGenxOES_enc(void *self , GLenum coord, GLenum pname, GLfixed param)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGenxOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7111,7 +7111,7 @@ void glTexGenxvOES_enc(void *self , GLenum coord, GLenum pname, const GLfixed* p
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7121,7 +7121,7 @@ void glTexGenxvOES_enc(void *self , GLenum coord, GLenum pname, const GLfixed* p
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTexGenxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7140,7 +7140,7 @@ void glGetTexGenfvOES_enc(void *self , GLenum coord, GLenum pname, GLfloat* para
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7150,7 +7150,7 @@ void glGetTexGenfvOES_enc(void *self , GLenum coord, GLenum pname, GLfloat* para
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexGenfvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7169,7 +7169,7 @@ void glGetTexGenivOES_enc(void *self , GLenum coord, GLenum pname, GLint* params
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7179,7 +7179,7 @@ void glGetTexGenivOES_enc(void *self , GLenum coord, GLenum pname, GLint* params
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexGenivOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7198,7 +7198,7 @@ void glGetTexGenxvOES_enc(void *self , GLenum coord, GLenum pname, GLfixed* para
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7208,7 +7208,7 @@ void glGetTexGenxvOES_enc(void *self , GLenum coord, GLenum pname, GLfixed* para
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_params + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetTexGenxvOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7227,7 +7227,7 @@ void glBindVertexArrayOES_enc(void *self , GLuint array)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7236,7 +7236,7 @@ void glBindVertexArrayOES_enc(void *self , GLuint array)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glBindVertexArrayOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7252,7 +7252,7 @@ void glDeleteVertexArraysOES_enc(void *self , GLsizei n, const GLuint* arrays)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7262,7 +7262,7 @@ void glDeleteVertexArraysOES_enc(void *self , GLsizei n, const GLuint* arrays)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_arrays + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteVertexArraysOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7280,7 +7280,7 @@ void glGenVertexArraysOES_enc(void *self , GLsizei n, GLuint* arrays)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7290,7 +7290,7 @@ void glGenVertexArraysOES_enc(void *self , GLsizei n, GLuint* arrays)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenVertexArraysOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7301,13 +7301,13 @@ void glGenVertexArraysOES_enc(void *self , GLsizei n, GLuint* arrays)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(arrays, __size_arrays);
+	stream->Readback((uint8_t*)arrays, __size_arrays);
 	if (useChecksum) checksumCalculator->addBuffer(arrays, __size_arrays);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGenVertexArraysOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7319,7 +7319,7 @@ GLboolean glIsVertexArrayOES_enc(void *self , GLuint array)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7328,7 +7328,7 @@ GLboolean glIsVertexArrayOES_enc(void *self , GLuint array)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsVertexArrayOES;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7340,13 +7340,13 @@ GLboolean glIsVertexArrayOES_enc(void *self , GLuint array)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsVertexArrayOES: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7359,7 +7359,7 @@ void glDiscardFramebufferEXT_enc(void *self , GLenum target, GLsizei numAttachme
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7369,7 +7369,7 @@ void glDiscardFramebufferEXT_enc(void *self , GLenum target, GLsizei numAttachme
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + __size_attachments + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDiscardFramebufferEXT;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7388,7 +7388,7 @@ void glRenderbufferStorageMultisampleIMG_enc(void *self , GLenum target, GLsizei
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7397,7 +7397,7 @@ void glRenderbufferStorageMultisampleIMG_enc(void *self , GLenum target, GLsizei
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glRenderbufferStorageMultisampleIMG;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7417,7 +7417,7 @@ void glFramebufferTexture2DMultisampleIMG_enc(void *self , GLenum target, GLenum
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7426,7 +7426,7 @@ void glFramebufferTexture2DMultisampleIMG_enc(void *self , GLenum target, GLenum
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFramebufferTexture2DMultisampleIMG;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7447,7 +7447,7 @@ void glDeleteFencesNV_enc(void *self , GLsizei n, const GLuint* fences)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7457,7 +7457,7 @@ void glDeleteFencesNV_enc(void *self , GLsizei n, const GLuint* fences)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_fences + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDeleteFencesNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7475,7 +7475,7 @@ void glGenFencesNV_enc(void *self , GLsizei n, GLuint* fences)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7485,7 +7485,7 @@ void glGenFencesNV_enc(void *self , GLsizei n, GLuint* fences)
 	 const size_t sizeWithoutChecksum = 8 + 4 + __size_fences + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGenFencesNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7503,7 +7503,7 @@ GLboolean glIsFenceNV_enc(void *self , GLuint fence)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7512,7 +7512,7 @@ GLboolean glIsFenceNV_enc(void *self , GLuint fence)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glIsFenceNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7524,13 +7524,13 @@ GLboolean glIsFenceNV_enc(void *self , GLuint fence)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glIsFenceNV: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7543,7 +7543,7 @@ GLboolean glTestFenceNV_enc(void *self , GLuint fence)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7552,7 +7552,7 @@ GLboolean glTestFenceNV_enc(void *self , GLuint fence)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glTestFenceNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7564,13 +7564,13 @@ GLboolean glTestFenceNV_enc(void *self , GLuint fence)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback(&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glTestFenceNV: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7583,7 +7583,7 @@ void glGetFenceivNV_enc(void *self , GLuint fence, GLenum pname, GLint* params)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7593,7 +7593,7 @@ void glGetFenceivNV_enc(void *self , GLuint fence, GLenum pname, GLint* params)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetFenceivNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7605,13 +7605,13 @@ void glGetFenceivNV_enc(void *self , GLuint fence, GLenum pname, GLint* params)
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetFenceivNV: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7623,7 +7623,7 @@ void glFinishFenceNV_enc(void *self , GLuint fence)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7632,7 +7632,7 @@ void glFinishFenceNV_enc(void *self , GLuint fence)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glFinishFenceNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7648,7 +7648,7 @@ void glSetFenceNV_enc(void *self , GLuint fence, GLenum condition)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7657,7 +7657,7 @@ void glSetFenceNV_enc(void *self , GLuint fence, GLenum condition)
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glSetFenceNV;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7674,7 +7674,7 @@ void glGetDriverControlsQCOM_enc(void *self , GLint* num, GLsizei size, GLuint* 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7685,7 +7685,7 @@ void glGetDriverControlsQCOM_enc(void *self , GLint* num, GLsizei size, GLuint* 
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetDriverControlsQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7697,15 +7697,15 @@ void glGetDriverControlsQCOM_enc(void *self , GLint* num, GLsizei size, GLuint* 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(num, __size_num);
+	stream->Readback((uint8_t*)num, __size_num);
 	if (useChecksum) checksumCalculator->addBuffer(num, __size_num);
-	stream->readback(driverControls, __size_driverControls);
+	stream->Readback((uint8_t*)driverControls, __size_driverControls);
 	if (useChecksum) checksumCalculator->addBuffer(driverControls, __size_driverControls);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetDriverControlsQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7717,7 +7717,7 @@ void glGetDriverControlStringQCOM_enc(void *self , GLuint driverControl, GLsizei
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7728,7 +7728,7 @@ void glGetDriverControlStringQCOM_enc(void *self , GLuint driverControl, GLsizei
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 0 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glGetDriverControlStringQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7741,15 +7741,15 @@ void glGetDriverControlStringQCOM_enc(void *self , GLuint driverControl, GLsizei
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(length, __size_length);
+	stream->Readback((uint8_t*)length, __size_length);
 	if (useChecksum) checksumCalculator->addBuffer(length, __size_length);
-	stream->readback(driverControlString, __size_driverControlString);
+	stream->Readback((uint8_t*)driverControlString, __size_driverControlString);
 	if (useChecksum) checksumCalculator->addBuffer(driverControlString, __size_driverControlString);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glGetDriverControlStringQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7761,7 +7761,7 @@ void glEnableDriverControlQCOM_enc(void *self , GLuint driverControl)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7770,7 +7770,7 @@ void glEnableDriverControlQCOM_enc(void *self , GLuint driverControl)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEnableDriverControlQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7786,7 +7786,7 @@ void glDisableDriverControlQCOM_enc(void *self , GLuint driverControl)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7795,7 +7795,7 @@ void glDisableDriverControlQCOM_enc(void *self , GLuint driverControl)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glDisableDriverControlQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7811,7 +7811,7 @@ void glExtGetTexturesQCOM_enc(void *self , GLuint* textures, GLint maxTextures, 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7822,7 +7822,7 @@ void glExtGetTexturesQCOM_enc(void *self , GLuint* textures, GLint maxTextures, 
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetTexturesQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7834,15 +7834,15 @@ void glExtGetTexturesQCOM_enc(void *self , GLuint* textures, GLint maxTextures, 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(textures, __size_textures);
+	stream->Readback((uint8_t*)textures, __size_textures);
 	if (useChecksum) checksumCalculator->addBuffer(textures, __size_textures);
-	stream->readback(numTextures, __size_numTextures);
+	stream->Readback((uint8_t*)numTextures, __size_numTextures);
 	if (useChecksum) checksumCalculator->addBuffer(numTextures, __size_numTextures);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetTexturesQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7854,7 +7854,7 @@ void glExtGetBuffersQCOM_enc(void *self , GLuint* buffers, GLint maxBuffers, GLi
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7865,7 +7865,7 @@ void glExtGetBuffersQCOM_enc(void *self , GLuint* buffers, GLint maxBuffers, GLi
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetBuffersQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7877,15 +7877,15 @@ void glExtGetBuffersQCOM_enc(void *self , GLuint* buffers, GLint maxBuffers, GLi
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(buffers, __size_buffers);
+	stream->Readback((uint8_t*)buffers, __size_buffers);
 	if (useChecksum) checksumCalculator->addBuffer(buffers, __size_buffers);
-	stream->readback(numBuffers, __size_numBuffers);
+	stream->Readback((uint8_t*)numBuffers, __size_numBuffers);
 	if (useChecksum) checksumCalculator->addBuffer(numBuffers, __size_numBuffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetBuffersQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7897,7 +7897,7 @@ void glExtGetRenderbuffersQCOM_enc(void *self , GLuint* renderbuffers, GLint max
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7908,7 +7908,7 @@ void glExtGetRenderbuffersQCOM_enc(void *self , GLuint* renderbuffers, GLint max
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetRenderbuffersQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7920,15 +7920,15 @@ void glExtGetRenderbuffersQCOM_enc(void *self , GLuint* renderbuffers, GLint max
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(renderbuffers, __size_renderbuffers);
+	stream->Readback((uint8_t*)renderbuffers, __size_renderbuffers);
 	if (useChecksum) checksumCalculator->addBuffer(renderbuffers, __size_renderbuffers);
-	stream->readback(numRenderbuffers, __size_numRenderbuffers);
+	stream->Readback((uint8_t*)numRenderbuffers, __size_numRenderbuffers);
 	if (useChecksum) checksumCalculator->addBuffer(numRenderbuffers, __size_numRenderbuffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetRenderbuffersQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7940,7 +7940,7 @@ void glExtGetFramebuffersQCOM_enc(void *self , GLuint* framebuffers, GLint maxFr
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7951,7 +7951,7 @@ void glExtGetFramebuffersQCOM_enc(void *self , GLuint* framebuffers, GLint maxFr
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetFramebuffersQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -7963,15 +7963,15 @@ void glExtGetFramebuffersQCOM_enc(void *self , GLuint* framebuffers, GLint maxFr
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(framebuffers, __size_framebuffers);
+	stream->Readback((uint8_t*)framebuffers, __size_framebuffers);
 	if (useChecksum) checksumCalculator->addBuffer(framebuffers, __size_framebuffers);
-	stream->readback(numFramebuffers, __size_numFramebuffers);
+	stream->Readback((uint8_t*)numFramebuffers, __size_numFramebuffers);
 	if (useChecksum) checksumCalculator->addBuffer(numFramebuffers, __size_numFramebuffers);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetFramebuffersQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -7983,7 +7983,7 @@ void glExtGetTexLevelParameterivQCOM_enc(void *self , GLuint texture, GLenum fac
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -7993,7 +7993,7 @@ void glExtGetTexLevelParameterivQCOM_enc(void *self , GLuint texture, GLenum fac
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetTexLevelParameterivQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8007,13 +8007,13 @@ void glExtGetTexLevelParameterivQCOM_enc(void *self , GLuint texture, GLenum fac
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(params, __size_params);
+	stream->Readback((uint8_t*)params, __size_params);
 	if (useChecksum) checksumCalculator->addBuffer(params, __size_params);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetTexLevelParameterivQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -8025,7 +8025,7 @@ void glExtTexObjectStateOverrideiQCOM_enc(void *self , GLenum target, GLenum pna
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8034,7 +8034,7 @@ void glExtTexObjectStateOverrideiQCOM_enc(void *self , GLenum target, GLenum pna
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtTexObjectStateOverrideiQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8052,7 +8052,7 @@ void glExtGetTexSubImageQCOM_enc(void *self , GLenum target, GLint level, GLint 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8062,7 +8062,7 @@ void glExtGetTexSubImageQCOM_enc(void *self , GLenum target, GLint level, GLint 
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 0 + 1*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetTexSubImageQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8082,13 +8082,13 @@ void glExtGetTexSubImageQCOM_enc(void *self , GLenum target, GLint level, GLint 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(texels, __size_texels);
+	stream->Readback((uint8_t*)texels, __size_texels);
 	if (useChecksum) checksumCalculator->addBuffer(texels, __size_texels);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetTexSubImageQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -8100,7 +8100,7 @@ void glExtGetShadersQCOM_enc(void *self , GLuint* shaders, GLint maxShaders, GLi
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8111,7 +8111,7 @@ void glExtGetShadersQCOM_enc(void *self , GLuint* shaders, GLint maxShaders, GLi
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetShadersQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8123,15 +8123,15 @@ void glExtGetShadersQCOM_enc(void *self , GLuint* shaders, GLint maxShaders, GLi
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(shaders, __size_shaders);
+	stream->Readback((uint8_t*)shaders, __size_shaders);
 	if (useChecksum) checksumCalculator->addBuffer(shaders, __size_shaders);
-	stream->readback(numShaders, __size_numShaders);
+	stream->Readback((uint8_t*)numShaders, __size_numShaders);
 	if (useChecksum) checksumCalculator->addBuffer(numShaders, __size_numShaders);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetShadersQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -8143,7 +8143,7 @@ void glExtGetProgramsQCOM_enc(void *self , GLuint* programs, GLint maxPrograms, 
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8154,7 +8154,7 @@ void glExtGetProgramsQCOM_enc(void *self , GLuint* programs, GLint maxPrograms, 
 	 const size_t sizeWithoutChecksum = 8 + 0 + 4 + 0 + 2*4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtGetProgramsQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8166,15 +8166,15 @@ void glExtGetProgramsQCOM_enc(void *self , GLuint* programs, GLint maxPrograms, 
 	if (useChecksum) checksumCalculator->addBuffer(buf, ptr-buf);
 	if (useChecksum) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
-	stream->readback(programs, __size_programs);
+	stream->Readback((uint8_t*)programs, __size_programs);
 	if (useChecksum) checksumCalculator->addBuffer(programs, __size_programs);
-	stream->readback(numPrograms, __size_numPrograms);
+	stream->Readback((uint8_t*)numPrograms, __size_numPrograms);
 	if (useChecksum) checksumCalculator->addBuffer(numPrograms, __size_numPrograms);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtGetProgramsQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -8186,7 +8186,7 @@ GLboolean glExtIsProgramBinaryQCOM_enc(void *self , GLuint program)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8195,7 +8195,7 @@ GLboolean glExtIsProgramBinaryQCOM_enc(void *self , GLuint program)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glExtIsProgramBinaryQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8207,13 +8207,13 @@ GLboolean glExtIsProgramBinaryQCOM_enc(void *self , GLuint program)
 
 
 	GLboolean retval;
-	stream->readback(&retval, 1);
+	stream->Readback((uint8_t*)&retval, 1);
 	if (useChecksum) checksumCalculator->addBuffer(&retval, 1);
 	if (useChecksum) {
 		unsigned char *checksumBufPtr = NULL;
 		unsigned char checksumBuf[ChecksumCalculator::kMaxChecksumSize];
 		if (checksumSize > 0) checksumBufPtr = &checksumBuf[0];
-		stream->readback(checksumBufPtr, checksumSize);
+		stream->Readback(checksumBufPtr, checksumSize);
 		if (!checksumCalculator->validate(checksumBufPtr, checksumSize)) {
 			ALOGE("glExtIsProgramBinaryQCOM: GL communication error, please report this issue to b.android.com.\n");
 			abort();
@@ -8226,7 +8226,7 @@ void glStartTilingQCOM_enc(void *self , GLuint x, GLuint y, GLuint width, GLuint
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8235,7 +8235,7 @@ void glStartTilingQCOM_enc(void *self , GLuint x, GLuint y, GLuint width, GLuint
 	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glStartTilingQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8255,7 +8255,7 @@ void glEndTilingQCOM_enc(void *self , GLbitfield preserveMask)
 {
 
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
-	IOStream *stream = ctx->m_stream;
+	IStream *stream = ctx->m_stream;
 	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 	bool useChecksum = checksumCalculator->getVersion() > 0;
 
@@ -8264,7 +8264,7 @@ void glEndTilingQCOM_enc(void *self , GLbitfield preserveMask)
 	 const size_t sizeWithoutChecksum = 8 + 4;
 	 const size_t checksumSize = checksumCalculator->checksumByteSize();
 	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
-	buf = stream->alloc(totalSize);
+	buf = stream->Alloc(totalSize);
 	ptr = buf;
 	int tmp = OP_glEndTilingQCOM;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &totalSize, 4);  ptr += 4;
@@ -8278,7 +8278,7 @@ void glEndTilingQCOM_enc(void *self , GLbitfield preserveMask)
 
 }  // namespace
 
-gl_encoder_context_t::gl_encoder_context_t(IOStream *stream, ChecksumCalculator *checksumCalculator)
+gl_encoder_context_t::gl_encoder_context_t(IStream *stream, ChecksumCalculator *checksumCalculator)
 {
 	m_stream = stream;
 	m_checksumCalculator = checksumCalculator;
@@ -8575,4 +8575,3 @@ gl_encoder_context_t::gl_encoder_context_t(IOStream *stream, ChecksumCalculator 
 	this->glStartTilingQCOM = &glStartTilingQCOM_enc;
 	this->glEndTilingQCOM = &glEndTilingQCOM_enc;
 }
-

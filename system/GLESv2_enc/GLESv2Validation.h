@@ -17,12 +17,11 @@
 #ifndef GLES_VALIDATION_H
 #define GLES_VALIDATION_H
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl32.h>
+
 #include <GLES2/gl2ext.h>
 #include <GLES2/gl2platform.h>
 
-#include <GLES3/gl3.h>
-#include <GLES3/gl31.h>
 
 #include "GL2Encoder.h"
 

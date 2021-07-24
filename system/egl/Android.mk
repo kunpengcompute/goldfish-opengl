@@ -34,6 +34,23 @@ endif
 # Used to access the Bionic private OpenGL TLS slot
 LOCAL_C_INCLUDES += bionic/libc/private
 
+ifdef USE_PREBUILT_LIBS
+LOCAL_C_INCLUDES += \
+    $(REPO_ROOT_DIR)/CloudDemo/InstructionEngine/Libs/Cloud/InstructionEngine \
+    $(REPO_ROOT_DIR)/CloudDemo/InstructionEngine/Libs/libs/Common
+else ifdef USE_PREBUILT_LIBS_KGPU
+LOCAL_C_INCLUDES += \
+    $(REPO_ROOT_DIR)/VMI_Cloud/3rd_groupware/instruction_engine/libs/Cloud/InstructionEngine \
+    $(REPO_ROOT_DIR)/VMI_Cloud/3rd_groupware/instruction_engine/libs/libs/Common
+else
+LOCAL_C_INCLUDES += \
+    $(REPO_ROOT_DIR)/Cloud/InstructionEngine \
+    $(REPO_ROOT_DIR)/libs/Common
+endif
+
+LOCAL_SHARED_LIBRARIES += \
+    libInstructionEngine
+    
 $(call emugl-end-module)
 
 #### egl.cfg ####

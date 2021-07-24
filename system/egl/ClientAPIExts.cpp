@@ -29,10 +29,10 @@ namespace ClientAPIExts
 #define FUNC_TYPE(fname) __egl_ ## fname ## _t
 // NOLINT: clang-tidy adds parentheses around 'params'.
 #define API_ENTRY(fname,params,args) \
-    typedef void (GL_APIENTRY *FUNC_TYPE(fname)) params;  // NOLINT
+    typedef void (*FUNC_TYPE(fname)) params;  // NOLINT
 
 #define API_ENTRY_RET(rtype,fname,params,args) \
-    typedef rtype (GL_APIENTRY *FUNC_TYPE(fname)) params;  // NOLINT
+    typedef rtype (*FUNC_TYPE(fname)) params;  // NOLINT
 
 #include "ClientAPIExts.in"
 #undef API_ENTRY

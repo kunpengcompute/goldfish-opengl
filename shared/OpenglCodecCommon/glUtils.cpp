@@ -16,8 +16,7 @@
 #include "glUtils.h"
 #include <string.h>
 #include "ErrorLog.h"
-#include <IOStream.h>
-
+#include "Include/IStream.h"
 #include <GLES3/gl31.h>
 
 size_t glSizeof(GLenum type)
@@ -108,7 +107,7 @@ size_t glSizeof(GLenum type)
 		retval = 4 + 4;
         break;
     default:
-        ALOGE("**** ERROR unknown type 0x%x (%s,%d)\n", type, __FUNCTION__,__LINE__);
+        ERR("**** ERROR unknown type 0x%x (%s,%d)\n", type, __FUNCTION__,__LINE__);
         retval = 4;
     }
     return retval;
@@ -448,16 +447,16 @@ void glUtilsWritePackPointerData(void* _stream, unsigned char *src,
                                  int size, GLenum type, unsigned int stride,
                                  unsigned int datalen)
 {
-    IOStream* stream = reinterpret_cast<IOStream*>(_stream);
+    IStream* stream = reinterpret_cast<IStream*>(_stream);
 
     unsigned int  vsize = size * glSizeof(type);
     if (stride == 0) stride = vsize;
 
     if (stride == vsize) {
-        stream->writeFully(src, datalen);
+        stream->WriteFully(src, datalen);
     } else {
         for (unsigned int i = 0; i < datalen; i += vsize) {
-            stream->writeFully(src, (size_t)vsize);
+            stream->WriteFully(src, (size_t)vsize);
             src += stride;
         }
     }
