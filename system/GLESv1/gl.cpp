@@ -26,7 +26,24 @@
 
 
 //XXX: fix this macro to get the context from fast tls path
-#define GET_CONTEXT GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();
+#define GET_CONTEXT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return
+#define GET_CONTEXT_ENUM \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_INT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_BIT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_BOOL \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return false 
+#define GET_CONTEXT_POINTER \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return nullptr    
 
 #include "gl_entry.cpp"
 
@@ -42,7 +59,7 @@ static EGLClient_glesInterface * s_gl = NULL;
         ALOGE("egl: Failed to get host connection\n"); \
         return ret; \
     } \
-    renderControl_encoder_context_t *rcEnc = hostCon->rcEncoder(); \
+    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("egl: Failed to get renderControl encoder context\n"); \
         return ret; \
@@ -73,8 +90,7 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
 
         ctx->override2DTextureTarget(target);
-        rcEnc->rcBindTexture(rcEnc,
-                ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindTexture(((cb_handle_t *)(native_buffer->handle))->hostHandle);
         ctx->restore2DTextureTarget();
     }
     else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
@@ -107,7 +123,7 @@ void glEGLImageTargetRenderbufferStorageOES(void *self, GLenum target, GLeglImag
         }
 
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
-        rcEnc->rcBindRenderbuffer(rcEnc, ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindRenderbuffer(((cb_handle_t *)(native_buffer->handle))->hostHandle);
     } else {
         //TODO
     }
@@ -153,7 +169,7 @@ const GLubyte *my_glGetString (void *self, GLenum name)
             }
             break;
         default:
-            GET_CONTEXT;
+            GET_CONTEXT_POINTER;
             ctx->setError(GL_INVALID_ENUM);
             break;
     }
@@ -185,5 +201,3 @@ EGLClient_glesInterface * init_emul_gles(EGLClient_eglInterface *eglIface)
     return s_gl;
 }
 } //extern
-
-

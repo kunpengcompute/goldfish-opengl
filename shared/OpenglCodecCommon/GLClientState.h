@@ -390,6 +390,8 @@ public:
     // Transform feedback state
     void setTransformFeedbackActiveUnpaused(bool activeUnpaused);
     bool getTransformFeedbackActiveUnpaused() const;
+    void setTransformFeedbackActive(bool active);
+    bool getTransformFeedbackActive() const;
 
     void setTextureData(SharedTextureDataMap* sharedTexData);
     // set eglsurface property on default framebuffer
@@ -449,6 +451,7 @@ private:
     GLuint m_shaderStorageBuffer;
 
     bool m_transformFeedbackActiveUnpaused;
+    bool m_transformFeedbackActive;
 
     int m_max_transform_feedback_separate_attribs;
     int m_max_uniform_buffer_bindings;
@@ -482,6 +485,7 @@ private:
     struct TextureUnit {
         unsigned int enables;
         GLuint texture[TEXTURE_TARGET_COUNT];
+        GLboolean textureExternalFirstUse;
     };
     struct TextureState {
         TextureUnit unit[MAX_TEXTURE_UNITS];

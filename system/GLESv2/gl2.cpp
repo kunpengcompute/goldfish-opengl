@@ -42,7 +42,7 @@ static EGLClient_glesInterface * s_gl = NULL;
         ALOGE("egl: Failed to get host connection\n"); \
         return ret; \
     } \
-    renderControl_encoder_context_t *rcEnc = hostCon->rcEncoder(); \
+    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("egl: Failed to get renderControl encoder context\n"); \
         return ret; \
@@ -76,10 +76,10 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
 
         ctx->override2DTextureTarget(target);
         ctx->associateEGLImage(target, hostImage);
-        rcEnc->rcBindTexture(rcEnc, ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindTexture(((cb_handle_t *)(native_buffer->handle))->hostHandle);
         ctx->restore2DTextureTarget(target);
     }
-    else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
+    else {
         GET_CONTEXT;
         ctx->override2DTextureTarget(target);
         ctx->associateEGLImage(target, hostImage);
@@ -109,9 +109,11 @@ void glEGLImageTargetRenderbufferStorageOES(void *self, GLenum target, GLeglImag
         }
 
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
-        rcEnc->rcBindRenderbuffer(rcEnc, ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindRenderbuffer(((cb_handle_t *)(native_buffer->handle))->hostHandle);
     } else {
-        //TODO
+        GLeglImageOES hostImage = reinterpret_cast<GLeglImageOES>((intptr_t)image->host_egl_image);
+        GET_CONTEXT;
+        ctx->m_glEGLImageTargetRenderbufferStorageOES_enc(self, target, hostImage);
     }
 
     return;
@@ -167,6 +169,7 @@ void init()
     GET_CONTEXT;
     ctx->m_glEGLImageTargetTexture2DOES_enc = ctx->glEGLImageTargetTexture2DOES;
     ctx->glEGLImageTargetTexture2DOES = &glEGLImageTargetTexture2DOES;
+    ctx->m_glEGLImageTargetRenderbufferStorageOES_enc = ctx->glEGLImageTargetRenderbufferStorageOES;
     ctx->glEGLImageTargetRenderbufferStorageOES = &glEGLImageTargetRenderbufferStorageOES;
     ctx->glGetString = &my_glGetString;
 }

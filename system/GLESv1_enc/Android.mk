@@ -12,6 +12,9 @@ LOCAL_SRC_FILES := \
         gl_enc.cpp \
         gl_entry.cpp
 
+LOCAL_C_INCLUDES += \
+    $(EMUGL_PATH)/goldfishinclude
+
 $(call emugl-import,libOpenglCodecCommon)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
 $(call emugl-export,C_INCLUDES,$(intermediates))

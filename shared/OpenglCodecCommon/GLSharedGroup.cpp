@@ -38,6 +38,7 @@ BufferData::BufferData(GLsizeiptr size, void * data) : m_size(size), m_usage(0),
 /**** ProgramData ****/
 ProgramData::ProgramData() : m_numIndexes(0),
                              m_initialized(false),
+                             m_linkStatus(0),
                              m_locShiftWAR(false)
 {
     m_Indexes = NULL;
@@ -580,6 +581,27 @@ void GLSharedGroup::unrefShaderDataLocked(ssize_t shaderIdx)
     }
 }
 
+ProgramData* GLSharedGroup::getProgramDataLocked(GLuint program) {
+    // Check the space of normal programs, then separable ones
+    ProgramData *pData = m_programs.valueFor(program);
+
+    if (pData) {
+        return pData;
+	}
+
+    std::map<GLuint, uint32_t>::const_iterator it =
+        m_shaderProgramIdMap.find(program);
+    if (it == m_shaderProgramIdMap.end()) {
+        return NULL;
+    }
+
+    ShaderProgramData* spData = m_shaderPrograms.valueFor(program);
+    if (!spData) {
+        return NULL;
+    }
+    return spData->programData;
+}
+
 uint32_t GLSharedGroup::addNewShaderProgramData() {
     android::AutoMutex _lock(m_lock);
     ShaderProgramData* data = new ShaderProgramData;
@@ -650,6 +672,27 @@ void GLSharedGroup::setShaderProgramIndexInfo(GLuint shaderProgram, GLuint index
             }
         }
     }
+}
+
+void GLSharedGroup::setProgramLinkStatus(GLuint program, GLint linkStatus) {
+    android::AutoMutex _lock(m_lock);
+    ProgramData* pData =
+        getProgramDataLocked(program);
+    if (!pData) {
+        return;
+    }
+	
+    pData->setLinkStatus(linkStatus);
+}
+
+GLint GLSharedGroup::getProgramLinkStatus(GLuint program) {
+    android::AutoMutex _lock(m_lock);
+    ProgramData* pData = getProgramDataLocked(program);
+    if (!pData) {
+        return 0;
+    }
+	
+    return pData->getLinkStatus();
 }
 
 void GLSharedGroup::setupShaderProgramLocationShiftWAR(GLuint shaderProgram) {

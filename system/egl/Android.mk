@@ -34,6 +34,13 @@ endif
 # Used to access the Bionic private OpenGL TLS slot
 LOCAL_C_INCLUDES += bionic/libc/private
 
+LOCAL_C_INCLUDES += \
+     $(EMUGL_PATH)/goldfishinclude
+
+LOCAL_SHARED_LIBRARIES += \
+    libInstructionEngine \
+    libVmiCommonInstr
+
 $(call emugl-end-module)
 
 #### egl.cfg ####

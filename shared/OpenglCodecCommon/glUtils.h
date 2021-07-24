@@ -28,6 +28,7 @@
     #undef GL_APIENTRY
 #endif
 
+#ifdef VMICLIENT
 #ifdef GL_APIENTRYP
     #undef GL_APIENTRYP
 #endif
@@ -36,11 +37,15 @@
 #ifndef ANDROID
 #define GL_APIENTRY
 #endif
+#endif
 
+#define GL_APIENTRY
 #include <GLES/gl.h>
 #include <GLES/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#undef GL_APIENTRY
+#undef GL_ES_VERSION_2_0
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,9 +61,6 @@ typedef enum {
     void   glUtilsPackPointerData(unsigned char *dst, unsigned char *str,
                            int size, GLenum type, unsigned int stride,
                            unsigned int datalen);
-    void glUtilsWritePackPointerData(void* stream, unsigned char *src,
-                                    int size, GLenum type, unsigned int stride,
-                                    unsigned int datalen);
     int glUtilsPixelBitSize(GLenum format, GLenum type);
     void   glUtilsPackStrings(char *ptr, char **strings, GLint *length, GLsizei count);
     int glUtilsCalcShaderSourceLen(char **strings, GLint *length, GLsizei count);
@@ -156,5 +158,7 @@ namespace GLUtils {
         return -1;
     }
 
+    template <int len> void PackDataImpl(unsigned char* ptr, unsigned char* src);
+    template <int len, class T> void PackData(unsigned char* ptr, T src) { PackDataImpl<len>(ptr, (unsigned char*)src); }
 }; // namespace GLUtils
 #endif

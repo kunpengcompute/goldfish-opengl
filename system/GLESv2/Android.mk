@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 ### GLESv2 implementation ###########################################
 $(call emugl-begin-shared-library,libGLESv2_emulation)
-$(call emugl-import,libOpenglSystemCommon libGLESv2_enc lib_renderControl_enc)
+$(call emugl-import,libOpenglSystemCommon libGLESv2_enc)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"GLESv2_emulation\" -DGL_GLEXT_PROTOTYPES
 
@@ -12,5 +12,12 @@ ifeq ($(shell test $(PLATFORM_SDK_VERSION) -lt 21 && echo PreLollipop),PreLollip
 else
     LOCAL_MODULE_RELATIVE_PATH := egl
 endif
+
+LOCAL_C_INCLUDES += \
+    $(EMUGL_PATH)/goldfishinclude
+
+LOCAL_SHARED_LIBRARIES += \
+    libInstructionEngine \
+    libVmiCommonInstr
 
 $(call emugl-end-module)

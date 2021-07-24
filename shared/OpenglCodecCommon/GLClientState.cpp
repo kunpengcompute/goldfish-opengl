@@ -21,14 +21,19 @@
 #include <string.h>
 #include "glUtils.h"
 #include <cutils/log.h>
+#include <mutex>
 
 #ifndef MAX
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #endif
 
 // Don't include these in the .h file, or we get weird compile errors.
+#define GL_APIENTRY
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
+#undef GL_APIENTRY
+
+static std::mutex g_texMutex;
 
 void GLClientState::init() {
     m_initialized = false;
@@ -91,6 +96,9 @@ void GLClientState::init() {
     m_pixelStore.pack_skip_rows = 0;
 
     memset(m_tex.unit, 0, sizeof(m_tex.unit));
+    for (int i = 0; i < MAX_TEXTURE_UNITS; i++) {
+        m_tex.unit[i].textureExternalFirstUse = GL_TRUE;
+    }
     m_tex.activeUnit = &m_tex.unit[0];
     m_tex.textureRecs = NULL;
 
@@ -800,6 +808,10 @@ GLenum GLClientState::bindTexture(GLenum target, GLuint texture,
         break;
     case GL_TEXTURE_EXTERNAL_OES:
         m_tex.activeUnit->texture[TEXTURE_EXTERNAL] = texture;
+        if (m_tex.activeUnit->textureExternalFirstUse) {
+            first = GL_TRUE;
+        }
+        m_tex.activeUnit->textureExternalFirstUse = GL_FALSE;
         break;
     case GL_TEXTURE_CUBE_MAP:
         m_tex.activeUnit->texture[TEXTURE_CUBE_MAP] = texture;
@@ -839,8 +851,10 @@ TextureRec* GLClientState::addTextureRec(GLuint id, GLenum target)
     tex->immutable = false;
     tex->boundEGLImage = false;
     tex->dims = new TextureDims;
-
-    (*(m_tex.textureRecs))[id] = tex;
+    {
+        std::lock_guard<std::mutex> lock(g_texMutex);
+        (*(m_tex.textureRecs))[id] = tex;
+    }
     return tex;
 }
 
@@ -1028,6 +1042,7 @@ void GLClientState::deleteTextures(GLsizei n, const GLuint* textures)
     // - could swap deleted textures to the end and re-sort.
     TextureRec* texrec;
     for (const GLuint* texture = textures; texture != textures + n; texture++) {
+        std::lock_guard<std::mutex> lock(g_texMutex);
         texrec = getTextureRec(*texture);
         if (texrec && texrec->dims) {
             delete texrec->dims;
@@ -1720,6 +1735,14 @@ void GLClientState::setTransformFeedbackActiveUnpaused(bool activeUnpaused) {
 
 bool GLClientState::getTransformFeedbackActiveUnpaused() const {
     return m_transformFeedbackActiveUnpaused;
+}
+
+void GLClientState::setTransformFeedbackActive(bool active) {
+    m_transformFeedbackActive = active;
+}
+
+bool GLClientState::getTransformFeedbackActive() const {
+    return m_transformFeedbackActive;
 }
 
 void GLClientState::setTextureData(SharedTextureDataMap* sharedTexData) {

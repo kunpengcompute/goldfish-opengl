@@ -82,6 +82,8 @@ private:
 
     android::Vector<GLuint> m_shaders;
 
+    uint32_t m_refcount;
+    GLint m_linkStatus;
 public:
     enum {
         INDEX_FLAG_SAMPLER_EXTERNAL = 0x00000001,
@@ -108,6 +110,14 @@ public:
     bool detachShader(GLuint shader);
     size_t getNumShaders() const { return m_shaders.size(); }
     GLuint getShader(size_t i) const { return m_shaders[i]; }
+    void incRef() { ++m_refcount; }
+    bool decRef() {
+        --m_refcount;
+        return 0 == m_refcount;
+    }
+  
+    void setLinkStatus(GLint status) { m_linkStatus = status; }
+    GLint getLinkStatus() { return m_linkStatus; }
 };
 
 struct ShaderData {
@@ -147,6 +157,7 @@ private:
 
     uint32_t m_shaderProgramId;
 
+    ProgramData* getProgramDataLocked(GLuint program);
 public:
     GLSharedGroup();
     ~GLSharedGroup();
@@ -193,6 +204,8 @@ public:
     void deleteShaderProgramData(GLuint shaderProgramName);
     void initShaderProgramData(GLuint shaderProgram, GLuint numIndices);
     void setShaderProgramIndexInfo(GLuint shaderProgram, GLuint index, GLint base, GLint size, GLenum type, const char* name);
+    void setProgramLinkStatus(GLuint program, GLint linkStatus);
+    GLint getProgramLinkStatus(GLuint program);
     void setupShaderProgramLocationShiftWAR(GLuint shaderProgram);
 };
 

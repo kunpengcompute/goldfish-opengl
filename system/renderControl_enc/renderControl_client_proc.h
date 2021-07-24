@@ -25,7 +25,7 @@ typedef uint32_t (renderControl_APIENTRY *rcCreateColorBuffer_client_proc_t) (vo
 typedef void (renderControl_APIENTRY *rcOpenColorBuffer_client_proc_t) (void * ctx, uint32_t);
 typedef void (renderControl_APIENTRY *rcCloseColorBuffer_client_proc_t) (void * ctx, uint32_t);
 typedef void (renderControl_APIENTRY *rcSetWindowColorBuffer_client_proc_t) (void * ctx, uint32_t, uint32_t);
-typedef int (renderControl_APIENTRY *rcFlushWindowColorBuffer_client_proc_t) (void * ctx, uint32_t);
+typedef int (renderControl_APIENTRY *rcFlushWindowColorBuffer_client_proc_t) (void * ctx, uint32_t, EGLint*, EGLint);
 typedef EGLint (renderControl_APIENTRY *rcMakeCurrent_client_proc_t) (void * ctx, uint32_t, uint32_t, uint32_t);
 typedef void (renderControl_APIENTRY *rcFBPost_client_proc_t) (void * ctx, uint32_t);
 typedef void (renderControl_APIENTRY *rcFBSetSwapInterval_client_proc_t) (void * ctx, EGLint);
@@ -40,7 +40,7 @@ typedef int (renderControl_APIENTRY *rcDestroyClientImage_client_proc_t) (void *
 typedef void (renderControl_APIENTRY *rcSelectChecksumHelper_client_proc_t) (void * ctx, uint32_t, uint32_t);
 typedef void (renderControl_APIENTRY *rcCreateSyncKHR_client_proc_t) (void * ctx, EGLenum, EGLint*, uint32_t, int, uint64_t*, uint64_t*);
 typedef EGLint (renderControl_APIENTRY *rcClientWaitSyncKHR_client_proc_t) (void * ctx, uint64_t, EGLint, uint64_t);
-typedef void (renderControl_APIENTRY *rcFlushWindowColorBufferAsync_client_proc_t) (void * ctx, uint32_t);
+typedef void (renderControl_APIENTRY *rcFlushWindowColorBufferAsync_client_proc_t) (void * ctx, uint32_t, EGLint*, EGLint);
 typedef int (renderControl_APIENTRY *rcDestroySyncKHR_client_proc_t) (void * ctx, uint64_t);
 typedef void (renderControl_APIENTRY *rcSetPuid_client_proc_t) (void * ctx, uint64_t);
 typedef int (renderControl_APIENTRY *rcUpdateColorBufferDMA_client_proc_t) (void * ctx, uint32_t, GLint, GLint, GLint, GLint, GLenum, GLenum, void*, uint32_t);

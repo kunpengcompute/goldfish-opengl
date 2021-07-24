@@ -298,10 +298,28 @@ extern "C" {
 	void glEndTilingQCOM(GLbitfield preserveMask);
 };
 
+
 #ifndef GET_CONTEXT
 static gl_client_context_t::CONTEXT_ACCESSOR_TYPE *getCurrentContext = NULL;
 void gl_client_context_t::setContextAccessor(CONTEXT_ACCESSOR_TYPE *f) { getCurrentContext = f; }
-#define GET_CONTEXT gl_client_context_t * ctx = getCurrentContext()
+#define GET_CONTEXT \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return
+#define GET_CONTEXT_ENUM \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return 0
+#define GET_CONTEXT_INT \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return 0
+#define GET_CONTEXT_BIT \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return 0
+#define GET_CONTEXT_BOOL \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return false 
+#define GET_CONTEXT_POINTER \
+    gl_client_context_t * ctx = getCurrentContext();\
+    return nullptr    
 #endif
 
 void glAlphaFunc(GLenum func, GLclampf ref)
@@ -796,7 +814,7 @@ void glGenTextures(GLsizei n, GLuint* textures)
 
 GLenum glGetError()
 {
-	GET_CONTEXT;
+	GET_CONTEXT_ENUM;
 	return ctx->glGetError(ctx);
 }
 
@@ -832,7 +850,7 @@ void glGetPointerv(GLenum pname, GLvoid** params)
 
 const GLubyte* glGetString(GLenum name)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_POINTER;
 	return ctx->glGetString(ctx, name);
 }
 
@@ -868,19 +886,19 @@ void glHint(GLenum target, GLenum mode)
 
 GLboolean glIsBuffer(GLuint buffer)
 {
-	GET_CONTEXT;
+    GET_CONTEXT_BOOL;
 	return ctx->glIsBuffer(ctx, buffer);
 }
 
 GLboolean glIsEnabled(GLenum cap)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsEnabled(ctx, cap);
 }
 
 GLboolean glIsTexture(GLuint texture)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsTexture(ctx, texture);
 }
 
@@ -1276,7 +1294,7 @@ void glGetCompressedTextureFormats(int count, GLint* formats)
 
 int glFinishRoundTrip()
 {
-	GET_CONTEXT;
+	GET_CONTEXT_INT;
 	return ctx->glFinishRoundTrip(ctx);
 }
 
@@ -1606,7 +1624,7 @@ void glTranslatexOES(GLfixed x, GLfixed y, GLfixed z)
 
 GLboolean glIsRenderbufferOES(GLuint renderbuffer)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsRenderbufferOES(ctx, renderbuffer);
 }
 
@@ -1644,7 +1662,7 @@ void glGetRenderbufferParameterivOES(GLenum target, GLenum pname, GLint* params)
 
 GLboolean glIsFramebufferOES(GLuint framebuffer)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsFramebufferOES(ctx, framebuffer);
 }
 
@@ -1670,7 +1688,7 @@ void glGenFramebuffersOES(GLsizei n, GLuint* framebuffers)
 
 GLenum glCheckFramebufferStatusOES(GLenum target)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_ENUM;
 	return ctx->glCheckFramebufferStatusOES(ctx, target);
 }
 
@@ -1700,13 +1718,13 @@ void glGenerateMipmapOES(GLenum target)
 
 void* glMapBufferOES(GLenum target, GLenum access)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_POINTER;
 	return ctx->glMapBufferOES(ctx, target, access);
 }
 
 GLboolean glUnmapBufferOES(GLenum target)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glUnmapBufferOES(ctx, target);
 }
 
@@ -1742,7 +1760,7 @@ void glWeightPointerOES(GLint size, GLenum type, GLsizei stride, const GLvoid* p
 
 GLbitfield glQueryMatrixxOES(GLfixed* mantissa, GLint* exponent)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BIT;
 	return ctx->glQueryMatrixxOES(ctx, mantissa, exponent);
 }
 
@@ -1864,7 +1882,7 @@ void glGenVertexArraysOES(GLsizei n, GLuint* arrays)
 
 GLboolean glIsVertexArrayOES(GLuint array)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsVertexArrayOES(ctx, array);
 }
 
@@ -1926,13 +1944,13 @@ void glGenFencesNV(GLsizei n, GLuint* fences)
 
 GLboolean glIsFenceNV(GLuint fence)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glIsFenceNV(ctx, fence);
 }
 
 GLboolean glTestFenceNV(GLuint fence)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glTestFenceNV(ctx, fence);
 }
 
@@ -2040,7 +2058,7 @@ void glExtGetProgramsQCOM(GLuint* programs, GLint maxPrograms, GLint* numProgram
 
 GLboolean glExtIsProgramBinaryQCOM(GLuint program)
 {
-	GET_CONTEXT;
+	GET_CONTEXT_BOOL;
 	return ctx->glExtIsProgramBinaryQCOM(ctx, program);
 }
 

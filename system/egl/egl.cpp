@@ -15,6 +15,7 @@
 */
 
 #include <assert.h>
+#include <vector>
 #include "HostConnection.h"
 #include "ThreadInfo.h"
 #include "eglDisplay.h"
@@ -29,7 +30,6 @@
 #include "eglContext.h"
 #include "ClientAPIExts.h"
 #include "EGLImage.h"
-#include "ProcessPipe.h"
 
 #include "GLEncoder.h"
 #ifdef WITH_GLES2
@@ -133,7 +133,7 @@ const char *  eglStrError(EGLint err)
 
 #define DEFINE_HOST_CONNECTION \
     HostConnection *hostCon = HostConnection::get(); \
-    ExtendedRCEncoderContext *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL)
+    IRenderControlEncoder *rcEnc = (hostCon ? hostCon->rcEncoder() : NULL)
 
 #define DEFINE_AND_VALIDATE_HOST_CONNECTION(ret) \
     HostConnection *hostCon = HostConnection::get(); \
@@ -141,7 +141,7 @@ const char *  eglStrError(EGLint err)
         ALOGE("egl: Failed to get host connection\n"); \
         return ret; \
     } \
-    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
+    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("egl: Failed to get renderControl encoder context\n"); \
         return ret; \
@@ -153,7 +153,7 @@ const char *  eglStrError(EGLint err)
         ALOGE("egl: Failed to get host connection\n"); \
         return ret; \
     } \
-    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
+    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("egl: Failed to get renderControl encoder context\n"); \
         return ret; \
@@ -268,6 +268,7 @@ struct egl_surface_t {
 
     virtual     void        setSwapInterval(int interval) = 0;
     virtual     EGLBoolean  swapBuffers() = 0;
+    virtual     EGLBoolean  swapBuffers(EGLint *rects, EGLint n_rects) = 0;
 
     EGLint      getSwapBehavior() const;
     uint32_t    getRcSurface()   { return rcSurface; }
@@ -348,6 +349,7 @@ struct egl_window_surface_t : public egl_surface_t {
 
     virtual void       setSwapInterval(int interval);
     virtual EGLBoolean swapBuffers();
+    virtual EGLBoolean swapBuffers(EGLint *rects, EGLint n_rects);
 
     virtual     void        setCollectingTimestamps(EGLint collect)
         override { collectingTimestamps = (collect == EGL_TRUE) ? true : false; }
@@ -394,13 +396,13 @@ EGLBoolean egl_window_surface_t::init()
     setNativeHeight(nativeHeight);
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
-            getWidth(), getHeight());
+    rcSurface = rcEnc->rcCreateWindowSurface((uintptr_t)config,
+            getWidth(), getHeight(), nativeWindow, EGL_WINDOW_BIT);
     if (!rcSurface) {
         ALOGE("rcCreateWindowSurface returned 0");
         return EGL_FALSE;
     }
-    rcEnc->rcSetWindowColorBuffer(rcEnc, rcSurface,
+    rcEnc->rcSetWindowColorBuffer(rcSurface,
             ((cb_handle_t*)(buffer->handle))->hostHandle);
 
     return EGL_TRUE;
@@ -422,7 +424,7 @@ egl_window_surface_t* egl_window_surface_t::create(
 egl_window_surface_t::~egl_window_surface_t() {
     DEFINE_HOST_CONNECTION;
     if (rcSurface && rcEnc) {
-        rcEnc->rcDestroyWindowSurface(rcEnc, rcSurface);
+        rcEnc->rcDestroyWindowSurface(rcSurface);
     }
     if (buffer) {
         nativeWindow->cancelBuffer_DEPRECATED(nativeWindow, buffer);
@@ -453,7 +455,7 @@ static uint64_t createNativeSync(EGLenum type,
     EGLint* actual_attribs =
         (EGLint*)(num_actual_attribs == 0 ? NULL : attrib_list);
 
-    rcEnc->rcCreateSyncKHR(rcEnc, type,
+    rcEnc->rcCreateSyncKHR(type,
                            actual_attribs,
                            num_actual_attribs * sizeof(EGLint),
                            destroy_when_signaled,
@@ -520,16 +522,16 @@ EGLBoolean egl_window_surface_t::swapBuffers()
     }
 
 #if PLATFORM_SDK_VERSION <= 16
-    rcEnc->rcFlushWindowColorBuffer(rcEnc, rcSurface);
+    rcEnc->rcFlushWindowColorBuffer(rcSurface, nullptr, 0);
     // equivalent to glFinish if no native sync
     eglWaitClient();
     nativeWindow->queueBuffer(nativeWindow, buffer);
 #else
     if (rcEnc->hasNativeSync()) {
-        rcEnc->rcFlushWindowColorBufferAsync(rcEnc, rcSurface);
-        createGoldfishOpenGLNativeSync(&presentFenceFd);
+        rcEnc->rcFlushWindowColorBufferAsync(rcSurface, nullptr, 0);
+        //createGoldfishOpenGLNativeSync(&presentFenceFd);
     } else {
-        rcEnc->rcFlushWindowColorBuffer(rcEnc, rcSurface);
+        rcEnc->rcFlushWindowColorBuffer(rcSurface, nullptr, 0);
         // equivalent to glFinish if no native sync
         eglWaitClient();
     }
@@ -559,7 +561,68 @@ EGLBoolean egl_window_surface_t::swapBuffers()
     }
 #endif
 
-    rcEnc->rcSetWindowColorBuffer(rcEnc, rcSurface,
+    rcEnc->rcSetWindowColorBuffer(rcSurface,
+            ((cb_handle_t *)(buffer->handle))->hostHandle);
+
+    setWidth(buffer->width);
+    setHeight(buffer->height);
+
+    return EGL_TRUE;
+}
+
+EGLBoolean egl_window_surface_t::swapBuffers(EGLint *rects, EGLint n_rects)
+{
+
+    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+
+    int presentFenceFd = -1;
+
+    if (buffer == NULL) {
+        ALOGE("egl_window_surface_t::swapBuffers called with NULL buffer");
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
+#if PLATFORM_SDK_VERSION <= 16
+    rcEnc->rcFlushWindowColorBuffer(rcSurface, rects, n_rects);
+    // equivalent to glFinish if no native sync
+    eglWaitClient();
+    nativeWindow->queueBuffer(nativeWindow, buffer);
+#else
+    if (rcEnc->hasNativeSync()) {
+        rcEnc->rcFlushWindowColorBufferAsync(rcSurface, rects, n_rects);
+        //createGoldfishOpenGLNativeSync(&presentFenceFd);
+    } else {
+        rcEnc->rcFlushWindowColorBuffer(rcSurface, rects, n_rects);
+        // equivalent to glFinish if no native sync
+        eglWaitClient();
+    }
+
+    DPRINT("queueBuffer with fence %d", presentFenceFd);
+    nativeWindow->queueBuffer(nativeWindow, buffer, presentFenceFd);
+#endif
+
+    DPRINT("calling dequeueBuffer...");
+
+#if PLATFORM_SDK_VERSION <= 16
+    if (nativeWindow->dequeueBuffer(nativeWindow, &buffer)) {
+        buffer = NULL;
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+#else
+    int acquireFenceFd = -1;
+    if (nativeWindow->dequeueBuffer(nativeWindow, &buffer, &acquireFenceFd)) {
+        buffer = NULL;
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
+    DPRINT("dequeueBuffer with fence %d", acquireFenceFd);
+
+    if (acquireFenceFd > 0) {
+        close(acquireFenceFd);
+    }
+#endif
+
+    rcEnc->rcSetWindowColorBuffer(rcSurface,
             ((cb_handle_t *)(buffer->handle))->hostHandle);
 
     setWidth(buffer->width);
@@ -579,6 +642,7 @@ struct egl_pbuffer_surface_t : public egl_surface_t {
 
     virtual void       setSwapInterval(int interval) { (void)interval; }
     virtual EGLBoolean swapBuffers() { return EGL_TRUE; }
+    virtual EGLBoolean swapBuffers(EGLint *rects, EGLint n_rects) { return EGL_TRUE; }
 
     uint32_t getRcColorBuffer() { return rcColorBuffer; }
 
@@ -603,8 +667,8 @@ egl_pbuffer_surface_t::~egl_pbuffer_surface_t()
 {
     DEFINE_HOST_CONNECTION;
     if (rcEnc) {
-        if (rcColorBuffer) rcEnc->rcCloseColorBuffer(rcEnc, rcColorBuffer);
-        if (rcSurface)     rcEnc->rcDestroyWindowSurface(rcEnc, rcSurface);
+        if (rcColorBuffer) rcEnc->rcCloseColorBuffer(rcColorBuffer);
+        if (rcSurface)     rcEnc->rcDestroyWindowSurface(rcSurface);
     }
 }
 
@@ -640,20 +704,41 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
 {
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
 
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
-            getWidth(), getHeight());
+    rcSurface = rcEnc->rcCreateWindowSurface((uintptr_t)config,
+            getWidth(), getHeight(), NULL, EGL_PBUFFER_BIT);
     if (!rcSurface) {
         ALOGE("rcCreateWindowSurface returned 0");
         return EGL_FALSE;
     }
 
-    rcColorBuffer = rcEnc->rcCreateColorBuffer(rcEnc, getWidth(), getHeight(), pixelFormat);
+    GLenum type = GL_UNSIGNED_BYTE;
+    int32_t format = HAL_PIXEL_FORMAT_RGBA_8888;
+    switch (pixelFormat) {
+        case GL_RGB:
+        case GL_RGB565_OES: {
+            format = HAL_PIXEL_FORMAT_RGBA_8888;
+            break;
+        }
+
+        case GL_RGBA:
+        case GL_RGB5_A1_OES:
+        case GL_RGBA4_OES: {
+            format = HAL_PIXEL_FORMAT_RGBA_8888;
+            break;
+        }
+
+        default: {
+            format = HAL_PIXEL_FORMAT_RGBA_8888;
+        }
+    }
+
+    rcColorBuffer = rcEnc->rcCreateColorBuffer(getWidth(), getHeight(), pixelFormat, type, format);
     if (!rcColorBuffer) {
         ALOGE("rcCreateColorBuffer returned 0");
         return EGL_FALSE;
     }
 
-    rcEnc->rcSetWindowColorBuffer(rcEnc, rcSurface, rcColorBuffer);
+    rcEnc->rcSetWindowColorBuffer(rcSurface, rcColorBuffer);
 
     return EGL_TRUE;
 }
@@ -696,10 +781,10 @@ static std::vector<std::string> getExtStringArray() {
     DEFINE_AND_VALIDATE_HOST_CONNECTION(res);
 
     char *hostStr = NULL;
-    int n = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS, NULL, 0);
+    int n = rcEnc->rcGetGLString(GL_EXTENSIONS, NULL, 0);
     if (n < 0) {
         hostStr = new char[-n+1];
-        n = rcEnc->rcGetGLString(rcEnc, GL_EXTENSIONS, hostStr, -n);
+        n = rcEnc->rcGetGLString(GL_EXTENSIONS, hostStr, -n);
         if (n <= 0) {
             delete [] hostStr;
             hostStr = NULL;
@@ -798,10 +883,10 @@ static const char *getGLString(int glEnum)
         // first query of that string - need to query host
         //
         DEFINE_AND_VALIDATE_HOST_CONNECTION(NULL);
-        int n = rcEnc->rcGetGLString(rcEnc, glEnum, NULL, 0);
+        int n = rcEnc->rcGetGLString(glEnum, NULL, 0);
         if (n < 0) {
             hostStr = new char[-n+1];
-            n = rcEnc->rcGetGLString(rcEnc, glEnum, hostStr, -n);
+            n = rcEnc->rcGetGLString(glEnum, hostStr, -n);
             if (n <= 0) {
                 delete [] hostStr;
                 hostStr = NULL;
@@ -904,7 +989,7 @@ EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size,
 
     EGLint i;
     for (i = 0 ; i < numConfigs && i < config_size ; i++) {
-        *configs++ = (EGLConfig)(uintptr_t)i;
+        *configs++ = (EGLConfig)((uintptr_t)i + 1);
     }
     *num_config = i;
     return EGL_TRUE;
@@ -946,7 +1031,7 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
 
     uint32_t* tempConfigs[config_size];
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    *num_config = rcEnc->rcChooseConfig(rcEnc,
+    *num_config = rcEnc->rcChooseConfig(
             local_attrib_list ? local_attrib_list:(EGLint*)attrib_list,
             attribs_size * sizeof(EGLint), (uint32_t*)tempConfigs, config_size);
 
@@ -1282,14 +1367,14 @@ static EGLBoolean s_eglReleaseThreadImpl(EGLThreadInfo* tInfo) {
     DEFINE_AND_VALIDATE_HOST_CONNECTION_FOR_TLS(EGL_FALSE, tInfo);
     // We are going to call makeCurrent on the null context and surface
     // anyway once we are on the host, so skip rcMakeCurrent here.
-    // rcEnc->rcMakeCurrent(rcEnc, 0, 0, 0);
+    // rcEnc->rcMakeCurrent(0, 0, 0);
     context->flags &= ~EGLContext_t::IS_CURRENT;
 
     s_destroyPendingSurfacesInContext(context);
 
     if (context->deletePending) {
         if (context->rcContext) {
-            rcEnc->rcDestroyContext(rcEnc, context->rcContext);
+            rcEnc->rcDestroyContext(context->rcContext);
             context->rcContext = 0;
         }
         delete context;
@@ -1392,7 +1477,7 @@ EGLBoolean eglBindTexImage(EGLDisplay dpy, EGLSurface eglSurface, EGLint buffer)
     egl_pbuffer_surface_t* pbSurface = (egl_pbuffer_surface_t*)surface;
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcEnc->rcBindTexture(rcEnc, pbSurface->getRcColorBuffer());
+    rcEnc->rcBindTexture(pbSurface->getRcColorBuffer());
 
     return GL_TRUE;
 }
@@ -1422,7 +1507,7 @@ EGLBoolean eglSwapInterval(EGLDisplay dpy, EGLint interval)
     egl_surface_t* draw(static_cast<egl_surface_t*>(ctx->draw));
     draw->setSwapInterval(interval);
 
-    rcEnc->rcFBSetSwapInterval(rcEnc, interval); //TODO: implement on the host
+    rcEnc->rcFBSetSwapInterval(interval); //TODO: implement on the host
 
     return EGL_TRUE;
 }
@@ -1437,6 +1522,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     EGLint context_flags = 0;
     EGLint profile_mask = 0;
     EGLint reset_notification_strategy = 0;
+    std::vector<EGLint> attribs;
 
     bool wantedMajorVersion = false;
     bool wantedMinorVersion = false;
@@ -1445,6 +1531,8 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
            EGLint attrib_val = attrib_list[1];
         switch(attrib_list[0]) {
         case EGL_CONTEXT_MAJOR_VERSION_KHR:
+            attribs.push_back(attrib_list[0]);
+            attribs.push_back(attrib_list[1]);
             majorVersion = attrib_val;
             wantedMajorVersion = true;
             break;
@@ -1473,13 +1561,20 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
             // According to the spec, we are allowed not to honor this hint.
             // https://www.khronos.org/registry/EGL/extensions/IMG/EGL_IMG_context_priority.txt
             break;
+        case EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT:
+            // add ROBUST_ACCESS
+            attribs.push_back(attrib_list[0]);
+            attribs.push_back(attrib_list[1]);
+            break;
+        case EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT:
+            break;
         default:
-            ALOGV("eglCreateContext unsupported attrib 0x%x", attrib_list[0]);
+            ALOGE("eglCreateContext unsupported attrib 0x%x", attrib_list[0]);
             setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_CONTEXT);
         }
         attrib_list+=2;
     }
-
+    attribs.push_back(attrib_list[0]);
     // Support up to GLES 3.2 depending on advertised version from the host system.
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_CONTEXT);
     if (rcEnc->getGLESMaxVersion() >= GLES_MAX_VERSION_3_0) {
@@ -1570,7 +1665,14 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     if (majorVersion == 3 && minorVersion == 2) {
         rcMajorVersion = 4;
     }
-    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)config, rcShareCtx, rcMajorVersion);
+    // 1.x Opengl ES is not supported, force to 3.0
+    if (majorVersion == 1) {
+        majorVersion = 3;
+        minorVersion = 0;
+        rcMajorVersion = 3;
+        ALOGE("%s: Opengl ES:1.x force to 3.0", __FUNCTION__);
+    }
+    uint32_t rcContext = rcEnc->rcCreateContext((uintptr_t)config, rcShareCtx, rcMajorVersion, &attribs[0]);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);
@@ -1601,7 +1703,7 @@ EGLBoolean eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 
     if (context->rcContext) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-        rcEnc->rcDestroyContext(rcEnc, context->rcContext);
+        rcEnc->rcDestroyContext(context->rcContext);
         context->rcContext = 0;
     }
 
@@ -1666,7 +1768,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     }
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    if (rcEnc->rcMakeCurrent(rcEnc, ctxHandle, drawHandle, readHandle) == EGL_FALSE) {
+    if (rcEnc->rcMakeCurrent(ctxHandle, drawHandle, readHandle) == EGL_FALSE) {
         ALOGE("rcMakeCurrent returned EGL_FALSE");
         setErrorReturn(EGL_BAD_CONTEXT, EGL_FALSE);
     }
@@ -1674,7 +1776,6 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     //Now make the local bind
     if (context) {
 
-        ALOGD("%s: %p: ver %d %d (tinfo %p)", __FUNCTION__, context, context->majorVersion, context->minorVersion, tInfo);
         // This is a nontrivial context.
         // The thread cannot be gralloc-only anymore.
         hostCon->setGrallocOnly(false);
@@ -1901,9 +2002,45 @@ EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface eglSurface)
     // post the surface
     EGLBoolean ret = d->swapBuffers();
 
-    hostCon->flush();
     return ret;
 }
+
+EGLBoolean eglSwapBuffersWithDamageKHR(EGLDisplay dpy, EGLSurface eglSurface, EGLint *rects, EGLint n_rects)
+{
+    VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
+    VALIDATE_SURFACE_RETURN(eglSurface, EGL_FALSE);
+
+    egl_surface_t* surface(static_cast<egl_surface_t*>(eglSurface));
+    uint32_t surfaceHandle = (surface) ? surface->getRcSurface() : 0;
+
+    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+    // post the surface with rects
+    EGLBoolean ret = EGL_FALSE;
+    if (rects == nullptr || n_rects == 0) {
+        ret = surface->swapBuffers();
+    } else {
+        ret = surface->swapBuffers(rects, n_rects);
+    }
+
+    return ret;
+}
+
+// EGLBoolean eglSetDamageRegionKHR(EGLDisplay dpy, EGLSurface eglSurface, EGLint *rects, EGLint n_rects)
+// {
+//     VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
+//     VALIDATE_SURFACE_RETURN(eglSurface, EGL_FALSE);
+
+//     egl_surface_t* surface(static_cast<egl_surface_t*>(eglSurface));
+//     uint32_t surfaceHandle = (surface) ? surface->getRcSurface() : 0;
+
+//     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+//     EGLint ret = rcEnc->rcSetDamageRegionKHR(surfaceHandle, rects, n_rects);
+//     if (ret == EGL_FALSE) {
+//         ALOGE("eglSetDamageRegionKHR failed: tid %d", gettid());
+//         return EGL_FALSE;
+//     }
+//     return EGL_TRUE;
+// }
 
 EGLBoolean eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
 {
@@ -1959,8 +2096,8 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
             case HAL_PIXEL_FORMAT_RGB_565:
             case HAL_PIXEL_FORMAT_YV12:
             case HAL_PIXEL_FORMAT_BGRA_8888:
-            case HAL_PIXEL_FORMAT_RGBA_FP16:
-            case HAL_PIXEL_FORMAT_RGBA_1010102:
+            // case HAL_PIXEL_FORMAT_RGBA_FP16:
+            // case HAL_PIXEL_FORMAT_RGBA_1010102:
                 break;
             default:
                 setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
@@ -1975,7 +2112,7 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
 
         return (EGLImageKHR)image;
     }
-    else if (target == EGL_GL_TEXTURE_2D_KHR) {
+    else {
         VALIDATE_CONTEXT_RETURN(ctx, EGL_NO_IMAGE_KHR);
 
         EGLContext_t *context = static_cast<EGLContext_t*>(ctx);
@@ -1983,7 +2120,7 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
 
         uint32_t ctxHandle = (context) ? context->rcContext : 0;
         GLuint texture = (GLuint)reinterpret_cast<uintptr_t>(buffer);
-        uint32_t img = rcEnc->rcCreateClientImage(rcEnc, ctxHandle, target, texture);
+        uint32_t img = rcEnc->rcCreateClientImage(ctxHandle, target, texture);
         EGLImage_t *image = new EGLImage_t();
         image->dpy = dpy;
         image->target = target;
@@ -2018,11 +2155,11 @@ EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR img)
 
         return EGL_TRUE;
     }
-    else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
+    else {
         uint32_t host_egl_image = image->host_egl_image;
         delete image;
         DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-        return rcEnc->rcDestroyClientImage(rcEnc, host_egl_image);
+        return rcEnc->rcDestroyClientImage(host_egl_image);
     }
 
     setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
@@ -2039,12 +2176,9 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
 
     DEFINE_HOST_CONNECTION;
 
-    if ((type != EGL_SYNC_FENCE_KHR &&
-         type != EGL_SYNC_NATIVE_FENCE_ANDROID) ||
-        (type != EGL_SYNC_FENCE_KHR &&
-         !rcEnc->hasNativeSync())) {
-        setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_SYNC_KHR);
-    }
+    if (type != EGL_SYNC_FENCE_KHR && type != EGL_SYNC_NATIVE_FENCE_ANDROID)
+        setErrorReturn(EGL_BAD_ATTRIBUTE, (EGLSyncKHR)EGL_FALSE);
+
 
     EGLThreadInfo *tInfo = getEGLThreadInfo();
     if (!tInfo || !tInfo->currentContext) {
@@ -2139,7 +2273,7 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync)
 
     if (!eglsync) {
         DPRINT("WARNING: null sync object")
-        return EGL_TRUE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = static_cast<EGLSync_t*>(eglsync);
@@ -2152,7 +2286,7 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync)
     if (sync) {
         DEFINE_HOST_CONNECTION;
         if (rcEnc->hasNativeSync()) {
-            rcEnc->rcDestroySyncKHR(rcEnc, sync->handle);
+            rcEnc->rcDestroySyncKHR(sync->handle);
         }
         delete sync;
     }
@@ -2167,7 +2301,7 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags,
 
     if (!eglsync) {
         DPRINT("WARNING: null sync object");
-        return EGL_CONDITION_SATISFIED_KHR;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
@@ -2180,7 +2314,7 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags,
     EGLint retval;
     if (rcEnc->hasNativeSync()) {
         retval = rcEnc->rcClientWaitSyncKHR
-            (rcEnc, sync->handle, flags, timeout);
+            (sync->handle, flags, timeout);
     } else {
         retval = EGL_CONDITION_SATISFIED_KHR;
     }
@@ -2203,6 +2337,13 @@ EGLBoolean eglGetSyncAttribKHR(EGLDisplay dpy, EGLSyncKHR eglsync,
         EGLint attribute, EGLint *value)
 {
     (void)dpy;
+
+    if(eglsync == 0)
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+
+    if (value == NULL)
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+
 
     EGLSync_t* sync = (EGLSync_t*)eglsync;
 
@@ -2240,18 +2381,18 @@ EGLint eglWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags) {
 
     if (!eglsync) {
         ALOGE("%s: null sync object!", __FUNCTION__);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     if (flags) {
         ALOGE("%s: flags must be 0, got 0x%x", __FUNCTION__, flags);
-        return EGL_FALSE;
+        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
 
     DEFINE_HOST_CONNECTION;
     if (rcEnc->hasNativeSyncV3()) {
         EGLSync_t* sync = (EGLSync_t*)eglsync;
-        rcEnc->rcWaitSyncKHR(rcEnc, sync->handle, flags);
+        rcEnc->rcWaitSyncKHR(sync->handle, flags);
     }
 
     return EGL_TRUE;

@@ -16,9 +16,9 @@
 #include "glUtils.h"
 #include <string.h>
 #include "ErrorLog.h"
-#include <IOStream.h>
-
+#include "IStream.h"
 #include <GLES3/gl31.h>
+#include <GLES2/gl2ext.h>
 
 size_t glSizeof(GLenum type)
 {
@@ -108,7 +108,7 @@ size_t glSizeof(GLenum type)
 		retval = 4 + 4;
         break;
     default:
-        ALOGE("**** ERROR unknown type 0x%x (%s,%d)\n", type, __FUNCTION__,__LINE__);
+        ERR("**** ERROR unknown type 0x%x (%s,%d)\n", type, __FUNCTION__,__LINE__);
         retval = 4;
     }
     return retval;
@@ -368,6 +368,15 @@ size_t glUtilsParamSize(GLenum param)
     case GL_TRANSFORM_FEEDBACK_VARYINGS:
     case GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH:
     case GL_VALIDATE_STATUS:
+    case GL_TRANSFORM_FEEDBACK_ACTIVE:
+    case GL_TRANSFORM_FEEDBACK_BINDING:
+    case GL_TRANSFORM_FEEDBACK_BUFFER_BINDING:
+    case GL_TRANSFORM_FEEDBACK_PAUSED:
+    case GL_TRANSFORM_FEEDBACK_BUFFER_SIZE:
+    case GL_TRANSFORM_FEEDBACK_BUFFER_START:
+    case GL_UNIFORM_BUFFER_BINDING:
+    case GL_CONTEXT_ROBUST_ACCESS_EXT:
+    case GL_READ_FRAMEBUFFER_BINDING:
         s = 1;
         break;
     case GL_ALIASED_LINE_WIDTH_RANGE:
@@ -439,25 +448,6 @@ void glUtilsPackPointerData(unsigned char *dst, unsigned char *src,
         for (unsigned int i = 0; i < datalen; i += vsize) {
             memcpy(dst, src, vsize);
             dst += vsize;
-            src += stride;
-        }
-    }
-}
-
-void glUtilsWritePackPointerData(void* _stream, unsigned char *src,
-                                 int size, GLenum type, unsigned int stride,
-                                 unsigned int datalen)
-{
-    IOStream* stream = reinterpret_cast<IOStream*>(_stream);
-
-    unsigned int  vsize = size * glSizeof(type);
-    if (stride == 0) stride = vsize;
-
-    if (stride == vsize) {
-        stream->writeFully(src, datalen);
-    } else {
-        for (unsigned int i = 0; i < datalen; i += vsize) {
-            stream->writeFully(src, (size_t)vsize);
             src += stride;
         }
     }
