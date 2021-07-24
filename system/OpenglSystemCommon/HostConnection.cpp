@@ -78,21 +78,6 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
             ERR("Failed to create IStream for host connection!!!");
             return nullptr;
         }
-
-        QemuPipeStream* qStream = new (std::nothrow) QemuPipeStream(STREAM_BUFFER_SIZE);
-        if (qStream == nullptr) {
-            ERR("Failed to create QemuPipeStream for host connection!!!");
-            return nullptr;
-        }
-        con->m_stream->SetHostStream(qStream);
-
-        // send zero 'clientFlags' to the host if not the app that we need remote render.
-        if (con->m_stream->GetHostStream() == nullptr) {
-            uint32_t* pClientFlags = (uint32_t*)con->m_stream->AllocBuffer(sizeof(uint32_t));
-            *pClientFlags = 0;
-            con->m_stream->CommitBuffer(sizeof(uint32_t));
-            DBG("con->m_stream->commitBuffer");
-        }
         ALOGD("HostConnection::get() New Host Connection established %p, tid %d\n", con, gettid());
         tinfo->hostConn = con;
     }

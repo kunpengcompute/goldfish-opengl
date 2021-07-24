@@ -43,7 +43,6 @@ public:
 
     int getSocket() const;
 
-    virtual int CommitBufferWithoutCompress(size_t size) { return size; }
 private:
     int m_sock;
     size_t m_bufsize;
