@@ -2464,11 +2464,17 @@ void GL2Encoder::s_glFramebufferRenderbuffer(void* self,
 void GL2Encoder::s_glInvalidateFramebuffer(void* self,
         GLenum target, GLsizei numAttachments, const GLenum* attachments) {
     GL2Encoder* ctx = (GL2Encoder*) self;
-    GLint maxColorAttachment;
+    SET_ERROR_IF((target != GL_FRAMEBUFFER) &&
+                 (target != GL_READ_FRAMEBUFFER) &&
+                 (target != GL_DRAW_FRAMEBUFFER), GL_INVALID_ENUM);
+    SET_ERROR_IF(numAttachments < 0, GL_INVALID_VALUE);
 
+    GLint maxColorAttachment;
     ctx->glGetIntegerv(ctx, GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachment);
     for (int i = 0; i < numAttachments; i++) {
-        SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+        if (attachments[i] != GL_DEPTH_ATTACHMENT && attachments[i] != GL_STENCIL_ATTACHMENT && attachments[i] != GL_DEPTH_STENCIL_ATTACHMENT) {
+            SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+        }
     }
     ctx->m_glInvalidateFramebuffer_enc(self, target, numAttachments, attachments);
 }
@@ -2476,11 +2482,17 @@ void GL2Encoder::s_glInvalidateFramebuffer(void* self,
 void GL2Encoder::s_glInvalidateSubFramebuffer(void* self,
         GLenum target, GLsizei numAttachments, const GLenum* attachments, GLint x, GLint y, GLsizei width, GLsizei height) {
     GL2Encoder* ctx = (GL2Encoder*) self;
+    SET_ERROR_IF(target != GL_FRAMEBUFFER && target != GL_READ_FRAMEBUFFER && target != GL_DRAW_FRAMEBUFFER, GL_INVALID_ENUM);
+    SET_ERROR_IF(numAttachments < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(width < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(height < 0, GL_INVALID_VALUE);
     GLint maxColorAttachment;
 
     ctx->glGetIntegerv(ctx, GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachment);
     for (int i = 0; i < numAttachments; i++) {
-        SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+        if (attachments[i] != GL_DEPTH_ATTACHMENT && attachments[i] != GL_STENCIL_ATTACHMENT && attachments[i] != GL_DEPTH_STENCIL_ATTACHMENT) {
+            SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+        }
     }
     ctx->m_glInvalidateSubFramebuffer_enc(self, target, numAttachments, attachments, x, y, width, height);
 }
