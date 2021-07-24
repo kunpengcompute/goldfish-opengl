@@ -250,7 +250,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glFramebufferTextureLayer);
     OVERRIDE(glTexStorage2D);
 
-    OVERRIDE_CUSTOM(glTransformFeedbackVaryings);
+    OVERRIDE(glTransformFeedbackVaryings);
     OVERRIDE(glBeginTransformFeedback);
     OVERRIDE(glEndTransformFeedback);
     OVERRIDE(glPauseTransformFeedback);
@@ -3565,6 +3565,7 @@ void GL2Encoder::s_glTransformFeedbackVaryings(void* self, GLuint program, GLsiz
     std::string packed = packVarNames(count, (const char**)varyings, &err);
     SET_ERROR_IF(err != GL_NO_ERROR, GL_INVALID_OPERATION);
 
+    ctx->m_glTransformFeedbackVaryings_enc(ctx, program, count, varyings, bufferMode);
     ctx->glTransformFeedbackVaryingsAEMU(ctx, program, count, (const char*)&packed[0], packed.size() + 1, bufferMode);
 }
 

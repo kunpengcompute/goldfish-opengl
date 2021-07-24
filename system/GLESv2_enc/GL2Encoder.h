@@ -500,6 +500,7 @@ private:
     static void s_glTexStorage2D(void* self, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 
     static void s_glTransformFeedbackVaryings(void* self, GLuint program, GLsizei count, const char* const* varyings, GLenum bufferMode);
+    glTransformFeedbackVaryings_client_proc_t m_glTransformFeedbackVaryings_enc;
 
     glBeginTransformFeedback_client_proc_t m_glBeginTransformFeedback_enc;
     static void s_glBeginTransformFeedback(void* self, GLenum primitiveMode);
