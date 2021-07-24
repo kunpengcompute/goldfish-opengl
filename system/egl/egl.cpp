@@ -15,6 +15,7 @@
 */
 
 #include <assert.h>
+#include <vector>
 #include "HostConnection.h"
 #include "ThreadInfo.h"
 #include "eglDisplay.h"
@@ -1457,6 +1458,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     EGLint context_flags = 0;
     EGLint profile_mask = 0;
     EGLint reset_notification_strategy = 0;
+    std::vector<EGLint> attribs;
 
     bool wantedMajorVersion = false;
     bool wantedMinorVersion = false;
@@ -1465,6 +1467,8 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
            EGLint attrib_val = attrib_list[1];
         switch(attrib_list[0]) {
         case EGL_CONTEXT_MAJOR_VERSION_KHR:
+            attribs.push_back(attrib_list[0]);
+            attribs.push_back(attrib_list[1]);
             majorVersion = attrib_val;
             wantedMajorVersion = true;
             break;
@@ -1493,13 +1497,20 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
             // According to the spec, we are allowed not to honor this hint.
             // https://www.khronos.org/registry/EGL/extensions/IMG/EGL_IMG_context_priority.txt
             break;
+        case EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT:
+            // add ROBUST_ACCESS
+            attribs.push_back(attrib_list[0]);
+            attribs.push_back(attrib_list[1]);
+            break;
+        case EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT:
+            break;
         default:
-            ALOGV("eglCreateContext unsupported attrib 0x%x", attrib_list[0]);
+            ALOGE("eglCreateContext unsupported attrib 0x%x", attrib_list[0]);
             setErrorReturn(EGL_BAD_ATTRIBUTE, EGL_NO_CONTEXT);
         }
         attrib_list+=2;
     }
-
+    attribs.push_back(attrib_list[0]);
     // Support up to GLES 3.2 depending on advertised version from the host system.
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_CONTEXT);
     if (rcEnc->getGLESMaxVersion() >= GLES_MAX_VERSION_3_0) {
@@ -1597,7 +1608,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
         rcMajorVersion = 3;
         ALOGE("%s: Opengl ES:1.x force to 3.0", __FUNCTION__);
     }
-    uint32_t rcContext = rcEnc->rcCreateContext((uintptr_t)config, rcShareCtx, rcMajorVersion);
+    uint32_t rcContext = rcEnc->rcCreateContext((uintptr_t)config, rcShareCtx, rcMajorVersion, &attribs[0]);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);

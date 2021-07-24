@@ -18,6 +18,7 @@
 #include "ErrorLog.h"
 #include "Include/IStream.h"
 #include <GLES3/gl31.h>
+#include <GLES2/gl2ext.h>
 
 size_t glSizeof(GLenum type)
 {
@@ -374,6 +375,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_TRANSFORM_FEEDBACK_BUFFER_SIZE:
     case GL_TRANSFORM_FEEDBACK_BUFFER_START:
     case GL_UNIFORM_BUFFER_BINDING:
+    case GL_CONTEXT_ROBUST_ACCESS_EXT:
         s = 1;
         break;
     case GL_ALIASED_LINE_WIDTH_RANGE:
