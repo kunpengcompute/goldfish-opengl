@@ -350,6 +350,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE_CUSTOM(glDrawElementsIndirect);
 
     OVERRIDE(glTexStorage2DMultisample);
+    OVERRIDE(glCopyTexSubImage3D);
     OVERRIDE(glGetFragDataLocation);
 }
 
@@ -2269,13 +2270,14 @@ void GL2Encoder::s_glTexSubImage2D(void* self, GLenum target, GLint level,
     // If unpack buffer is nonzero, verify buffer data fits and is evenly divisible by the type.
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (state->pboNeededDataSize(width, height, 1, format, type, 0) >
+                 (state->pboNeededDataSize(width, height, 1, format, type, 0) + (uintptr_t)pixels >
                   ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
-                  glSizeof(type)),
+                 ((ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
+                  glSizeof(type)) || ((uintptr_t)pixels %
+                  glSizeof(type))),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(!ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) && !pixels, GL_INVALID_OPERATION);
     if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
@@ -2964,14 +2966,13 @@ void GL2Encoder::s_glCompressedTexImage2D(void* self, GLenum target, GLint level
     // If unpack buffer is nonzero, verify unmapped state.
     SET_ERROR_IF(ctx->isBufferTargetMapped(GL_PIXEL_UNPACK_BUFFER), GL_INVALID_OPERATION);
     SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
+
     // If unpack buffer is nonzero, verify buffer data fits.
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
                  (imageSize > ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
-    // TODO: Fix:
-    // If |imageSize| is inconsistent with compressed dimensions.
-    // SET_ERROR_IF(GLESv2Validation::compressedTexImageSize(internalformat, width, height, 1) != imageSize, GL_INVALID_VALUE);
+   // SET_ERROR_IF(!ctx->m_state->compressedTexImageSizeCompatible(internalformat, width, height, 1, imageSize), GL_INVALID_VALUE);
 
     GLenum stateTarget = target;
     if (target == GL_TEXTURE_CUBE_MAP_POSITIVE_X ||
@@ -3732,6 +3733,9 @@ void GL2Encoder::s_glTexImage3D(void* self, GLenum target, GLint level, GLint in
                  GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::pixelType(ctx, type), GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::pixelFormat(ctx, format), GL_INVALID_ENUM);
+    SET_ERROR_IF(target == GL_TEXTURE_3D &&
+        ((format == GL_DEPTH_COMPONENT) ||
+         (format == GL_DEPTH_STENCIL)), GL_INVALID_OPERATION);
 
     // If unpack buffer is nonzero, verify unmapped state.
     SET_ERROR_IF(ctx->isBufferTargetMapped(GL_PIXEL_UNPACK_BUFFER), GL_INVALID_OPERATION);
@@ -3755,13 +3759,13 @@ void GL2Encoder::s_glTexImage3D(void* self, GLenum target, GLint level, GLint in
     // If unpack buffer is nonzero, verify buffer data fits and is evenly divisible by the type.
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (ctx->m_state->pboNeededDataSize(width, height, depth, format, type, 0) >
+                 ((uintptr_t)data + ctx->m_state->pboNeededDataSize(width, height, depth, format, type, 0) >
                   ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
-                  glSizeof(type)),
+                 ((ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
+                  glSizeof(type)) || ((uintptr_t)data % glSizeof(type))),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(state->isBoundTextureImmutableFormat(target), GL_INVALID_OPERATION);
 
@@ -3816,13 +3820,13 @@ void GL2Encoder::s_glTexSubImage3D(void* self, GLenum target, GLint level, GLint
     // If unpack buffer is nonzero, verify buffer data fits and is evenly divisible by the type.
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (ctx->m_state->pboNeededDataSize(width, height, depth, format, type, 0) >
+                 ((uintptr_t)data + ctx->m_state->pboNeededDataSize(width, height, depth, format, type, 0) >
                   ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
-                 (ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
-                  glSizeof(type)),
+                 ((ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size %
+                  glSizeof(type)) || ((uintptr_t)data % glSizeof(type))),
                  GL_INVALID_OPERATION);
     SET_ERROR_IF(!ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) && !data, GL_INVALID_OPERATION);
     SET_ERROR_IF(xoffset < 0 || yoffset < 0 || zoffset < 0, GL_INVALID_VALUE);
@@ -3846,12 +3850,30 @@ void GL2Encoder::s_glCompressedTexImage3D(void* self, GLenum target, GLint level
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
 
+    SET_ERROR_IF(target != GL_TEXTURE_3D &&
+                 target != GL_TEXTURE_2D_ARRAY,
+                 GL_INVALID_ENUM);
     // Filter compressed formats support.
     SET_ERROR_IF(!GLESv2Validation::supportedCompressedFormat(ctx, internalformat), GL_INVALID_ENUM);
+    SET_ERROR_IF(target == GL_TEXTURE_CUBE_MAP, GL_INVALID_ENUM);
     // If unpack buffer is nonzero, verify unmapped state.
     SET_ERROR_IF(ctx->isBufferTargetMapped(GL_PIXEL_UNPACK_BUFFER), GL_INVALID_OPERATION);
     SET_ERROR_IF(width < 0 || height < 0 || depth < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(border, GL_INVALID_VALUE);
+    GLint max_texture_size;
+    GLint max_3d_texture_size;
+    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    ctx->glGetIntegerv(ctx, GL_MAX_3D_TEXTURE_SIZE, &max_3d_texture_size);
+    SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_3d_texture_size), GL_INVALID_VALUE);
+
+    SET_ERROR_IF(width < 0 || height < 0 || depth < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(width > max_texture_size, GL_INVALID_VALUE);
+    SET_ERROR_IF(height > max_texture_size, GL_INVALID_VALUE);
+    SET_ERROR_IF(width > max_3d_texture_size, GL_INVALID_VALUE);
+    SET_ERROR_IF(height > max_3d_texture_size, GL_INVALID_VALUE);
+    SET_ERROR_IF(depth > max_3d_texture_size, GL_INVALID_VALUE);
     // If unpack buffer is nonzero, verify buffer data fits.
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER) &&
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
@@ -3889,6 +3911,15 @@ void GL2Encoder::s_glCompressedTexSubImage3D(void* self, GLenum target, GLint le
                  ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER) &&
                  (imageSize > ctx->getBufferData(GL_PIXEL_UNPACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
+    SET_ERROR_IF(xoffset < 0 || yoffset < 0 || zoffset < 0, GL_INVALID_VALUE);
+    GLint max_texture_size;
+    GLint max_3d_texture_size;
+    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    ctx->glGetIntegerv(ctx, GL_MAX_3D_TEXTURE_SIZE, &max_3d_texture_size);
+    SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_3d_texture_size), GL_INVALID_VALUE);
+    SET_ERROR_IF(width < 0 || height < 0 || depth < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(xoffset < 0 || yoffset < 0 || zoffset < 0, GL_INVALID_VALUE);
 
     if (ctx->boundBuffer(GL_PIXEL_UNPACK_BUFFER)) {
@@ -3934,6 +3965,8 @@ void GL2Encoder::s_glDrawArraysInstanced(void* self, GLenum mode, GLint first, G
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(primcount < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE, GL_INVALID_FRAMEBUFFER_OPERATION);
 
     bool has_client_vertex_arrays = false;
     bool has_indirect_arrays = false;
@@ -3959,6 +3992,7 @@ void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei coun
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(primcount < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(!(type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_SHORT || type == GL_UNSIGNED_INT), GL_INVALID_ENUM);
     SET_ERROR_IF(ctx->m_state->getTransformFeedbackActiveUnpaused(), GL_INVALID_OPERATION);
 
@@ -4433,7 +4467,7 @@ void GL2Encoder::s_glBlitFramebuffer(void* self, GLint srcX0, GLint srcY0, GLint
              srcX1 != dstX1 || srcY1 != dstY1),
             GL_INVALID_OPERATION);
 
-	ctx->m_glBlitFramebuffer_enc(ctx,
+    ctx->m_glBlitFramebuffer_enc(ctx,
             srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
             mask, filter);
@@ -5292,6 +5326,35 @@ void GL2Encoder::s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, 
     SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
                  GL_INVALID_FRAMEBUFFER_OPERATION);
     ctx->m_glCopyTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, x, y, width, height);
+}
+
+void GL2Encoder::s_glCopyTexSubImage3D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(target != GL_TEXTURE_3D &&
+                 target != GL_TEXTURE_2D_ARRAY,
+                 GL_INVALID_ENUM);
+    GLint max_texture_size;
+    GLint max_3d_texture_size;
+    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    ctx->glGetIntegerv(ctx, GL_MAX_3D_TEXTURE_SIZE, &max_3d_texture_size);
+    SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
+    SET_ERROR_IF(level > ilog2(max_3d_texture_size), GL_INVALID_VALUE);
+    SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(xoffset < 0 || yoffset < 0 || zoffset < 0, GL_INVALID_VALUE);
+    GLuint tex = ctx->m_state->getBoundTexture(target);
+    GLsizei neededWidth = xoffset + width;
+    GLsizei neededHeight = yoffset + height;
+    GLsizei neededDepth = zoffset + 1;
+    SET_ERROR_IF(tex &&
+                 (neededWidth > ctx->m_state->queryTexWidth(level, tex) ||
+                  neededHeight > ctx->m_state->queryTexHeight(level, tex) ||
+                  neededDepth > ctx->m_state->queryTexDepth(level, tex)),
+                 GL_INVALID_VALUE);
+    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+                 GL_INVALID_FRAMEBUFFER_OPERATION);
+
+    ctx->m_glCopyTexSubImage3D_enc(ctx, target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 GLint GL2Encoder::s_glGetFragDataLocation (void *self , GLuint program, const char* name) {

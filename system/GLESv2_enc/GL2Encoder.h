@@ -302,25 +302,25 @@ private:
     glUniformMatrix4fv_client_proc_t m_glUniformMatrix4fv_enc;
 
     static void s_glUseProgram(void *self, GLuint program);
-	static void s_glUniform1f(void *self , GLint location, GLfloat x);
-	static void s_glUniform1fv(void *self , GLint location, GLsizei count, const GLfloat* v);
-	static void s_glUniform1i(void *self , GLint location, GLint x);
-	static void s_glUniform1iv(void *self , GLint location, GLsizei count, const GLint* v);
-	static void s_glUniform2f(void *self , GLint location, GLfloat x, GLfloat y);
-	static void s_glUniform2fv(void *self , GLint location, GLsizei count, const GLfloat* v);
-	static void s_glUniform2i(void *self , GLint location, GLint x, GLint y);
-	static void s_glUniform2iv(void *self , GLint location, GLsizei count, const GLint* v);
-	static void s_glUniform3f(void *self , GLint location, GLfloat x, GLfloat y, GLfloat z);
-	static void s_glUniform3fv(void *self , GLint location, GLsizei count, const GLfloat* v);
-	static void s_glUniform3i(void *self , GLint location, GLint x, GLint y, GLint z);
-	static void s_glUniform3iv(void *self , GLint location, GLsizei count, const GLint* v);
-	static void s_glUniform4f(void *self , GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
-	static void s_glUniform4fv(void *self , GLint location, GLsizei count, const GLfloat* v);
-	static void s_glUniform4i(void *self , GLint location, GLint x, GLint y, GLint z, GLint w);
-	static void s_glUniform4iv(void *self , GLint location, GLsizei count, const GLint* v);
-	static void s_glUniformMatrix2fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
-	static void s_glUniformMatrix3fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
-	static void s_glUniformMatrix4fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
+    static void s_glUniform1f(void *self , GLint location, GLfloat x);
+    static void s_glUniform1fv(void *self , GLint location, GLsizei count, const GLfloat* v);
+    static void s_glUniform1i(void *self , GLint location, GLint x);
+    static void s_glUniform1iv(void *self , GLint location, GLsizei count, const GLint* v);
+    static void s_glUniform2f(void *self , GLint location, GLfloat x, GLfloat y);
+    static void s_glUniform2fv(void *self , GLint location, GLsizei count, const GLfloat* v);
+    static void s_glUniform2i(void *self , GLint location, GLint x, GLint y);
+    static void s_glUniform2iv(void *self , GLint location, GLsizei count, const GLint* v);
+    static void s_glUniform3f(void *self , GLint location, GLfloat x, GLfloat y, GLfloat z);
+    static void s_glUniform3fv(void *self , GLint location, GLsizei count, const GLfloat* v);
+    static void s_glUniform3i(void *self , GLint location, GLint x, GLint y, GLint z);
+    static void s_glUniform3iv(void *self , GLint location, GLsizei count, const GLint* v);
+    static void s_glUniform4f(void *self , GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+    static void s_glUniform4fv(void *self , GLint location, GLsizei count, const GLfloat* v);
+    static void s_glUniform4i(void *self , GLint location, GLint x, GLint y, GLint z, GLint w);
+    static void s_glUniform4iv(void *self , GLint location, GLsizei count, const GLint* v);
+    static void s_glUniformMatrix2fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
+    static void s_glUniformMatrix3fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
+    static void s_glUniformMatrix4fv(void *self , GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
 
     glActiveTexture_client_proc_t m_glActiveTexture_enc;
     glBindTexture_client_proc_t m_glBindTexture_enc;
@@ -721,6 +721,10 @@ private:
 
     glCopyTexSubImage2D_client_proc_t m_glCopyTexSubImage2D_enc;
     static void s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+    
+    glCopyTexSubImage3D_client_proc_t m_glCopyTexSubImage3D_enc;
+    static void s_glCopyTexSubImage3D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+    
     glGetFragDataLocation_client_proc_t m_glGetFragDataLocation_enc;
     static GLint s_glGetFragDataLocation (void *self , GLuint program, const char* name);
 public:
