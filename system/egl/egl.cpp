@@ -1590,6 +1590,13 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     if (majorVersion == 3 && minorVersion == 2) {
         rcMajorVersion = 4;
     }
+    // 1.x Opengl ES is not supported, force to 3.0
+    if (majorVersion == 1) {
+        majorVersion = 3;
+        minorVersion = 0;
+        rcMajorVersion = 3;
+        ALOGD("%s: Opengl ES:1.x force to 3.0", __FUNCTION__);
+    }
     uint32_t rcContext = rcEnc->rcCreateContext((uintptr_t)config, rcShareCtx, rcMajorVersion);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
