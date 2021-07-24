@@ -123,7 +123,7 @@ GL2Encoder *HostConnection::gl2Encoder()
             ALOGD("HostConnection::gl2Encoder new failed");
             return nullptr;
         }
-        if (!m_gl2Enc->InitStateMachine()) {
+        if (!m_gl2Enc->InitEncoder()) {
             ALOGD("HostConnection::gl2Encoder init statemachine exports failed");
             return nullptr;
         }

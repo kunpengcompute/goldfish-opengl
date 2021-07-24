@@ -39,7 +39,7 @@ public:
      */
     void InitVmiGLESEntryList();
 
-    VmiPixelDataAlignment GetPixelDataAlignment();
+    VmiPixelDataAlignment GetPixelDataAlignment() const;
 
     void PixelDataSetAlignment(uint32_t param, GLint value);
 
@@ -49,8 +49,10 @@ public:
     uint32_t GetEncodeSize(VmiUniformLayout &layout);
     void EncodeUniforms(BufferWriter &writer, VmiUniformLayout &layout);
     void EncodeUniformLayout(GLuint program, VmiUniformLayout &layout);
-    bool InitStateMachine();
-    IStream* GetStream();
+    bool InitEncoder();
+    IStream* GetStream() const;
+    SnapshotRestore* GetSnapshotRestore() const;
+    VmiTransMatrix* GetTransMatrix() const;
 private:
     VmiPixelDataAlignment m_pixelData = VmiPixelDataAlignment();
     void InitVmiGLESFunPtrs();
