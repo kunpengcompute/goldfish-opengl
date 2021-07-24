@@ -25,7 +25,7 @@
 class GLEncoder : public gl_encoder_context_t {
 
 public:
-    GLEncoder(IStream *stream, ChecksumCalculator* protocol);
+    GLEncoder(IOStream *stream, ChecksumCalculator* protocol);
     virtual ~GLEncoder();
     void setClientState(GLClientState *state) {
         m_state = state;
@@ -35,7 +35,7 @@ public:
         if (m_state && m_shared.Ptr())
             m_state->setTextureData(m_shared->getTextureData());
     }
-    void flush() { m_stream->Flush(); }
+    void flush() { m_stream->flush(); }
     size_t pixelDataSize(GLsizei width, GLsizei height, GLenum format, GLenum type, int pack);
 
     void setInitialized(){ m_initialized = true; };

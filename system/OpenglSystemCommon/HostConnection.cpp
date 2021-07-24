@@ -35,7 +35,8 @@ HostConnection::HostConnection() :
     m_checksumHelper(),
     m_glExtensions(),
     m_grallocOnly(true),
-    m_noHostError(false)
+    m_noHostError(false),
+    m_iostream(NULL)
 {
 }
 
@@ -49,6 +50,8 @@ HostConnection::~HostConnection()
     m_gl2Enc = nullptr;
     delete m_rcEnc;
     m_rcEnc = nullptr;
+    delete m_iostream;
+    m_iostream = nullptr;
 }
 
 HostConnection *HostConnection::get() {
@@ -70,12 +73,17 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
         if (NULL == con) {
             return NULL;
         }
-
         con->m_stream = IStream::GetStream();
         if (con->m_stream == nullptr) {
             ALOGE("Failed to create IStream for host connection!!!");
             return nullptr;
         }
+        QemuPipeStream* qStream = new (std::nothrow) QemuPipeStream();
+        if (qStream == nullptr) {
+            ERR("Failed to create QemuPipeStream for host connection!!!");
+            return nullptr;
+        }
+        con->m_iostream = qStream;
         ALOGD("HostConnection::get() New Host Connection established %p, tid %d\n", con, gettid());
         tinfo->hostConn = con;
     }
@@ -100,7 +108,7 @@ void HostConnection::exit() {
 GLEncoder *HostConnection::glEncoder()
 {
     if (!m_glEnc) {
-        m_glEnc = new GLEncoder(m_stream, checksumHelper());
+        m_glEnc = new GLEncoder(m_iostream, checksumHelper());
         ALOGD("HostConnection::glEncoder new encoder %p, tid %d", m_glEnc, gettid());
         m_glEnc->setContextAccessor(s_getGLContext);
     }

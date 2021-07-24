@@ -17,6 +17,7 @@
 #define __COMMON_HOST_CONNECTION_H
 
 #include "IStream.h"
+#include "IOStream.h"
 #include "IRenderControlEncoder.h"
 #include "ChecksumCalculator.h"
 #include "goldfish_dma.h"
@@ -117,6 +118,7 @@ private:
     void queryAndSetNoErrorState(IRenderControlEncoder *rcEnc);
 
 private:
+    IOStream *m_iostream;
     IStream *m_stream;
     GLEncoder   *m_glEnc;
     GL2Encoder  *m_gl2Enc;

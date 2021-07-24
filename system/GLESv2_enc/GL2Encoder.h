@@ -73,7 +73,6 @@ public:
     }
     const GLClientState *state() { return m_state; }
     const GLSharedGroupPtr shared() { return m_shared; }
-    void flush() { m_stream->Flush(); }
 
     void setInitialized(){ m_initialized = true; };
     bool isInitialized(){ return m_initialized; };
@@ -138,7 +137,6 @@ private:
                              int* minIndex_out, int* maxIndex_out);
     void getVBOUsage(bool* hasClientArrays, bool* hasVBOs) const;
     void sendVertexAttributes(GLint first, GLsizei count, bool hasClientArrays, GLsizei primcount = 0);
-    void flushDrawCall();
 
     bool updateHostTexture2DBinding(GLenum texUnit, GLenum newTarget);
     void updateHostTexture2DBindingsFromProgramData(GLuint program);

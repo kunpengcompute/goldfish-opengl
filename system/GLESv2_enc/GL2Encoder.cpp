@@ -480,7 +480,6 @@ void GL2Encoder::s_glFlush(void *self)
 {
     GL2Encoder *ctx = (GL2Encoder *) self;
     ctx->m_glFlush_enc(self);
-    ctx->m_stream->Flush();
 }
 
 const GLubyte *GL2Encoder::s_glGetString(void *self, GLenum name)
@@ -1153,17 +1152,6 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count, bool hasClient
     }
 }
 
-void GL2Encoder::flushDrawCall() {
-    // This used to be every other draw call, but
-    // now that we are using real GPU buffers on host,
-    // set this to every 200 draw calls
-    // (tuned on z840 linux NVIDIA Quadro K2200)
-    if (m_drawCallFlushCount % 200 == 0) {
-        m_stream->Flush();
-    }
-    m_drawCallFlushCount++;
-}
-
 static bool isValidDrawMode(GLenum mode)
 {
     bool retval = false;
@@ -1265,7 +1253,6 @@ void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum
             ctx->sendVertexAttributes(0, maxIndex + 1, true);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
             ctx->glDrawElementsOffset(ctx, mode, count, type, offset);
-            ctx->flushDrawCall();
             adjustIndices = false;
         } else {
             BufferData * buf = ctx->m_shared->getBufferData(ctx->m_state->currentIndexVbo());
@@ -4042,7 +4029,6 @@ void GL2Encoder::s_glDrawArraysInstanced(void* self, GLenum mode, GLint first, G
         ctx->sendVertexAttributes(0, count, false, primcount);
         ctx->m_glDrawArraysInstanced_enc(ctx, mode, first, count, primcount);
     }
-    ctx->m_stream->Flush();
 }
 
 void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount)
@@ -4106,7 +4092,6 @@ void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei coun
             ctx->sendVertexAttributes(0, maxIndex + 1, false, primcount);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
             ctx->glDrawElementsInstancedOffsetAEMU(ctx, mode, count, type, offset, primcount);
-            ctx->flushDrawCall();
             adjustIndices = false;
         } else {
             BufferData * buf = ctx->m_shared->getBufferData(ctx->m_state->currentIndexVbo());
@@ -4123,7 +4108,6 @@ void GL2Encoder::s_glDrawElementsInstanced(void* self, GLenum mode, GLsizei coun
         if (has_indirect_arrays || 1) {
             ctx->sendVertexAttributes(minIndex, maxIndex - minIndex + 1, true, primcount);
             ctx->glDrawElementsInstancedDataAEMU(ctx, mode, count, type, adjustedIndices, primcount, count * glSizeof(type));
-            ctx->m_stream->Flush();
             // XXX - OPTIMIZATION (see the other else branch) should be implemented
             if(!has_indirect_arrays) {
                 //ALOGD("unoptimized drawelements !!!\n");
@@ -4197,7 +4181,6 @@ void GL2Encoder::s_glDrawRangeElements(void* self, GLenum mode, GLuint start, GL
             ctx->sendVertexAttributes(0, maxIndex + 1, false);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
             ctx->glDrawElementsOffset(ctx, mode, count, type, offset);
-            ctx->flushDrawCall();
             adjustIndices = false;
         } else {
             BufferData * buf = ctx->m_shared->getBufferData(ctx->m_state->currentIndexVbo());
@@ -4214,7 +4197,6 @@ void GL2Encoder::s_glDrawRangeElements(void* self, GLenum mode, GLuint start, GL
         if (has_indirect_arrays || 1) {
             ctx->sendVertexAttributes(minIndex, maxIndex - minIndex + 1, true);
             ctx->glDrawElementsData(ctx, mode, count, type, adjustedIndices, count * glSizeof(type));
-            ctx->m_stream->Flush();
             // XXX - OPTIMIZATION (see the other else branch) should be implemented
             if(!has_indirect_arrays) {
                 //ALOGD("unoptimized drawelements !!!\n");

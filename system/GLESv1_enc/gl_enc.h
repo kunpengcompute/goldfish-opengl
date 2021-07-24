@@ -4,7 +4,7 @@
 #ifndef GUARD_gl_encoder_context_t
 #define GUARD_gl_encoder_context_t
 
-#include "IStream.h"
+#include "IOStream.h"
 #include "ChecksumCalculator.h"
 #include "gl_client_context.h"
 
@@ -14,10 +14,10 @@
 
 struct gl_encoder_context_t : public gl_client_context_t {
 
-	IStream *m_stream;
+	IOStream *m_stream;
 	ChecksumCalculator *m_checksumCalculator;
 
-	gl_encoder_context_t(IStream *stream, ChecksumCalculator *checksumCalculator);
+	gl_encoder_context_t(IOStream *stream, ChecksumCalculator *checksumCalculator);
 	virtual uint64_t lockAndWriteDma(void* data, uint32_t sz) { return 0; }
 };
 
