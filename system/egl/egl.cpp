@@ -433,7 +433,7 @@ void egl_window_surface_t::setSwapInterval(int interval)
 {
     nativeWindow->setSwapInterval(nativeWindow, interval);
 }
-#if 0
+
 // createNativeSync() creates an OpenGL sync object on the host
 // using rcCreateSyncKHR. If necessary, a native fence FD will
 // also be created through the goldfish sync device.
@@ -489,7 +489,7 @@ static void createGoldfishOpenGLNativeSync(int* fd_out) {
                      -1 /* we want a new fd */,
                      fd_out);
 }
-#endif
+
 EGLBoolean egl_window_surface_t::swapBuffers()
 {
 
@@ -2113,7 +2113,7 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
 
     uint64_t sync_handle = 0;
     int newFenceFd = -1;
-#if 0
+
     if (rcEnc->hasNativeSync()) {
         sync_handle =
             createNativeSync(type, attrib_list, num_actual_attribs,
@@ -2128,7 +2128,6 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
         // is unavailable.
         eglWaitClient();
     }
-#endif
 
     EGLSync_t* syncRes = new EGLSync_t(sync_handle);
 
@@ -2171,10 +2170,9 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync)
 
     if (sync) {
         DEFINE_HOST_CONNECTION;
-        //临时屏蔽
-        // if (rcEnc->hasNativeSync()) {
-        //     rcEnc->rcDestroySyncKHR(sync->handle);
-        // }
+        if (rcEnc->hasNativeSync()) {
+            rcEnc->rcDestroySyncKHR(sync->handle);
+        }
         delete sync;
     }
 
@@ -2199,12 +2197,12 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags,
     DEFINE_HOST_CONNECTION;
 
     EGLint retval;
-    // if (rcEnc->hasNativeSync()) {
-    //     retval = rcEnc->rcClientWaitSyncKHR
-    //         (sync->handle, flags, timeout);
-    // } else {
+    if (rcEnc->hasNativeSync()) {
+        retval = rcEnc->rcClientWaitSyncKHR
+            (sync->handle, flags, timeout);
+    } else {
         retval = EGL_CONDITION_SATISFIED_KHR;
-//    }
+    }
     EGLint res_status;
     switch (sync->type) {
         case EGL_SYNC_FENCE_KHR:
@@ -2271,9 +2269,8 @@ EGLint eglWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR eglsync, EGLint flags) {
 
     DEFINE_HOST_CONNECTION;
     if (rcEnc->hasNativeSyncV3()) {
-        ALOGE("==============lsl");
         EGLSync_t* sync = (EGLSync_t*)eglsync;
-        //rcEnc->rcWaitSyncKHR(sync->handle, flags);
+        rcEnc->rcWaitSyncKHR(sync->handle, flags);
     }
 
     return EGL_TRUE;

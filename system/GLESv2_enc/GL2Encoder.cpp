@@ -422,7 +422,7 @@ public:
     }
     ~ScopedQueryUpdate() {
         GLint hostError = mErrorUpdater.getHostErrorAndUpdate();
-        if (hostError == GL_NO_ERROR) {
+        if (hostError == GL_NO_ERROR && mTarget != nullptr) {
             memcpy(mTarget, &mBuf[0], mBuf.size());
         }
         mErrorUpdater.updateGuestErrorState();
@@ -2234,7 +2234,10 @@ void GL2Encoder::s_glTexSubImage2D(void* self, GLenum target, GLint level,
     } else {
         ctx->m_glTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, width,
                 height, format, type, pixels);
-        ALOGE("%s:%s:%d GL error 0x%x\n", __FILE__, __FUNCTION__, __LINE__, s_glGetError(self)); //avoid systemui.apk crash
+        GLenum err = s_glGetError(self);
+        if (err != GL_NO_ERROR) {
+            ALOGE("%s:%s:%d GL error 0x%x\n", __FILE__, __FUNCTION__, __LINE__, err); //avoid systemui.apk crash
+        }    
     }
     if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
         ctx->restore2DTextureTarget(target);
