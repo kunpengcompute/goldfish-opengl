@@ -116,6 +116,7 @@ GL2Encoder *HostConnection::gl2Encoder()
         DBG("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
         m_gl2Enc->setNoHostError(m_noHostError);
     }
+    m_stream->WaitRebuildStateMachine();
     return m_gl2Enc;
 }
 
@@ -131,6 +132,7 @@ IRenderControlEncoder *HostConnection::rcEncoder()
         queryAndSetGLESMaxVersion(m_rcEnc);
         queryAndSetNoErrorState(m_rcEnc);
     }
+    m_stream->WaitRebuildStateMachine();
     return m_rcEnc;
 }
 
