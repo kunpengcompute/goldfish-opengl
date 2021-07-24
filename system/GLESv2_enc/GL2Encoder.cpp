@@ -282,13 +282,6 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
 
     OVERRIDE(glBindSampler);
 
-    OVERRIDE_CUSTOM(glFenceSync);
-    OVERRIDE_CUSTOM(glClientWaitSync);
-    OVERRIDE_CUSTOM(glWaitSync);
-    OVERRIDE_CUSTOM(glDeleteSync);
-    OVERRIDE_CUSTOM(glIsSync);
-    OVERRIDE_CUSTOM(glGetSynciv);
-
     OVERRIDE(glGetIntegeri_v);
     OVERRIDE(glGetInteger64i_v);
     OVERRIDE(glGetInteger64v);

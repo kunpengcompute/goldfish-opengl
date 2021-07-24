@@ -1694,7 +1694,6 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     //Now make the local bind
     if (context) {
 
-        ALOGD("%s: %p: ver %d %d (tinfo %p)", __FUNCTION__, context, context->majorVersion, context->minorVersion, tInfo);
         // This is a nontrivial context.
         // The thread cannot be gralloc-only anymore.
         hostCon->setGrallocOnly(false);
