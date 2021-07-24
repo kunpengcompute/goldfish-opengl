@@ -374,7 +374,7 @@ static int gralloc_alloc(alloc_device_t* dev,
             // Workaround: distinguish vs the RGB8/RGBA8
             // by changing |glFormat| to GL_RGB565
             // (previously, it was still GL_RGB)
-            glFormat = GL_RGB;
+            glFormat = GL_RGB565;
             glType = GL_UNSIGNED_SHORT_5_6_5;
             break;
 #if PLATFORM_SDK_VERSION >= 26
