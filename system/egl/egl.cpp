@@ -268,6 +268,7 @@ struct egl_surface_t {
 
     virtual     void        setSwapInterval(int interval) = 0;
     virtual     EGLBoolean  swapBuffers() = 0;
+    virtual     EGLBoolean  swapBuffers(EGLint *rects, EGLint n_rects) = 0;
 
     EGLint      getSwapBehavior() const;
     uint32_t    getRcSurface()   { return rcSurface; }
@@ -348,6 +349,7 @@ struct egl_window_surface_t : public egl_surface_t {
 
     virtual void       setSwapInterval(int interval);
     virtual EGLBoolean swapBuffers();
+    virtual EGLBoolean swapBuffers(EGLint *rects, EGLint n_rects);
 
     virtual     void        setCollectingTimestamps(EGLint collect)
         override { collectingTimestamps = (collect == EGL_TRUE) ? true : false; }
@@ -520,16 +522,77 @@ EGLBoolean egl_window_surface_t::swapBuffers()
     }
 
 #if PLATFORM_SDK_VERSION <= 16
-    rcEnc->rcFlushWindowColorBuffer(rcSurface);
+    rcEnc->rcFlushWindowColorBuffer(rcSurface, nullptr, 0);
     // equivalent to glFinish if no native sync
     eglWaitClient();
     nativeWindow->queueBuffer(nativeWindow, buffer);
 #else
     if (rcEnc->hasNativeSync()) {
-        rcEnc->rcFlushWindowColorBufferAsync(rcSurface);
+        rcEnc->rcFlushWindowColorBufferAsync(rcSurface, nullptr, 0);
         //createGoldfishOpenGLNativeSync(&presentFenceFd);
     } else {
-        rcEnc->rcFlushWindowColorBuffer(rcSurface);
+        rcEnc->rcFlushWindowColorBuffer(rcSurface, nullptr, 0);
+        // equivalent to glFinish if no native sync
+        eglWaitClient();
+    }
+
+    DPRINT("queueBuffer with fence %d", presentFenceFd);
+    nativeWindow->queueBuffer(nativeWindow, buffer, presentFenceFd);
+#endif
+
+    DPRINT("calling dequeueBuffer...");
+
+#if PLATFORM_SDK_VERSION <= 16
+    if (nativeWindow->dequeueBuffer(nativeWindow, &buffer)) {
+        buffer = NULL;
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+#else
+    int acquireFenceFd = -1;
+    if (nativeWindow->dequeueBuffer(nativeWindow, &buffer, &acquireFenceFd)) {
+        buffer = NULL;
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
+    DPRINT("dequeueBuffer with fence %d", acquireFenceFd);
+
+    if (acquireFenceFd > 0) {
+        close(acquireFenceFd);
+    }
+#endif
+
+    rcEnc->rcSetWindowColorBuffer(rcSurface,
+            ((cb_handle_t *)(buffer->handle))->hostHandle);
+
+    setWidth(buffer->width);
+    setHeight(buffer->height);
+
+    return EGL_TRUE;
+}
+
+EGLBoolean egl_window_surface_t::swapBuffers(EGLint *rects, EGLint n_rects)
+{
+
+    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+
+    int presentFenceFd = -1;
+
+    if (buffer == NULL) {
+        ALOGE("egl_window_surface_t::swapBuffers called with NULL buffer");
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
+#if PLATFORM_SDK_VERSION <= 16
+    rcEnc->rcFlushWindowColorBuffer(rcSurface, rects, n_rects);
+    // equivalent to glFinish if no native sync
+    eglWaitClient();
+    nativeWindow->queueBuffer(nativeWindow, buffer);
+#else
+    if (rcEnc->hasNativeSync()) {
+        rcEnc->rcFlushWindowColorBufferAsync(rcSurface, rects, n_rects);
+        //createGoldfishOpenGLNativeSync(&presentFenceFd);
+    } else {
+        rcEnc->rcFlushWindowColorBuffer(rcSurface, rects, n_rects);
         // equivalent to glFinish if no native sync
         eglWaitClient();
     }
@@ -579,6 +642,7 @@ struct egl_pbuffer_surface_t : public egl_surface_t {
 
     virtual void       setSwapInterval(int interval) { (void)interval; }
     virtual EGLBoolean swapBuffers() { return EGL_TRUE; }
+    virtual EGLBoolean swapBuffers(EGLint *rects, EGLint n_rects) { return EGL_TRUE; }
 
     uint32_t getRcColorBuffer() { return rcColorBuffer; }
 
@@ -1941,6 +2005,44 @@ EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface eglSurface)
     hostCon->flush();
     return ret;
 }
+
+EGLBoolean eglSwapBuffersWithDamageKHR(EGLDisplay dpy, EGLSurface eglSurface, EGLint *rects, EGLint n_rects)
+{
+    VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
+    VALIDATE_SURFACE_RETURN(eglSurface, EGL_FALSE);
+
+    egl_surface_t* surface(static_cast<egl_surface_t*>(eglSurface));
+    uint32_t surfaceHandle = (surface) ? surface->getRcSurface() : 0;
+
+    DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+    // post the surface with rects
+    EGLBoolean ret = EGL_FALSE;
+    if (rects == nullptr || n_rects == 0) {
+        ret = surface->swapBuffers();
+    } else {
+        ret = surface->swapBuffers(rects, n_rects);
+    }
+
+    hostCon->flush();
+    return ret;
+}
+
+// EGLBoolean eglSetDamageRegionKHR(EGLDisplay dpy, EGLSurface eglSurface, EGLint *rects, EGLint n_rects)
+// {
+//     VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
+//     VALIDATE_SURFACE_RETURN(eglSurface, EGL_FALSE);
+
+//     egl_surface_t* surface(static_cast<egl_surface_t*>(eglSurface));
+//     uint32_t surfaceHandle = (surface) ? surface->getRcSurface() : 0;
+
+//     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+//     EGLint ret = rcEnc->rcSetDamageRegionKHR(surfaceHandle, rects, n_rects);
+//     if (ret == EGL_FALSE) {
+//         ALOGE("eglSetDamageRegionKHR failed: tid %d", gettid());
+//         return EGL_FALSE;
+//     }
+//     return EGL_TRUE;
+// }
 
 EGLBoolean eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
 {
