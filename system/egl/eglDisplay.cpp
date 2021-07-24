@@ -181,7 +181,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
 
         uint32_t nInts = m_numConfigAttribs * (m_numConfigs + 1);
         EGLint tmp_buf[nInts];
-        m_configs = new EGLint[nInts-m_numConfigAttribs];
+        m_configs = new EGLint[nInts];
         if (!m_configs) {
             pthread_mutex_unlock(&m_lock);
             return false;
@@ -201,7 +201,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         }
 
         //Copy the actual configs data to m_configs
-        memcpy(m_configs, tmp_buf + m_numConfigAttribs, m_numConfigs*m_numConfigAttribs*sizeof(EGLint));
+        memcpy(m_configs, tmp_buf, nInts * sizeof(EGLint));
 
         m_initialized = true;
     }
@@ -214,7 +214,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
 
 void eglDisplay::processConfigs()
 {
-    for (intptr_t i=0; i<m_numConfigs; i++) {
+    for (intptr_t i=1; i<=m_numConfigs; i++) {
         EGLConfig config = (EGLConfig)i;
         //Setup the EGL_NATIVE_VISUAL_ID attribute
         PixelFormat format;
@@ -472,7 +472,7 @@ void eglDisplay::dumpConfig(EGLConfig config)
 {
     EGLint value = 0;
     //ALOGD("^^^^^^^^^^ dumpConfig %d ^^^^^^^^^^^^^^^^^^", (int)config);
-    for (int i=0; i<m_numConfigAttribs; i++) {
+    for (int i=1; i<=m_numConfigAttribs; i++) {
         getAttribValue(config, i, &value);
         //ALOGD("{%d}[%d] %d\n", (int)config, i, value);
     }
