@@ -144,10 +144,10 @@ public:
 class GLSharedGroup {
 private:
     SharedTextureDataMap m_textureRecs;
-    std::map<GLuint, BufferData*> m_buffers;
-    std::map<GLuint, ProgramData*> m_programs;
-    std::map<GLuint, ShaderData*> m_shaders;
-    std::map<uint32_t, ShaderProgramData*> m_shaderPrograms;
+    android::DefaultKeyedVector<GLuint, BufferData*> m_buffers;
+    android::DefaultKeyedVector<GLuint, ProgramData*> m_programs;
+    android::DefaultKeyedVector<GLuint, ShaderData*> m_shaders;
+    android::DefaultKeyedVector<uint32_t, ShaderProgramData*> m_shaderPrograms;
     std::map<GLuint, uint32_t> m_shaderProgramIdMap;
 
     mutable android::Mutex m_lock;
