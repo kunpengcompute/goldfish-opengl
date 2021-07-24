@@ -91,7 +91,7 @@ public:
     BufferData* getBufferDataById(GLuint buffer) const;
     bool isBufferMapped(GLuint buffer) const;
     bool isBufferTargetMapped(GLenum target) const;
-
+    bool isSurpportAtscExtension(void* self);
 private:
 
     int m_currMajorVersion;

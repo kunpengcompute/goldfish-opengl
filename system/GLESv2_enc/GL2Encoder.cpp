@@ -2945,11 +2945,73 @@ void GL2Encoder::s_glFlushMappedBufferRange(void* self, GLenum target, GLintptr 
             (void*)((char*)buf->m_fixedBuffer.ptr() + totalOffset));
 }
 
+static bool belongsAtscEnum(GLenum internalformat)
+{
+    bool bRet = false;
+    switch(internalformat){
+        case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
+        case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR:
+        case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR:
+            bRet = true;
+            break;
+        default:
+            bRet = false;
+        break;
+    }   
+    
+    return bRet;
+}
+
+bool GL2Encoder::isSurpportAtscExtension(void* self){
+    if (self == nullptr){
+        return false;
+    }
+    
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    int size = ctx->m_currExtensionsArray.size();
+    for(int i = 0; i < size; i++){
+        if (ctx->m_currExtensionsArray[i] == "GL_KHR_texture_compression_astc_ldr"){
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 void GL2Encoder::s_glCompressedTexImage2D(void* self, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid* data) {
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
 
     SET_ERROR_IF(!GLESv2Validation::textureTarget(ctx, target), GL_INVALID_ENUM);
+    SET_ERROR_IF(target == GL_TEXTURE_CUBE_MAP, GL_INVALID_ENUM);
+    if(!ctx->isSurpportAtscExtension(self)){
+        SET_ERROR_IF(belongsAtscEnum(internalformat) == true,GL_INVALID_ENUM);
+    }
     // Filter compressed formats support.
     SET_ERROR_IF(!GLESv2Validation::supportedCompressedFormat(ctx, internalformat), GL_INVALID_ENUM);
     // Verify level <= log2(GL_MAX_TEXTURE_SIZE).
