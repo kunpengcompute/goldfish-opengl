@@ -32,22 +32,16 @@ public:
     /**
      * @brief: VmiGLESv2Encoder destructor function
      */
-    virtual ~VmiGLESv2Encoder();
+    virtual ~VmiGLESv2Encoder() = default;
 
     /**
      * @brief: Hook and encode all the GLES APIs members.
      */
     void InitVmiGLESEntryList();
 
-    VmiPixelDataAlignment GetPixelDataAlignment()
-    {
-        return m_pixelData;
-    }
+    VmiPixelDataAlignment GetPixelDataAlignment();
 
-    void PixelDataSetAlignment(uint32_t param, GLint value)
-    {
-        m_pixelData.SetAlignment(param, value);
-    }
+    void PixelDataSetAlignment(uint32_t param, GLint value);
 
     void SendClientGLTexImage2D(TexImageInfo &texInfo);
     void SendClientGLTexSubImage2D(TexSubImageInfo &texInfo);
@@ -55,6 +49,7 @@ public:
     uint32_t GetEncodeSize(VmiUniformLayout &layout);
     void EncodeUniforms(BufferWriter &writer, VmiUniformLayout &layout);
     void EncodeUniformLayout(GLuint program, VmiUniformLayout &layout);
+    bool InitStateMachine();
 
 private:
     VmiPixelDataAlignment m_pixelData = VmiPixelDataAlignment();

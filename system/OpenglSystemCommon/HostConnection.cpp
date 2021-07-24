@@ -112,6 +112,14 @@ GL2Encoder *HostConnection::gl2Encoder()
 {
     if (!m_gl2Enc) {
         m_gl2Enc = new GL2Encoder(m_stream, checksumHelper());
+        if (!m_gl2Enc) {
+            ALOGD("HostConnection::gl2Encoder new failed");
+            return nullptr;
+        }
+        if (!m_gl2Enc->InitStateMachine()) {
+            ALOGD("HostConnection::gl2Encoder init statemachine exports failed");
+            return nullptr;
+        }
         ALOGD("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
         m_gl2Enc->setNoHostError(m_noHostError);
     }
