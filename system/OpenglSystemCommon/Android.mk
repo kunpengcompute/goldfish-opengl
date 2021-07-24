@@ -24,8 +24,8 @@ LOCAL_C_INCLUDES += \
     $(EMUGL_PATH)/goldfishinclude
 
 LOCAL_SHARED_LIBRARIES += \
-    libInstructionEngine \
-    libVmiInsCommon \
+    libVmiInstructionEngine \
+    libVmiUtil \
     libVmiCommonInstr
 
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH) bionic/libc/private)

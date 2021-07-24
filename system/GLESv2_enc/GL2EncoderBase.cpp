@@ -120,9 +120,9 @@ bool GL2EncoderBase::InitGLESv2Export()
     }
 
 #if defined(__LP64__)
-    const std::string libName = "/vendor/lib64/libInstructionEngine.so";
+    const std::string libName = "/vendor/lib64/libVmiInstructionEngine.so";
 #else
-    const std::string libName = "/vendor/lib/libInstructionEngine.so";
+    const std::string libName = "/vendor/lib/libVmiInstructionEngine.so";
 #endif
     m_libHandle = LoadLibrary(libName);
     if (m_libHandle == nullptr) {
