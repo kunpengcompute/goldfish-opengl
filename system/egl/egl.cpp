@@ -2178,7 +2178,7 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
 
     DEFINE_HOST_CONNECTION;
 
-    if (type == EGL_SYNC_FENCE_KHR && attrib_list != NULL)
+    if (type != EGL_SYNC_FENCE_KHR && type != EGL_SYNC_NATIVE_FENCE_ANDROID)
         setErrorReturn(EGL_BAD_ATTRIBUTE, (EGLSyncKHR)EGL_FALSE);
 
 
