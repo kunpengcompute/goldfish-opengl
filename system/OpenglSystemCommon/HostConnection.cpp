@@ -19,7 +19,6 @@
 #include "GL2Encoder.h"
 #include "QemuPipeStream.h"
 #include "ThreadInfo.h"
-#include "Log/logging.h"
 #include <cutils/log.h>
 
 #define STREAM_BUFFER_SIZE  (4*1024*1024)
@@ -75,7 +74,7 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
 
         con->m_stream = IStream::GetStream();
         if (con->m_stream == nullptr) {
-            ERR("Failed to create IStream for host connection!!!");
+            ALOGE("Failed to create IStream for host connection!!!");
             return nullptr;
         }
         ALOGD("HostConnection::get() New Host Connection established %p, tid %d\n", con, gettid());
@@ -103,7 +102,7 @@ GLEncoder *HostConnection::glEncoder()
 {
     if (!m_glEnc) {
         m_glEnc = new GLEncoder(m_stream, checksumHelper());
-        DBG("HostConnection::glEncoder new encoder %p, tid %d", m_glEnc, gettid());
+        ALOGD("HostConnection::glEncoder new encoder %p, tid %d", m_glEnc, gettid());
         m_glEnc->setContextAccessor(s_getGLContext);
     }
     return m_glEnc;
@@ -113,7 +112,7 @@ GL2Encoder *HostConnection::gl2Encoder()
 {
     if (!m_gl2Enc) {
         m_gl2Enc = new GL2Encoder(m_stream, checksumHelper());
-        DBG("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
+        ALOGD("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
         m_gl2Enc->setNoHostError(m_noHostError);
     }
     m_stream->WaitRebuildStateMachine();
@@ -125,7 +124,7 @@ IRenderControlEncoder *HostConnection::rcEncoder()
     if (!m_rcEnc) {
         m_rcEnc = InstantiateRenderControlEncoder(m_stream);
         if (m_rcEnc == nullptr) {
-            ERR("Failed to instantiate VmiRenderControlWrap");
+            ALOGE("Failed to instantiate VmiRenderControlWrap");
             return nullptr;
         }
         queryAndSetSyncImpl(m_rcEnc);

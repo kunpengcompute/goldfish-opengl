@@ -16,7 +16,7 @@
 #ifndef _GL2_ENCODER_H_
 #define _GL2_ENCODER_H_
 
-#include "GLESv2Encoder/VmiGLESv2Encoder.h"
+#include "VmiGLESv2Encoder.h"
 #include "gl2_enc.h"
 #include "GLClientState.h"
 #include "GLSharedGroup.h"

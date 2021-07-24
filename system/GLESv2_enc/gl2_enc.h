@@ -4,7 +4,7 @@
 #ifndef GUARD_gl2_encoder_context_t
 #define GUARD_gl2_encoder_context_t
 
-#include "Include/IStream.h"
+#include "IStream.h"
 #include "ChecksumCalculator.h"
 #include "gl2_client_context.h"
 

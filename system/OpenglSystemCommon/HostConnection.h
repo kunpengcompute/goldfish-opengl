@@ -16,8 +16,8 @@
 #ifndef __COMMON_HOST_CONNECTION_H
 #define __COMMON_HOST_CONNECTION_H
 
-#include "Include/IStream.h"
-#include "VmiRenderControlEncoder/IRenderControlEncoder.h"
+#include "IStream.h"
+#include "IRenderControlEncoder.h"
 #include "ChecksumCalculator.h"
 #include "goldfish_dma.h"
 

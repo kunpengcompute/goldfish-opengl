@@ -21,7 +21,7 @@
  * <hardware/qemu_pipe.h> for more details.
  */
 #include <stdlib.h>
-#include "Include/IStream.h"
+#include "IStream.h"
 
 class QemuPipeStream : public IStream {
 public:
