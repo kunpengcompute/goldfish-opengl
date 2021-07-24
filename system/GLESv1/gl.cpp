@@ -26,7 +26,24 @@
 
 
 //XXX: fix this macro to get the context from fast tls path
-#define GET_CONTEXT GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();
+#define GET_CONTEXT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return
+#define GET_CONTEXT_ENUM \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_INT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_BIT \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return 0
+#define GET_CONTEXT_BOOL \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return false 
+#define GET_CONTEXT_POINTER \
+    GLEncoder * ctx = getEGLThreadInfo()->hostConn->glEncoder();\
+    return nullptr    
 
 #include "gl_entry.cpp"
 
@@ -152,7 +169,7 @@ const GLubyte *my_glGetString (void *self, GLenum name)
             }
             break;
         default:
-            GET_CONTEXT;
+            GET_CONTEXT_POINTER;
             ctx->setError(GL_INVALID_ENUM);
             break;
     }
