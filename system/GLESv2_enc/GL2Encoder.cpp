@@ -1563,6 +1563,7 @@ void GL2Encoder::s_glLinkProgram(void * self, GLuint program)
     ctx->m_shared->setupLocationShiftWAR(program);
 
     delete[] name;
+    ctx->glUniformLayout(self, program);
 }
 
 void GL2Encoder::s_glDeleteProgram(void *self, GLuint program)
