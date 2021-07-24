@@ -2985,6 +2985,12 @@ void glCopyImageSubDataEXT(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLi
         srcHeight, srcDepth);
 }
 
+void glBlendBarrierKHR(void)
+{
+	GET_CONTEXT;
+	ctx->glBlendBarrierKHR(ctx);
+}
+
 void glTexParameterIivEXT(GLenum target, GLenum pname, const GLint *params)
 {
 	GET_CONTEXT;
