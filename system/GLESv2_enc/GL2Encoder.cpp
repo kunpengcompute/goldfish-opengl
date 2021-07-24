@@ -350,6 +350,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE_CUSTOM(glDrawElementsIndirect);
 
     OVERRIDE(glTexStorage2DMultisample);
+    OVERRIDE(glGetFragDataLocation);
 }
 
 GL2Encoder::~GL2Encoder()
@@ -1538,6 +1539,7 @@ void GL2Encoder::s_glLinkProgram(void * self, GLuint program)
 
     GLint linkStatus = 0;
     ctx->glGetProgramiv(self, program, GL_LINK_STATUS, &linkStatus);
+    ctx->m_shared->setProgramLinkStatus(program, linkStatus);
     if (!linkStatus) {
         return;
     }
@@ -1568,6 +1570,31 @@ void GL2Encoder::s_glLinkProgram(void * self, GLuint program)
     ctx->glUniformLayout(self, program);
 }
 
+
+#define VALIDATE_PROGRAM_NAME(program) \
+    bool isShaderOrProgramObject = \
+        ctx->m_shared->isShaderOrProgramObject(program); \
+    bool isProgram = \
+        ctx->m_shared->isProgram(program); \
+    SET_ERROR_IF(!isShaderOrProgramObject, GL_INVALID_VALUE); \
+    SET_ERROR_IF(!isProgram, GL_INVALID_OPERATION); \
+
+#define VALIDATE_PROGRAM_NAME_RET(program, ret) \
+    bool isShaderOrProgramObject = \
+        ctx->m_shared->isShaderOrProgramObject(program); \
+    bool isProgram = \
+        ctx->m_shared->isProgram(program); \
+    RET_AND_SET_ERROR_IF(!isShaderOrProgramObject, GL_INVALID_VALUE, ret); \
+    RET_AND_SET_ERROR_IF(!isProgram, GL_INVALID_OPERATION, ret); \
+
+#define VALIDATE_SHADER_NAME(shader) \
+    bool isShaderOrProgramObject = \
+        ctx->m_shared->isShaderOrProgramObject(shader); \
+    bool isShader = \
+        ctx->m_shared->isShader(shader); \
+    SET_ERROR_IF(!isShaderOrProgramObject, GL_INVALID_VALUE); \
+    SET_ERROR_IF(!isShader, GL_INVALID_OPERATION); \
+    
 void GL2Encoder::s_glDeleteProgram(void *self, GLuint program)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
@@ -5265,4 +5292,11 @@ void GL2Encoder::s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, 
     SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
                  GL_INVALID_FRAMEBUFFER_OPERATION);
     ctx->m_glCopyTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, x, y, width, height);
+}
+
+GLint GL2Encoder::s_glGetFragDataLocation (void *self , GLuint program, const char* name) {
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    VALIDATE_PROGRAM_NAME_RET(program, -1);
+    RET_AND_SET_ERROR_IF(!ctx->m_shared->getProgramLinkStatus(program), GL_INVALID_OPERATION, -1);
+    return ctx->m_glGetFragDataLocation_enc(ctx, program, name);
 }

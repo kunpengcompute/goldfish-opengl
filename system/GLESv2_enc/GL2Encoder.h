@@ -721,6 +721,8 @@ private:
 
     glCopyTexSubImage2D_client_proc_t m_glCopyTexSubImage2D_enc;
     static void s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+    glGetFragDataLocation_client_proc_t m_glGetFragDataLocation_enc;
+    static GLint s_glGetFragDataLocation (void *self , GLuint program, const char* name);
 public:
     glEGLImageTargetTexture2DOES_client_proc_t m_glEGLImageTargetTexture2DOES_enc;
 
