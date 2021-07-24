@@ -364,6 +364,13 @@ private:
     glRenderbufferStorage_client_proc_t m_glRenderbufferStorage_enc;
     static void s_glRenderbufferStorage(void* self, GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 
+    glInvalidateFramebuffer_client_proc_t m_glInvalidateFramebuffer_enc;
+    static void s_glInvalidateFramebuffer(void* self, GLenum target, GLsizei numAttachments, const GLenum* attachments);
+
+    glInvalidateSubFramebuffer_client_proc_t m_glInvalidateSubFramebuffer_enc;
+    static void s_glInvalidateSubFramebuffer(void* self, GLenum target, GLsizei numAttachments, const GLenum* attachments,
+                                             GLint x, GLint y, GLsizei width, GLsizei height);
+
     glFramebufferRenderbuffer_client_proc_t m_glFramebufferRenderbuffer_enc;
     static void s_glFramebufferRenderbuffer(void* self, GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 
@@ -560,6 +567,9 @@ private:
 
     glClearBufferfv_client_proc_t m_glClearBufferfv_enc;
     static void s_glClearBufferfv(void* self, GLenum buffer, GLint drawBuffer, const GLfloat* value);
+
+    glClearBufferfi_client_proc_t m_glClearBufferfi_enc;
+    static void s_glClearBufferfi(void* self, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
 
     glBlitFramebuffer_client_proc_t m_glBlitFramebuffer_enc;
     static void s_glBlitFramebuffer(void* self, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);

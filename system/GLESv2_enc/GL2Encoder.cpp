@@ -182,6 +182,8 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glBindRenderbuffer);
     OVERRIDE(glRenderbufferStorage);
     OVERRIDE(glFramebufferRenderbuffer);
+    OVERRIDE(glInvalidateFramebuffer);
+    OVERRIDE(glInvalidateSubFramebuffer);
 
     OVERRIDE(glGenFramebuffers);
     OVERRIDE(glDeleteFramebuffers);
@@ -275,6 +277,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glClearBufferiv);
     OVERRIDE(glClearBufferuiv);
     OVERRIDE(glClearBufferfv);
+    OVERRIDE(glClearBufferfi);
     OVERRIDE(glBlitFramebuffer);
     OVERRIDE_CUSTOM(glGetInternalformativ);
 
@@ -2421,7 +2424,10 @@ void GL2Encoder::s_glRenderbufferStorage(void* self,
         GLsizei width, GLsizei height) {
     GL2Encoder* ctx = (GL2Encoder*) self;
     GLClientState* state = ctx->m_state;
+    GLint maxRenderbuffersize;
 
+    ctx->glGetIntegerv(ctx, GL_MAX_RENDERBUFFER_SIZE, &maxRenderbuffersize);
+    SET_ERROR_IF(width > maxRenderbuffersize || height > maxRenderbuffersize, GL_INVALID_VALUE);
     SET_ERROR_IF(target != GL_RENDERBUFFER, GL_INVALID_ENUM);
     SET_ERROR_IF(
         !GLESv2Validation::rboFormat(ctx, internalformat),
@@ -2442,9 +2448,34 @@ void GL2Encoder::s_glFramebufferRenderbuffer(void* self,
 
     SET_ERROR_IF(!GLESv2Validation::framebufferTarget(ctx, target), GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::framebufferAttachment(ctx, attachment), GL_INVALID_ENUM);
+
     state->attachRbo(target, attachment, renderbuffer);
 
     ctx->m_glFramebufferRenderbuffer_enc(self, target, attachment, renderbuffertarget, renderbuffer);
+}
+
+void GL2Encoder::s_glInvalidateFramebuffer(void* self,
+        GLenum target, GLsizei numAttachments, const GLenum* attachments) {
+    GL2Encoder* ctx = (GL2Encoder*) self;
+    GLint maxColorAttachment;
+
+    ctx->glGetIntegerv(ctx, GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachment);
+    for (int i = 0; i < numAttachments; i++) {
+        SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+    }
+    ctx->m_glInvalidateFramebuffer_enc(self, target, numAttachments, attachments);
+}
+
+void GL2Encoder::s_glInvalidateSubFramebuffer(void* self,
+        GLenum target, GLsizei numAttachments, const GLenum* attachments, GLint x, GLint y, GLsizei width, GLsizei height) {
+    GL2Encoder* ctx = (GL2Encoder*) self;
+    GLint maxColorAttachment;
+
+    ctx->glGetIntegerv(ctx, GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachment);
+    for (int i = 0; i < numAttachments; i++) {
+        SET_ERROR_IF(attachments[i] >= GL_COLOR_ATTACHMENT0 + maxColorAttachment, GL_INVALID_OPERATION);
+    }
+    ctx->m_glInvalidateSubFramebuffer_enc(self, target, numAttachments, attachments, x, y, width, height);
 }
 
 void GL2Encoder::s_glGenFramebuffers(void* self,
@@ -3418,7 +3449,10 @@ void GL2Encoder::s_glRenderbufferStorageMultisample(void* self,
         GLsizei width, GLsizei height) {
     GL2Encoder *ctx = (GL2Encoder *)self;
     GLClientState* state = ctx->m_state;
+    GLint maxRenderbuffersize;
 
+    ctx->glGetIntegerv(ctx, GL_MAX_RENDERBUFFER_SIZE, &maxRenderbuffersize);
+    SET_ERROR_IF(width > maxRenderbuffersize || height > maxRenderbuffersize, GL_INVALID_VALUE);
     SET_ERROR_IF(target != GL_RENDERBUFFER, GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::rboFormat(ctx, internalformat), GL_INVALID_ENUM);
 
@@ -4160,8 +4194,12 @@ void GL2Encoder::s_glDisable(void* self, GLenum what) {
 
 void GL2Encoder::s_glClearBufferiv(void* self, GLenum buffer, GLint drawBuffer, const GLint * value) {
     GL2Encoder *ctx = (GL2Encoder *)self;
+    GLint maxDrawBuffersize;
 
-    SET_ERROR_IF(buffer == GL_DEPTH || buffer == GL_DEPTH_STENCIL, GL_INVALID_ENUM);
+    SET_ERROR_IF(buffer != GL_COLOR && buffer != GL_STENCIL, GL_INVALID_ENUM);
+    ctx->glGetIntegerv(ctx, GL_MAX_DRAW_BUFFERS, &maxDrawBuffersize);
+    SET_ERROR_IF(buffer == GL_COLOR && drawBuffer >= maxDrawBuffersize, GL_INVALID_VALUE);
+    SET_ERROR_IF(buffer == GL_STENCIL && drawBuffer != 0, GL_INVALID_VALUE);
 
     ctx->m_glClearBufferiv_enc(ctx, buffer, drawBuffer, value);
 }
@@ -4169,7 +4207,11 @@ void GL2Encoder::s_glClearBufferiv(void* self, GLenum buffer, GLint drawBuffer, 
 void GL2Encoder::s_glClearBufferuiv(void* self, GLenum buffer, GLint drawBuffer, const GLuint * value) {
     GL2Encoder *ctx = (GL2Encoder *)self;
 
-    SET_ERROR_IF(buffer == GL_DEPTH || buffer == GL_STENCIL || buffer == GL_DEPTH_STENCIL, GL_INVALID_ENUM);
+    GLint maxDrawBuffersize;
+
+    SET_ERROR_IF(buffer != GL_COLOR, GL_INVALID_ENUM);
+    ctx->glGetIntegerv(ctx, GL_MAX_DRAW_BUFFERS, &maxDrawBuffersize);
+    SET_ERROR_IF(drawBuffer < 0 && drawBuffer >= maxDrawBuffersize, GL_INVALID_VALUE);
 
     ctx->m_glClearBufferuiv_enc(ctx, buffer, drawBuffer, value);
 }
@@ -4177,9 +4219,22 @@ void GL2Encoder::s_glClearBufferuiv(void* self, GLenum buffer, GLint drawBuffer,
 void GL2Encoder::s_glClearBufferfv(void* self, GLenum buffer, GLint drawBuffer, const GLfloat * value) {
     GL2Encoder *ctx = (GL2Encoder *)self;
 
-    SET_ERROR_IF(buffer == GL_STENCIL || buffer == GL_DEPTH_STENCIL, GL_INVALID_ENUM);
+    GLint maxDrawBuffersize;
+    ctx->glGetIntegerv(ctx, GL_MAX_DRAW_BUFFERS, &maxDrawBuffersize);
+    SET_ERROR_IF(buffer != GL_DEPTH && buffer != GL_COLOR, GL_INVALID_ENUM);
+    SET_ERROR_IF(buffer == GL_COLOR && drawBuffer >= maxDrawBuffersize, GL_INVALID_VALUE);
+    SET_ERROR_IF(buffer == GL_DEPTH && drawBuffer != 0, GL_INVALID_VALUE);
 
     ctx->m_glClearBufferfv_enc(ctx, buffer, drawBuffer, value);
+}
+
+void GL2Encoder::s_glClearBufferfi(void* self, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil) {
+    GL2Encoder *ctx = (GL2Encoder *)self;
+
+    SET_ERROR_IF(buffer != GL_DEPTH_STENCIL, GL_INVALID_ENUM);
+    SET_ERROR_IF(drawbuffer != 0 && buffer == GL_DEPTH_STENCIL, GL_INVALID_VALUE);
+
+    ctx->m_glClearBufferfi_enc(ctx, buffer, drawbuffer, depth, stencil);
 }
 
 void GL2Encoder::s_glBlitFramebuffer(void* self, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {
