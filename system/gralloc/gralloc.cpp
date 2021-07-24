@@ -558,7 +558,7 @@ static int gralloc_alloc(alloc_device_t* dev,
             ALOGD("%s: failed to create host cb! -EIO", __FUNCTION__);
             return -EIO;
         }
-        if (isHidlGralloc) { *getOpenCountPtr(cb) = 0; }
+        if (isHidlGralloc) { *getOpenCountPtr(cb) = 1; }
     }
 
     //
@@ -600,16 +600,13 @@ static int gralloc_free(alloc_device_t* dev,
         int32_t openCount = 1;
         int32_t* openCountPtr = &openCount;
 
-        if (isHidlGralloc) { openCountPtr = getOpenCountPtr(cb); }
-
-        if (*openCountPtr > 0) {
-            DEFINE_AND_VALIDATE_HOST_CONNECTION;
-            D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
-            rcEnc->rcCloseColorBuffer(cb->hostHandle);
-        } else {
-            D("A rcCloseColorBuffer is owed!!! sdk ver: %d", PLATFORM_SDK_VERSION);
-            *openCountPtr = -1;
+        if (isHidlGralloc) {
+            openCountPtr = getOpenCountPtr(cb);
+            *openCountPtr -= 1;
         }
+        DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
+        rcEnc->rcCloseColorBuffer(cb->hostHandle);
     }
 
     //
@@ -798,7 +795,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
         cb->mappedPid = getpid();
         if (isHidlGralloc) {
             int32_t* openCountPtr = getOpenCountPtr(cb);
-            if (!*openCountPtr) *openCountPtr = 1;
+            *openCountPtr += 1;
         }
 
     }
@@ -828,17 +825,8 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
         D("Closing host cb:%p, ColorBuffer 0x%x", cb, cb->hostHandle);
         rcEnc->rcCloseColorBuffer(cb->hostHandle);
 		if (isHidlGralloc) {
-            // Queue up another rcCloseColorBuffer if applicable.
-            // invariant: have ashmem.
-            if (cb->ashmemSize > 0 && cb->mappedPid == getpid()) {
-                D("cb:%p, colorbuffer:0x%x, cur base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
-                int32_t* openCountPtr = getOpenCountPtr(cb);
-                if (*openCountPtr == -1) {
-                    D("%s: revenge of the rcCloseColorBuffer  0x%x\n!", __func__, cb->hostHandle);
-                    rcEnc->rcCloseColorBuffer(cb->hostHandle);
-                    *openCountPtr = -2;
-                }
-            }			
+            int32_t* openCountPtr = getOpenCountPtr(cb);
+            (*openCountPtr)--;
 		}
     }
 
