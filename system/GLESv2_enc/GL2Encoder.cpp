@@ -274,6 +274,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
 
     OVERRIDE(glEnable);
     OVERRIDE(glDisable);
+    OVERRIDE(glClear);
     OVERRIDE(glClearBufferiv);
     OVERRIDE(glClearBufferuiv);
     OVERRIDE(glClearBufferfv);
@@ -4202,6 +4203,15 @@ void GL2Encoder::s_glDisable(void* self, GLenum what) {
     }
 
     ctx->m_glDisable_enc(ctx, what);
+}
+
+void GL2Encoder::s_glClear(void* self, GLbitfield mask) {
+    GL2Encoder *ctx = (GL2Encoder *)self;
+
+    SET_ERROR_IF(mask & ~(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT),
+                 GL_INVALID_VALUE);
+
+    ctx->m_glClear_enc(ctx, mask);
 }
 
 void GL2Encoder::s_glClearBufferiv(void* self, GLenum buffer, GLint drawBuffer, const GLint * value) {

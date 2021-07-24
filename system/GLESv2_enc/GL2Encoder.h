@@ -559,6 +559,9 @@ private:
     glDisable_client_proc_t m_glDisable_enc;
     static void s_glDisable(void* self, GLenum what);
 
+    glClear_client_proc_t m_glClear_enc;
+    static void s_glClear(void* self, GLbitfield mask);
+
     glClearBufferiv_client_proc_t m_glClearBufferiv_enc;
     static void s_glClearBufferiv(void* self, GLenum buffer, GLint drawBuffer, const GLint* value);
 
