@@ -50,8 +50,8 @@ public:
     void EncodeUniforms(BufferWriter &writer, VmiUniformLayout &layout);
     void EncodeUniformLayout(GLuint program, VmiUniformLayout &layout);
     bool InitStateMachine();
-private:
     IStream* GetStream();
+private:
     VmiPixelDataAlignment m_pixelData = VmiPixelDataAlignment();
     void InitVmiGLESFunPtrs();
     void InitVertexArrayFunPtrs();
