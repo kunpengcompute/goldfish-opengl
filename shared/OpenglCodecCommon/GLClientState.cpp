@@ -93,6 +93,9 @@ void GLClientState::init() {
     m_pixelStore.pack_skip_rows = 0;
 
     memset(m_tex.unit, 0, sizeof(m_tex.unit));
+    for (int i = 0; i < MAX_TEXTURE_UNITS; i++) {
+        m_tex.unit[i].textureExternalFirstUse = GL_TRUE;
+    }
     m_tex.activeUnit = &m_tex.unit[0];
     m_tex.textureRecs = NULL;
 
@@ -802,6 +805,10 @@ GLenum GLClientState::bindTexture(GLenum target, GLuint texture,
         break;
     case GL_TEXTURE_EXTERNAL_OES:
         m_tex.activeUnit->texture[TEXTURE_EXTERNAL] = texture;
+        if (m_tex.activeUnit->textureExternalFirstUse) {
+            first = GL_TRUE;
+        }
+        m_tex.activeUnit->textureExternalFirstUse = GL_FALSE;
         break;
     case GL_TEXTURE_CUBE_MAP:
         m_tex.activeUnit->texture[TEXTURE_CUBE_MAP] = texture;

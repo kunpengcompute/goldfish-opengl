@@ -1595,7 +1595,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
         majorVersion = 3;
         minorVersion = 0;
         rcMajorVersion = 3;
-        ALOGD("%s: Opengl ES:1.x force to 3.0", __FUNCTION__);
+        ALOGE("%s: Opengl ES:1.x force to 3.0", __FUNCTION__);
     }
     uint32_t rcContext = rcEnc->rcCreateContext((uintptr_t)config, rcShareCtx, rcMajorVersion);
     if (!rcContext) {

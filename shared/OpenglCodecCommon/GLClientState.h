@@ -482,6 +482,7 @@ private:
     struct TextureUnit {
         unsigned int enables;
         GLuint texture[TEXTURE_TARGET_COUNT];
+        GLboolean textureExternalFirstUse;
     };
     struct TextureState {
         TextureUnit unit[MAX_TEXTURE_UNITS];
