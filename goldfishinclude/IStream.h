@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <new>
 
-class VmiHookStream;
 class VmiRebuildStream;
 class SnapshotRestore;
 
@@ -42,9 +41,10 @@ public:
         return nullptr;
     }
 
-    virtual uint32_t GetFlushWindowColorBufferAsyncAckNum() const
+    virtual uint8_t* AllocEncodeCache(size_t size)
     {
-        return 0;
+        (void)size;
+        return nullptr;
     }
 
     virtual void* AllocBuffer(size_t size) = 0;
@@ -94,25 +94,11 @@ public:
         return ReadFully(buf, len);
     }
 
-    IStream* GetRebuildStream() const
-    {
-        return m_rebuildStream;
-    }
-
-    SnapshotRestore* GetSnapshotRestore() const
-    {
-        return m_snapshotRestore;
-    }
     /**
      * @brief: initialize InstructionStream then return IStream* instance
      * @return: IStream*
      */
     static IStream* GetStream();
-    /**
-     * @brief: Reclaiming resources when destory render stream
-     * @param [in] destoryStream: render Streams to be destroyed
-     */
-    static void DestoryStream(IStream &destoryStream);
 
     virtual void WaitRebuildStateMachine()
     {
@@ -125,13 +111,6 @@ public:
     virtual void NotifyRestoreFinished()
     {
     }
-protected:
-    IStream* m_rebuildStream = nullptr;
-    SnapshotRestore* m_snapshotRestore = nullptr;
-    void SetBufSize(size_t size)
-    {
-        m_bufSize = size;
-    }
 
 private:
     uint8_t* m_buf = nullptr;
@@ -139,18 +118,6 @@ private:
     size_t m_free = 0;
     int m_state = 0;
 
-    void SetRebuildStream(IStream* rebuildStream)
-    {
-        m_rebuildStream = rebuildStream;
-    }
-
-    void SetSnapshotRestore(SnapshotRestore* snapshotRestore)
-    {
-        m_snapshotRestore = snapshotRestore;
-    }
-
-    static bool ConstructRebuildStream(VmiRebuildStream &rebuildStream, VmiHookStream &vmiStream);
-    static bool ConstructHookStream(VmiHookStream &vmiStream);
 };
 
 #endif

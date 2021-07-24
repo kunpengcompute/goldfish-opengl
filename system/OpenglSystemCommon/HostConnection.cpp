@@ -41,7 +41,6 @@ HostConnection::HostConnection() :
 
 HostConnection::~HostConnection()
 {
-    IStream::DestoryStream(*m_stream);
     delete m_stream;
     m_stream = nullptr;
     delete m_glEnc;
