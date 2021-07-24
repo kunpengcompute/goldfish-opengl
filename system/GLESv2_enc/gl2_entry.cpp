@@ -416,6 +416,26 @@ extern "C" {
 	void glGetFramebufferParameteriv(GLenum target, GLenum pname, GLint* params);
 	void glGetTexLevelParameterfv(GLenum target, GLint level, GLenum pname, GLfloat* params);
 	void glGetTexLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params);
+    void glEnableiEXT(GLenum target, GLuint index);
+    void glDisableiEXT(GLenum target, GLuint index);
+    void glBlendEquationiEXT(GLuint buf, GLenum mode);
+    void glBlendEquationSeparateiEXT(GLuint buf, GLenum modeRGB, GLenum modeAlpha);
+    void glBlendFunciEXT(GLuint buf, GLenum src, GLenum dst);
+    void glBlendFuncSeparateiEXT(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+    void glColorMaskiEXT(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
+    GLboolean glIsEnablediEXT(GLenum target, GLuint index);
+    void glCopyImageSubDataEXT(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY,
+        GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ,
+        GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
+    void glBlendBarrierKHR(void);
+    void glTexParameterIivEXT(GLenum target, GLenum pname, const GLint *params);
+    void glTexParameterIuivEXT(GLenum target, GLenum pname, const GLuint *params);
+    void glGetTexParameterIivEXT(GLenum target, GLenum pname, GLint *params);
+    void glGetTexParameterIuivEXT(GLenum target, GLenum pname, GLuint *params);
+    void glSamplerParameterIivEXT(GLuint sampler, GLenum pname, const GLint *param);
+    void glSamplerParameterIuivEXT(GLuint sampler, GLenum pname, const GLuint *param);
+    void glGetSamplerParameterIivEXT(GLuint sampler, GLenum pname, GLint *params);
+    void glGetSamplerParameterIuivEXT(GLuint sampler, GLenum pname, GLuint *params);
 };
 
 #ifndef GET_CONTEXT
