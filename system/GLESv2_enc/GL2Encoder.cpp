@@ -4292,12 +4292,13 @@ void GL2Encoder::s_glGetInternalformativ(void* self, GLenum target, GLenum inter
     // Limit to 4 (spec minimum) to keep dEQP tests from timing out.
     switch (pname) {
         case GL_NUM_SAMPLE_COUNTS:
-            *params = 3;
+            *params = 4;
             break;
         case GL_SAMPLES:
-            params[0] = 4;
-            if (bufSize > 1) params[1] = 2;
-            if (bufSize > 2) params[2] = 1;
+            params[0] = 8;
+            if (bufSize > 1) params[1] = 4;
+            if (bufSize > 2) params[2] = 2;
+            if (bufSize > 3) params[3] = 1;
             break;
         default:
             break;
