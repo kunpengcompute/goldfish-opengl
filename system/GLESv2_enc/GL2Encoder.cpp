@@ -217,7 +217,7 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glGetBufferParameteri64v);
     OVERRIDE(glGetBufferPointerv);
 
-    OVERRIDE_CUSTOM(glGetUniformIndices);
+    OVERRIDE(glGetUniformIndices);
 
     OVERRIDE(glUniform1ui);
     OVERRIDE(glUniform2ui);
@@ -3188,7 +3188,9 @@ void GL2Encoder::s_glGetUniformIndices(void* self, GLuint program, GLsizei unifo
         }
     }
 
-    ctx->glGetUniformIndicesAEMU(ctx, program, uniformCount, (const GLchar*)&packed[0], packed.size() + 1, uniformIndices);
+    ctx->m_glGetUniformIndices_enc(ctx, program, uniformCount, uniformNames, uniformIndices);
+    // 调用本地软渲染库，暂不发给客户端
+    //ctx->glGetUniformIndicesAEMU(ctx, program, uniformCount, (const GLchar*)&packed[0], packed.size() + 1, uniformIndices);
 
     for (int i = 0; i < uniformCount; i++) {
         if (uniformIndices[i] >= 0 && needLocationWAR) {
