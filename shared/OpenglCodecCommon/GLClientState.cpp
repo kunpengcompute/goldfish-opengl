@@ -1731,6 +1731,14 @@ bool GLClientState::getTransformFeedbackActiveUnpaused() const {
     return m_transformFeedbackActiveUnpaused;
 }
 
+void GLClientState::setTransformFeedbackActive(bool active) {
+    m_transformFeedbackActive = active;
+}
+
+bool GLClientState::getTransformFeedbackActive() const {
+    return m_transformFeedbackActive;
+}
+
 void GLClientState::setTextureData(SharedTextureDataMap* sharedTexData) {
     m_tex.textureRecs = sharedTexData;
 }

@@ -1527,6 +1527,11 @@ void GL2Encoder::s_glLinkProgram(void * self, GLuint program)
     SET_ERROR_IF(!isProgram && !ctx->m_shared->isShader(program), GL_INVALID_VALUE);
     SET_ERROR_IF(!isProgram, GL_INVALID_OPERATION);
 
+    if (program == ctx->m_state->currentProgram() ||
+        (!ctx->m_state->currentProgram() && (program == ctx->m_state->currentShaderProgram()))) {
+        SET_ERROR_IF(ctx->m_state->getTransformFeedbackActive(), GL_INVALID_OPERATION);
+    }
+
     ctx->m_glLinkProgram_enc(self, program);
 
     GLint linkStatus = 0;
@@ -3610,13 +3615,16 @@ void GL2Encoder::s_glBeginTransformFeedback(void* self, GLenum primitiveMode) {
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
     ctx->m_glBeginTransformFeedback_enc(ctx, primitiveMode);
+    state->setTransformFeedbackActive(true);
     state->setTransformFeedbackActiveUnpaused(true);
 }
 
 void GL2Encoder::s_glEndTransformFeedback(void* self) {
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
+    SET_ERROR_IF(!state->getTransformFeedbackActive(), GL_INVALID_OPERATION);
     ctx->m_glEndTransformFeedback_enc(ctx);
+    state->setTransformFeedbackActive(false);
     state->setTransformFeedbackActiveUnpaused(false);
 }
 
