@@ -13,6 +13,7 @@
 
 createGLESv2Encoder_proc_t GL2EncoderBase::createGLESv2EncoderFunc = nullptr;
 glActiveTexture_client_proc_t GL2EncoderBase::glActiveTextureFunc = nullptr;
+glAttachShader_client_proc_t GL2EncoderBase::glAttachShaderFunc = nullptr;
 bool GL2EncoderBase::m_isInit = false;
 void* GL2EncoderBase::m_libHandle = nullptr;
 
@@ -63,6 +64,7 @@ void* GetProcAddress(void* library, const std::string& name)
 GL2EncoderBase::GL2EncoderBase()
 {
     glActiveTexture = glActiveTexture_s;
+    glAttachShader = glAttachShader_s;
     InitGLESv2Export();
 }
 
@@ -106,7 +108,8 @@ bool GL2EncoderBase::InitGLESv2Export()
 
     createGLESv2EncoderFunc = reinterpret_cast<decltype(createGLESv2EncoderFunc)>(func("CreateVmiGLESv2Encoder"));
     glActiveTextureFunc = reinterpret_cast<decltype(glActiveTextureFunc)>(func("VmiGlActiveTexture"));
-   
+    glAttachShaderFunc = reinterpret_cast<decltype(glAttachShaderFunc)>(func("VmiGlAttachShader"));
+
     m_isInit = true;
     ALOGD("GL2EncoderBase::InitGLESv2Export success!");
     return true;
@@ -134,9 +137,20 @@ void GL2EncoderBase::glActiveTexture_s(void * self, unsigned int texture)
 {
     ALOGD("GL2EncoderBase::glActiveTexture_s begin");
     GL2EncoderBase * ctx = static_cast<GL2EncoderBase*>(self);
-    if (ctx == nullptr){
+    if (ctx == nullptr) {
         ALOGE("glActiveTexture_s: parameters error. ctx==nullptr");
         return;
     }
     ctx->glActiveTextureFunc(ctx->GetGLESv2Encoder(self), texture);
+}
+
+void GL2EncoderBase::glAttachShader_s(void * self, GLuint program, GLuint shader)
+{
+    ALOGD("GL2EncoderBase::glAttachShader_s begin");
+    GL2EncoderBase * ctx = static_cast<GL2EncoderBase*>(self);
+    if (ctx == nullptr) {
+        ALOGE("glAttachShader_s: parameters error. ctx==nullptr");
+        return;
+    }
+    ctx->glAttachShaderFunc(ctx->GetGLESv2Encoder(self), program, shader);
 }

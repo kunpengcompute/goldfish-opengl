@@ -5,6 +5,7 @@ $(call emugl-begin-shared-library,libGLESv2_enc)
 
 LOCAL_SRC_FILES := \
     GL2Encoder.cpp \
+    GL2EncoderBase.cpp \
     GLESv2Validation.cpp
 
 LOCAL_CFLAGS += -DLOG_TAG=\"emuglGLESv2_enc\"

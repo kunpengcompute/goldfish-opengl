@@ -96,6 +96,7 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
 
     // overrides
 #define OVERRIDE(name)  m_##name##_enc = this-> name ; this-> name = &s_##name
+#define OVERRIDE_NEW(name)  m_##name##_enc = this->GL2EncoderBase::name ; this->GL2EncoderBase::name = &s_##name
 #define OVERRIDE_CUSTOM(name)  this-> name = &s_##name
 #define OVERRIDEWITH(name, target)  do { \
     m_##target##_enc = this-> target; \
@@ -134,7 +135,7 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
     OVERRIDE(glCreateProgram);
     OVERRIDE(glCreateShader);
     OVERRIDE(glDeleteShader);
-    OVERRIDE(glAttachShader);
+    OVERRIDE_NEW(glAttachShader);
     OVERRIDE(glDetachShader);
     OVERRIDE(glGetAttachedShaders);
     OVERRIDE(glGetShaderSource);
@@ -164,7 +165,7 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
     OVERRIDE(glUniformMatrix3fv);
     OVERRIDE(glUniformMatrix4fv);
 
-    OVERRIDE(glActiveTexture);
+    OVERRIDE_NEW(glActiveTexture);
     OVERRIDE(glBindTexture);
     OVERRIDE(glDeleteTextures);
     OVERRIDE(glGetTexParameterfv);

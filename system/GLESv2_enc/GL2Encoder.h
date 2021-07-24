@@ -17,6 +17,7 @@
 #define _GL2_ENCODER_H_
 
 #include "VmiGLESv2Encoder.h"
+#include "GL2EncoderBase.h"
 #include "gl2_enc.h"
 #include "GLClientState.h"
 #include "GLSharedGroup.h"
@@ -27,7 +28,7 @@
 #include <vector>
 #include <log/log.h>
 
-class GL2Encoder : public VmiGLESv2Encoder {
+class GL2Encoder : public VmiGLESv2Encoder, public GL2EncoderBase {
 public:
     GL2Encoder(void *stream, ChecksumCalculator* protocol);
     virtual ~GL2Encoder();

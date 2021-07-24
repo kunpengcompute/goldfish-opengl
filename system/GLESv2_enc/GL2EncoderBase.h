@@ -27,8 +27,11 @@ public:
     static createGLESv2Encoder_proc_t createGLESv2EncoderFunc;
 
     static glActiveTexture_client_proc_t glActiveTextureFunc;
+    static glAttachShader_client_proc_t glAttachShaderFunc;
     static void glActiveTexture_s(void * self, unsigned int texture);
+    static void glAttachShader_s(void * self, GLuint program, GLuint shader);
     glActiveTexture_client_proc_t glActiveTexture = nullptr;
+    glAttachShader_client_proc_t glAttachShader = nullptr;
 private:
     static bool m_isInit;
     static void* m_libHandle;
