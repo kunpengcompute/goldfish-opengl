@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <log/log.h>
 #include "GLES3/gl32.h"
 #include "GLES2/gl2ext.h"

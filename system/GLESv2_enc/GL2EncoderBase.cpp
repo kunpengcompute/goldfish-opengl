@@ -5,7 +5,6 @@
 #define LOG_TAG "GL2EncoderBase"
 #include "GL2EncoderBase.h"
 #include "GL2Encoder.h"
-#include <functional>
 #include <string>
 #include <climits>
 #include <cstdlib>
