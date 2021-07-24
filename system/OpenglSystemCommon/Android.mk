@@ -25,7 +25,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES += \
     libVmiInstructionEngine \
-    libVmiInsCommon \
+    libVmiUtil \
     libVmiCommonInstr
 
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH) bionic/libc/private)
