@@ -1184,6 +1184,8 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+                 GL_INVALID_FRAMEBUFFER_OPERATION);
 
     bool has_client_vertex_arrays = false;
     bool has_indirect_arrays = false;
@@ -1937,6 +1939,9 @@ void GL2Encoder::s_glActiveTexture(void* self, GLenum texture)
     GLClientState* state = ctx->m_state;
     GLenum err;
 
+    GLint maxCombinedUnits;
+    ctx->glGetIntegerv(ctx, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombinedUnits);
+    SET_ERROR_IF(texture - GL_TEXTURE0 > maxCombinedUnits - 1, GL_INVALID_ENUM);
     SET_ERROR_IF((err = state->setActiveTextureUnit(texture)) != GL_NO_ERROR, err);
 
     ctx->m_glActiveTexture_enc(ctx, texture);
@@ -2126,7 +2131,19 @@ void GL2Encoder::s_glTexImage2D(void* self, GLenum target, GLint level,
     SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
     SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP) &&
-                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_X) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_Y) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_Z) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_X) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) &&
+                (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
     SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(width > max_texture_size, GL_INVALID_VALUE);
     SET_ERROR_IF(height > max_texture_size, GL_INVALID_VALUE);
@@ -2271,6 +2288,18 @@ void GL2Encoder::s_glCopyTexImage2D(void* self, GLenum target, GLint level,
     SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
     SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_X) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_Y) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_POSITIVE_Z) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_X) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) &&
+                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
+    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) &&
                  (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
     SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(width > max_texture_size, GL_INVALID_VALUE);
@@ -2536,6 +2565,16 @@ void GL2Encoder::s_glFramebufferTexture2D(void* self,
         GLenum textarget, GLuint texture, GLint level) {
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
+    GLint max_texture_size;
+    GLint max_cube_map_texture_size;
+    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    ctx->glGetIntegerv(ctx, GL_MAX_CUBE_MAP_TEXTURE_SIZE, &max_cube_map_texture_size);
+    if (textarget == GL_TEXTURE_2D) {
+        SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
+    }
+    if (textarget == GL_TEXTURE_CUBE_MAP_POSITIVE_X) {
+        SET_ERROR_IF(level > ilog2(max_cube_map_texture_size), GL_INVALID_VALUE);
+    }
 
     SET_ERROR_IF(!GLESv2Validation::framebufferTarget(ctx, target), GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::framebufferAttachment(ctx, attachment), GL_INVALID_ENUM);
@@ -4169,6 +4208,7 @@ void GL2Encoder::s_glReadPixels(void* self, GLint x, GLint y, GLsizei width, GLs
     GLint framebufferStatus = ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER);
     GLint sampleBuffer;
     ctx->glGetIntegerv(ctx, GL_SAMPLE_BUFFERS, &sampleBuffer);
+    SET_ERROR_IF(framebufferStatus != GL_FRAMEBUFFER_COMPLETE, GL_INVALID_FRAMEBUFFER_OPERATION);
     SET_ERROR_IF(framebufferStatus == GL_FRAMEBUFFER_COMPLETE && readFrameBufferBind != 0 && sampleBuffer > 0, GL_INVALID_OPERATION);
     /*
 GL_INVALID_OPERATION is generated if the readbuffer of the currently bound framebuffer is a fixed point normalized surface and format and type are neither GL_RGBA and GL_UNSIGNED_BYTE, respectively, nor the format/type pair returned by querying GL_IMPLEMENTATION_COLOR_READ_FORMAT and GL_IMPLEMENTATION_COLOR_READ_TYPE.
@@ -4254,7 +4294,7 @@ void GL2Encoder::s_glClearBufferuiv(void* self, GLenum buffer, GLint drawBuffer,
 
     SET_ERROR_IF(buffer != GL_COLOR, GL_INVALID_ENUM);
     ctx->glGetIntegerv(ctx, GL_MAX_DRAW_BUFFERS, &maxDrawBuffersize);
-    SET_ERROR_IF(drawBuffer < 0 && drawBuffer >= maxDrawBuffersize, GL_INVALID_VALUE);
+    SET_ERROR_IF(drawBuffer < 0 || drawBuffer >= maxDrawBuffersize, GL_INVALID_VALUE);
 
     ctx->m_glClearBufferuiv_enc(ctx, buffer, drawBuffer, value);
 }
