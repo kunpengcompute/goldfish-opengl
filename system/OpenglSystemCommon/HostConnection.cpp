@@ -42,10 +42,15 @@ HostConnection::HostConnection() :
 
 HostConnection::~HostConnection()
 {
+    IStream::DestoryStream(*m_stream);
     delete m_stream;
+    m_stream = nullptr;
     delete m_glEnc;
+    m_glEnc = nullptr;
     delete m_gl2Enc;
+    m_gl2Enc = nullptr;
     delete m_rcEnc;
+    m_rcEnc = nullptr;
 }
 
 HostConnection *HostConnection::get() {
