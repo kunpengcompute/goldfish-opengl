@@ -696,7 +696,6 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
 
     // send post request to host
     rcEnc->rcFBPost(cb->hostHandle);
-    hostCon->flush();
 
     return 0;
 }
@@ -739,7 +738,6 @@ static int fb_setSwapInterval(struct framebuffer_device_t* dev,
 
     // send request to host
     rcEnc->rcFBSetSwapInterval(interval);
-    hostCon->flush();
 
     return 0;
 }

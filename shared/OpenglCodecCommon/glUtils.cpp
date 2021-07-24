@@ -453,25 +453,6 @@ void glUtilsPackPointerData(unsigned char *dst, unsigned char *src,
     }
 }
 
-void glUtilsWritePackPointerData(void* _stream, unsigned char *src,
-                                 int size, GLenum type, unsigned int stride,
-                                 unsigned int datalen)
-{
-    IStream* stream = reinterpret_cast<IStream*>(_stream);
-
-    unsigned int  vsize = size * glSizeof(type);
-    if (stride == 0) stride = vsize;
-
-    if (stride == vsize) {
-        stream->WriteFully(src, datalen);
-    } else {
-        for (unsigned int i = 0; i < datalen; i += vsize) {
-            stream->WriteFully(src, (size_t)vsize);
-            src += stride;
-        }
-    }
-}
-
 #ifndef GL_RGBA16F
 #define GL_RGBA16F                        0x881A
 #endif // GL_RGBA16F

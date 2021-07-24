@@ -69,7 +69,7 @@ static GLubyte *gExtensionsString= (GLubyte *) "GL_OES_EGL_image_external ";
         return ret; \
     } \
 
-GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
+GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
         : VmiGLESv2Encoder(stream)
 {
     m_currMajorVersion = 2;

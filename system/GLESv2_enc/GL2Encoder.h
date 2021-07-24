@@ -29,7 +29,7 @@
 
 class GL2Encoder : public VmiGLESv2Encoder {
 public:
-    GL2Encoder(IStream *stream, ChecksumCalculator* protocol);
+    GL2Encoder(void *stream, ChecksumCalculator* protocol);
     virtual ~GL2Encoder();
     void setNoHostError(bool noHostError) {
         m_noHostError = noHostError;

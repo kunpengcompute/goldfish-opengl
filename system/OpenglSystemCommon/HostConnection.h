@@ -90,12 +90,6 @@ public:
     IRenderControlEncoder *rcEncoder();
     ChecksumCalculator *checksumHelper() { return &m_checksumHelper; }
 
-    void flush() {
-        if (m_stream) {
-            m_stream->Flush();
-        }
-    }
-
     void setGrallocOnly(bool gralloc_only) {
         m_grallocOnly = gralloc_only;
     }

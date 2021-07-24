@@ -18,7 +18,7 @@ class VmiUniformLayout;
 class VmiGLESv2Encoder {
 public:
     // m_stream need to explode to GL2Encoder to call, make it public.
-    IStream* m_stream = nullptr;
+    VmiRebuildStream* m_stream = nullptr;
     // declare all the GLES function pointer members, called by goldfish Opengl, make it public.
     FOREACH_OPENGL_DEDUCE(GLES_DECLARE_MEMBER_DEDUCE)
     FOREACH_OPENGL_MANUAL(GLES_DECLARE_MEMBER_MANUAL)
@@ -27,7 +27,7 @@ public:
      * @brief: VmiGLESv2Encoder constructor function
      * @param [in] stream: server to client stream
      */
-    explicit VmiGLESv2Encoder(IStream* stream);
+    explicit VmiGLESv2Encoder(void* stream);
 
     /**
      * @brief: VmiGLESv2Encoder destructor function

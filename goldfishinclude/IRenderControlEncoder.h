@@ -78,6 +78,6 @@ public:
     virtual bool hasNativeSyncV3() const = 0;
 };
 
-IRenderControlEncoder* InstantiateRenderControlEncoder(IStream *stream);
+IRenderControlEncoder* InstantiateRenderControlEncoder(void *stream);
 
 #endif  // IRENDER_CONTROL_ENCODER_H

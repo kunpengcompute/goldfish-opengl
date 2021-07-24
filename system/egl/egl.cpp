@@ -2002,7 +2002,6 @@ EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface eglSurface)
     // post the surface
     EGLBoolean ret = d->swapBuffers();
 
-    hostCon->flush();
     return ret;
 }
 
@@ -2023,7 +2022,6 @@ EGLBoolean eglSwapBuffersWithDamageKHR(EGLDisplay dpy, EGLSurface eglSurface, EG
         ret = surface->swapBuffers(rects, n_rects);
     }
 
-    hostCon->flush();
     return ret;
 }
 
