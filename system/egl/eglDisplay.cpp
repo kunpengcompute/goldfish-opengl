@@ -29,7 +29,7 @@ static const char systemStaticEGLExtensions[] =
             "EGL_ANDROID_image_native_buffer "
             "EGL_KHR_fence_sync "
             "EGL_KHR_image_base "
-            "EGL_KHR_gl_texture_2d_image "
+            "EGL_KHR_gl_texture_2D_image "
             "EGL_EXT_create_context_robustness ";
 
 // extensions to add dynamically depending on host-side support
