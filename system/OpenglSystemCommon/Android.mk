@@ -39,7 +39,7 @@ endif
 
 LOCAL_SHARED_LIBRARIES += \
     libInstructionEngine \
-    libVmiCommon \
+    libVmiInsCommon \
     libVmiCommonInstr
 
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH) bionic/libc/private)
