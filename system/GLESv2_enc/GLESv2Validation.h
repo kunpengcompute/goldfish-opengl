@@ -44,6 +44,8 @@ bool framebufferAttachment(GL2Encoder* ctx, GLenum attachment);
 bool readPixelsFormat(GLenum format);
 bool readPixelsType(GLenum type);
 
+bool readPixelsFmtTypeUnMatch(GLenum format, GLenum type);
+
 bool vertexAttribType(GL2Encoder* ctx, GLenum type);
 
 bool readPixelsFboFormatMatch(GLenum format, GLenum type, GLenum fboTexType);

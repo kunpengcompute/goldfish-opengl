@@ -289,6 +289,14 @@ bool vertexAttribType(GL2Encoder* ctx, GLenum type)
     return retval;
 }
 
+bool readPixelsFmtTypeUnMatch(GLenum format, GLenum type) {
+    if (type == GL_UNSIGNED_SHORT_5_6_5)
+        return format != GL_RGB;
+    if (type == GL_UNSIGNED_SHORT_4_4_4_4 || type == GL_UNSIGNED_SHORT_5_5_5_1)
+        return format != GL_RGBA;
+    return false;
+}
+
 bool readPixelsFboFormatMatch(GLenum format, GLenum type, GLenum fboTexType) {
 #define INVALID_TYPE_MATCH(x, y) \
     if (type == x && fboTexType == y) return false; \

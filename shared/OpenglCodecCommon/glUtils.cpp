@@ -376,6 +376,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_TRANSFORM_FEEDBACK_BUFFER_START:
     case GL_UNIFORM_BUFFER_BINDING:
     case GL_CONTEXT_ROBUST_ACCESS_EXT:
+    case GL_READ_FRAMEBUFFER_BINDING:
         s = 1;
         break;
     case GL_ALIASED_LINE_WIDTH_RANGE:

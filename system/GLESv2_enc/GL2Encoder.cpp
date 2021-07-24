@@ -4126,9 +4126,15 @@ void GL2Encoder::s_glGetProgramBinary(void* self, GLuint program, GLsizei bufSiz
 
 void GL2Encoder::s_glReadPixels(void* self, GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid* pixels) {
     GL2Encoder *ctx = (GL2Encoder *)self;
-
-    SET_ERROR_IF(!GLESv2Validation::readPixelsFormat(format), GL_INVALID_ENUM);
-    SET_ERROR_IF(!GLESv2Validation::readPixelsType(type), GL_INVALID_ENUM);
+    GLint implementFmt = 0;
+    GLint implementType = 0;
+    ctx->glGetIntegerv(ctx, GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implementFmt);
+    ctx->glGetIntegerv(ctx, GL_IMPLEMENTATION_COLOR_READ_TYPE, &implementType);
+    if (implementType != type || implementFmt != format) {
+        SET_ERROR_IF(!GLESv2Validation::readPixelsFormat(format), GL_INVALID_ENUM);
+        SET_ERROR_IF(!GLESv2Validation::readPixelsType(type), GL_INVALID_ENUM);
+    }
+    SET_ERROR_IF(GLESv2Validation::readPixelsFmtTypeUnMatch(format, type), GL_INVALID_OPERATION);
     SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
     SET_ERROR_IF(ctx->isBufferTargetMapped(GL_PIXEL_PACK_BUFFER), GL_INVALID_OPERATION);
     SET_ERROR_IF(ctx->boundBuffer(GL_PIXEL_PACK_BUFFER) &&
@@ -4136,6 +4142,12 @@ void GL2Encoder::s_glReadPixels(void* self, GLint x, GLint y, GLsizei width, GLs
                  (ctx->m_state->pboNeededDataSize(width, height, 1, format, type, 1) >
                   ctx->getBufferData(GL_PIXEL_PACK_BUFFER)->m_size),
                  GL_INVALID_OPERATION);
+    GLint readFrameBufferBind;
+    ctx->glGetIntegerv(ctx, GL_READ_FRAMEBUFFER_BINDING, &readFrameBufferBind);
+    GLint framebufferStatus = ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER);
+    GLint sampleBuffer;
+    ctx->glGetIntegerv(ctx, GL_SAMPLE_BUFFERS, &sampleBuffer);
+    SET_ERROR_IF(framebufferStatus == GL_FRAMEBUFFER_COMPLETE && readFrameBufferBind != 0 && sampleBuffer > 0, GL_INVALID_OPERATION);
     /*
 GL_INVALID_OPERATION is generated if the readbuffer of the currently bound framebuffer is a fixed point normalized surface and format and type are neither GL_RGBA and GL_UNSIGNED_BYTE, respectively, nor the format/type pair returned by querying GL_IMPLEMENTATION_COLOR_READ_FORMAT and GL_IMPLEMENTATION_COLOR_READ_TYPE.
 
