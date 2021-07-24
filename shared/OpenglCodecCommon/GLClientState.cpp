@@ -21,6 +21,7 @@
 #include <string.h>
 #include "glUtils.h"
 #include <cutils/log.h>
+#include <mutex>
 
 #ifndef MAX
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
@@ -31,6 +32,8 @@
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #undef GL_APIENTRY
+
+static std::mutex g_texMutex;
 
 void GLClientState::init() {
     m_initialized = false;
@@ -848,8 +851,10 @@ TextureRec* GLClientState::addTextureRec(GLuint id, GLenum target)
     tex->immutable = false;
     tex->boundEGLImage = false;
     tex->dims = new TextureDims;
-
-    (*(m_tex.textureRecs))[id] = tex;
+    {
+        std::lock_guard<std::mutex> lock(g_texMutex);
+        (*(m_tex.textureRecs))[id] = tex;
+    }
     return tex;
 }
 
@@ -1037,6 +1042,7 @@ void GLClientState::deleteTextures(GLsizei n, const GLuint* textures)
     // - could swap deleted textures to the end and re-sort.
     TextureRec* texrec;
     for (const GLuint* texture = textures; texture != textures + n; texture++) {
+        std::lock_guard<std::mutex> lock(g_texMutex);
         texrec = getTextureRec(*texture);
         if (texrec && texrec->dims) {
             delete texrec->dims;

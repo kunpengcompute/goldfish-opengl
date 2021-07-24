@@ -38,6 +38,7 @@ BufferData::BufferData(GLsizeiptr size, void * data) : m_size(size), m_usage(0),
 /**** ProgramData ****/
 ProgramData::ProgramData() : m_numIndexes(0),
                              m_initialized(false),
+                             m_linkStatus(0),
                              m_locShiftWAR(false)
 {
     m_Indexes = NULL;
