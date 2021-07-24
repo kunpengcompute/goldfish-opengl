@@ -447,13 +447,13 @@ void gl2_client_context_t::setContextAccessor(CONTEXT_ACCESSOR_TYPE *f) { getCur
 void glActiveTexture(GLenum texture)
 {
 	GET_CONTEXT;
-	ctx->GL2EncoderBase::glActiveTexture(ctx, texture);
+	ctx->glActiveTexture(ctx, texture);
 }
 
 void glAttachShader(GLuint program, GLuint shader)
 {
 	GET_CONTEXT;
-	ctx->GL2EncoderBase::glAttachShader(ctx, program, shader);
+	ctx->glAttachShader(ctx, program, shader);
 }
 
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar* name)

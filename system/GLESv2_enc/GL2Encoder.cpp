@@ -135,7 +135,7 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
     OVERRIDE(glCreateProgram);
     OVERRIDE(glCreateShader);
     OVERRIDE(glDeleteShader);
-    OVERRIDE_NEW(glAttachShader);
+    OVERRIDE(glAttachShader);
     OVERRIDE(glDetachShader);
     OVERRIDE(glGetAttachedShaders);
     OVERRIDE(glGetShaderSource);
@@ -165,7 +165,7 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
     OVERRIDE(glUniformMatrix3fv);
     OVERRIDE(glUniformMatrix4fv);
 
-    OVERRIDE_NEW(glActiveTexture);
+    OVERRIDE(glActiveTexture);
     OVERRIDE(glBindTexture);
     OVERRIDE(glDeleteTextures);
     OVERRIDE(glGetTexParameterfv);
