@@ -27,6 +27,9 @@
 #include <cutils/log.h>
 #include <cutils/properties.h>
 #include "ErrorLog.h"
+#include <set>
+#include <string>
+#include <sstream>
 
 /* Set to 1 or 2 to enable debug traces */
 #define DEBUG  0
@@ -44,6 +47,24 @@
 #endif
 
 #define DBG_FUNC DBG("%s\n", __FUNCTION__)
+
+#ifdef GOLDFISH_HIDL_GRALLOC
+static const bool isHidlGralloc = true;
+#else
+static const bool isHidlGralloc = false;
+#endif
+
+int32_t* getOpenCountPtr(cb_handle_t* cb) {
+    return ((int32_t*)cb->ashmemBase) + 1;
+}
+
+uint32_t getAshmemColorOffset(cb_handle_t* cb) {
+    uint32_t res = 0;
+    if (cb->canBePosted()) res = sizeof(intptr_t);
+    if (isHidlGralloc) res = sizeof(intptr_t) * 2;
+    return res;
+}
+
 namespace {
     const char *WIDTH = "1080";
     const char *HEIGHT = "1920";
@@ -69,12 +90,25 @@ static pthread_once_t     sFallbackOnce = PTHREAD_ONCE_INIT;
 
 static void fallback_init(void);  // forward
 
-
 typedef struct _alloc_list_node {
     buffer_handle_t handle;
     _alloc_list_node *next;
     _alloc_list_node *prev;
 } AllocListNode;
+
+struct MemRegionInfo {
+    void* ashmemBase;
+    mutable uint32_t refCount;
+};
+
+struct MemRegionInfoCmp {
+    bool operator()(const MemRegionInfo& a, const MemRegionInfo& b) const {
+        return a.ashmemBase < b.ashmemBase;
+    }
+};
+
+typedef std::set<MemRegionInfo, MemRegionInfoCmp> MemRegionSet;
+typedef MemRegionSet::iterator mem_region_handle_t;
 
 //
 // Our gralloc device structure (alloc interface)
@@ -83,8 +117,93 @@ struct gralloc_device_t {
     alloc_device_t  device;
 
     AllocListNode *allocListHead;    // double linked list of allocated buffers
+    MemRegionSet ashmemRegions; // to track allocations of each ashmem region
     pthread_mutex_t lock;
 };
+
+struct gralloc_memregions_t {
+    MemRegionSet ashmemRegions;
+    pthread_mutex_t lock;
+};
+// global device instance
+static gralloc_memregions_t* s_memregions = NULL;
+
+void init_gralloc_memregions() {
+    if (s_memregions) return;
+    s_memregions = new gralloc_memregions_t;
+    pthread_mutex_init(&s_memregions->lock, NULL);
+}
+
+void get_mem_region(void* ashmemBase) {
+    init_gralloc_memregions();
+    D("%s: call for %p", __FUNCTION__, ashmemBase);
+    MemRegionInfo lookup;
+    lookup.ashmemBase = ashmemBase;
+    pthread_mutex_lock(&s_memregions->lock);
+    mem_region_handle_t handle = s_memregions->ashmemRegions.find(lookup);
+    if (handle == s_memregions->ashmemRegions.end()) {
+        MemRegionInfo newRegion;
+        newRegion.ashmemBase = ashmemBase;
+        newRegion.refCount = 1;
+        s_memregions->ashmemRegions.insert(newRegion);
+    } else {
+        handle->refCount++;
+    }
+    pthread_mutex_unlock(&s_memregions->lock);
+}
+
+bool put_mem_region(void* ashmemBase) {
+    init_gralloc_memregions();
+    D("%s: call for %p", __FUNCTION__, ashmemBase);
+    MemRegionInfo lookup;
+    lookup.ashmemBase = ashmemBase;
+    pthread_mutex_lock(&s_memregions->lock);
+    mem_region_handle_t handle = s_memregions->ashmemRegions.find(lookup);
+    if (handle == s_memregions->ashmemRegions.end()) {
+        ALOGE("%s: error: tried to put nonexistent mem region!", __FUNCTION__);
+        pthread_mutex_unlock(&s_memregions->lock);
+        return true;
+    } else {
+        handle->refCount--;
+        bool shouldRemove = !handle->refCount;
+        if (shouldRemove) {
+            s_memregions->ashmemRegions.erase(lookup);
+        }
+        pthread_mutex_unlock(&s_memregions->lock);
+        return shouldRemove;
+    }
+}
+
+void dump_regions() {
+    init_gralloc_memregions();
+    mem_region_handle_t curr = s_memregions->ashmemRegions.begin();
+    std::stringstream res;
+    for (; curr != s_memregions->ashmemRegions.end(); curr++) {
+        res << "\tashmem base " << curr->ashmemBase << " refcount " << curr->refCount << "\n";
+    }
+    ALOGD("ashmem region dump [\n%s]", res.str().c_str());
+}
+#if DEBUG
+
+#define GET_ASHMEM_REGION(cb) \
+    dump_regions(); \
+    get_mem_region((void*)cb->ashmemBase); \
+    dump_regions(); \
+
+#define PUT_ASHMEM_REGION(cb) \
+    dump_regions(); \
+    bool SHOULD_UNMAP = put_mem_region((void*)cb->ashmemBase); \
+    dump_regions(); \
+
+#else
+
+#define GET_ASHMEM_REGION(cb) \
+    get_mem_region((void*)cb->ashmemBase); \
+
+#define PUT_ASHMEM_REGION(cb) \
+    bool SHOULD_UNMAP = put_mem_region((void*)cb->ashmemBase); \
+
+#endif
 
 //
 // Our framebuffer device structure
@@ -98,6 +217,9 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
     if (cb->fd < 0 || cb->ashmemSize <= 0) {
         return -EINVAL;
     }
+
+    int map_flags = MAP_SHARED;
+    if (isHidlGralloc) map_flags |= MAP_ANONYMOUS;
 
     void *addr = mmap(0, cb->ashmemSize, PROT_READ | PROT_WRITE,
                       MAP_SHARED, cb->fd, 0);
@@ -141,6 +263,18 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
 #define HAL_PIXEL_FORMAT_YCbCr_420_888 0xFFFFFFF
 #endif
 
+#ifndef GL_RGBA16F
+#define GL_RGBA16F                        0x881A
+#endif // GL_RGBA16F
+#ifndef GL_HALF_FLOAT
+#define GL_HALF_FLOAT                     0x140B
+#endif // GL_HALF_FLOAT
+#ifndef GL_RGB10_A2
+#define GL_RGB10_A2                       0x8059
+#endif // GL_RGB10_A2
+#ifndef GL_UNSIGNED_INT_2_10_10_10_REV
+#define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
+#endif // GL_UNSIGNED_INT_2_10_10_10_REV
 //
 // gralloc device functions (alloc interface)
 //
@@ -237,9 +371,24 @@ static int gralloc_alloc(alloc_device_t* dev,
             break;
         case HAL_PIXEL_FORMAT_RGB_565:
             bpp = 2;
-            glFormat = GL_RGB;
+            // Workaround: distinguish vs the RGB8/RGBA8
+            // by changing |glFormat| to GL_RGB565
+            // (previously, it was still GL_RGB)
+            glFormat = GL_RGB565;
             glType = GL_UNSIGNED_SHORT_5_6_5;
             break;
+#if PLATFORM_SDK_VERSION >= 26
+        case HAL_PIXEL_FORMAT_RGBA_FP16:
+            bpp = 8;
+            glFormat = GL_RGBA16F;
+            glType = GL_HALF_FLOAT;
+            break;
+        case HAL_PIXEL_FORMAT_RGBA_1010102:
+            bpp = 4;
+            glFormat = GL_RGB10_A2;
+            glType = GL_UNSIGNED_INT_2_10_10_10_REV;
+            break;
+#endif // PLATFORM_SDK_VERSION >= 26
 #if PLATFORM_SDK_VERSION >= 21
         case HAL_PIXEL_FORMAT_RAW16:
         case HAL_PIXEL_FORMAT_Y16:
@@ -299,12 +448,50 @@ static int gralloc_alloc(alloc_device_t* dev,
             return -EINVAL;
     }
 
-    if (usage & GRALLOC_USAGE_HW_FB) {
-        // keep space for postCounter
-        ashmem_size += sizeof(uint32_t);
+    //
+    // Allocate ColorBuffer handle on the host (only if h/w access is allowed)
+    // Only do this for some h/w usages, not all.
+    // Also do this if we need to read from the surface, in this case the
+    // rendering will still happen on the host but we also need to be able to
+    // read back from the color buffer, which requires that there is a buffer
+    //
+#if PLATFORM_SDK_VERSION >= 17
+    bool needHostCb = ((!yuv_format && frameworkFormat != HAL_PIXEL_FORMAT_BLOB) ||
+#else
+    bool needHostCb = (!yuv_format ||
+#endif
+                       frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
+                       frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) &&
+#if PLATFORM_SDK_VERSION >= 15
+                      (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER |
+                                GRALLOC_USAGE_HW_2D | GRALLOC_USAGE_HW_COMPOSER |
+                                GRALLOC_USAGE_HW_VIDEO_ENCODER |
+                                GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK))
+#else // PLATFORM_SDK_VERSION
+                      (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER |
+                                GRALLOC_USAGE_HW_2D |
+                                GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK))
+#endif // PLATFORM_SDK_VERSION
+                      ;
+
+    if (isHidlGralloc) {
+        if (needHostCb || (usage & GRALLOC_USAGE_HW_FB)) {
+            // keep space for postCounter
+            // AND openCounter for all host cb
+            ashmem_size += sizeof(uint32_t) * 2;
+        }
+    } else {
+        if (usage & GRALLOC_USAGE_HW_FB) {
+            // keep space for postCounter
+            ashmem_size += sizeof(uint32_t) * 1;
+        }
     }
 
-    if (sw_read || sw_write || hw_cam_write || hw_vid_enc_read) {
+    // API26 always expect at least one file descriptor is associated with
+    // one color buffer
+    // BUG: 37719038
+    if (PLATFORM_SDK_VERSION >= 26 ||
+        sw_read || sw_write || hw_cam_write || hw_vid_enc_read) {
         // keep space for image on guest memory if SW access is needed
         // or if the camera is doing writing
         if (yuv_format) {
@@ -354,46 +541,24 @@ static int gralloc_alloc(alloc_device_t* dev,
             delete cb;
             return err;
         }
-
+        D("gralloc_alloc cb:%p colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
         cb->setFd(fd);
     }
-
-    //
-    // Allocate ColorBuffer handle on the host (only if h/w access is allowed)
-    // Only do this for some h/w usages, not all.
-    // Also do this if we need to read from the surface, in this case the
-    // rendering will still happen on the host but we also need to be able to
-    // read back from the color buffer, which requires that there is a buffer
-    //
-    if (!yuv_format ||
-        frameworkFormat == HAL_PIXEL_FORMAT_YV12 ||
-        frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-#if PLATFORM_SDK_VERSION >= 15
-        if (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER |
-                     GRALLOC_USAGE_HW_2D | GRALLOC_USAGE_HW_COMPOSER |
-                     GRALLOC_USAGE_HW_VIDEO_ENCODER |
-                     GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK) ) {
-#else // PLATFORM_SDK_VERSION
-        if (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER |
-                     GRALLOC_USAGE_HW_2D |
-                     GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK) ) {
-#endif // PLATFORM_SDK_VERSION
-            ALOGD("%s: format %d and usage 0x%x imply creation of host color buffer",
-                  __FUNCTION__, frameworkFormat, usage);
-            DEFINE_HOST_CONNECTION;
-            if (hostCon && rcEnc) {
-                cb->hostHandle = rcEnc->rcCreateColorBuffer(w, h, glFormat, glType, format);
-                D("Created host ColorBuffer 0x%x\n", cb->hostHandle);
-            }
-
-            if (!cb->hostHandle) {
-              // Could not create colorbuffer on host !!!
-              close(fd);
-              delete cb;
-              ALOGD("%s: failed to create host cb! -EIO", __FUNCTION__);
-              return -EIO;
-            }
+    if (needHostCb) {
+        DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        if (hostCon && rcEnc) {
+            cb->hostHandle = rcEnc->rcCreateColorBuffer(w, h, glFormat, glType, format);
+            D("Created host ColorBuffer 0x%x\n", cb->hostHandle);
         }
+
+        if (!cb->hostHandle) {
+            // Could not create colorbuffer on host !!!
+            close(fd);
+            delete cb;
+            ALOGD("%s: failed to create host cb! -EIO", __FUNCTION__);
+            return -EIO;
+        }
+        if (isHidlGralloc) { *getOpenCountPtr(cb) = 0; }
     }
 
     //
@@ -425,16 +590,26 @@ static int gralloc_alloc(alloc_device_t* dev,
 static int gralloc_free(alloc_device_t* dev,
                         buffer_handle_t handle)
 {
-    const cb_handle_t *cb = (const cb_handle_t *)handle;
+    cb_handle_t *cb = (cb_handle_t *)handle;
     if (!cb_handle_t::validate((cb_handle_t*)cb)) {
         ERR("gralloc_free: invalid handle");
         return -EINVAL;
     }
 
     if (cb->hostHandle != 0) {
-        DEFINE_AND_VALIDATE_HOST_CONNECTION;
-        D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
-        rcEnc->rcCloseColorBuffer(cb->hostHandle);
+        int32_t openCount = 1;
+        int32_t* openCountPtr = &openCount;
+
+        if (isHidlGralloc) { openCountPtr = getOpenCountPtr(cb); }
+
+        if (*openCountPtr > 0) {
+            DEFINE_AND_VALIDATE_HOST_CONNECTION;
+            D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
+            rcEnc->rcCloseColorBuffer(cb->hostHandle);
+        } else {
+            D("A rcCloseColorBuffer is owed!!! sdk ver: %d", PLATFORM_SDK_VERSION);
+            *openCountPtr = -1;
+        }
     }
 
     //
@@ -442,6 +617,7 @@ static int gralloc_free(alloc_device_t* dev,
     //
     if (cb->fd > 0) {
         if (cb->ashmemSize > 0 && cb->ashmemBase) {
+            D("gralloc_free cb:%p colorbuffer:0x%x, delete base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
             munmap((void *)cb->ashmemBase, cb->ashmemSize);
         }
         close(cb->fd);
@@ -603,7 +779,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
 
     if (cb->hostHandle != 0) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
-        D("Opening host ColorBuffer 0x%x\n", cb->hostHandle);
+        D("Opening host cb:%p ColorBuffer 0x%x", cb, cb->hostHandle);
         rcEnc->rcOpenColorBuffer2(cb->hostHandle);
     }
 
@@ -618,7 +794,16 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
             ERR("gralloc_register_buffer(%p): map failed: %s", cb, strerror(-err));
             return -err;
         }
+        D("gralloc_register_buffer cb:%p, colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
         cb->mappedPid = getpid();
+        if (isHidlGralloc) {
+            int32_t* openCountPtr = getOpenCountPtr(cb);
+            if (!*openCountPtr) *openCountPtr = 1;
+        }
+
+    }
+	if (cb->ashmemSize > 0) {
+        GET_ASHMEM_REGION(cb);
     }
 
     return 0;
@@ -640,8 +825,21 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
 
     if (cb->hostHandle != 0) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
-        D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
+        D("Closing host cb:%p, ColorBuffer 0x%x", cb, cb->hostHandle);
         rcEnc->rcCloseColorBuffer(cb->hostHandle);
+		if (isHidlGralloc) {
+            // Queue up another rcCloseColorBuffer if applicable.
+            // invariant: have ashmem.
+            if (cb->ashmemSize > 0 && cb->mappedPid == getpid()) {
+                D("cb:%p, colorbuffer:0x%x, cur base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
+                int32_t* openCountPtr = getOpenCountPtr(cb);
+                if (*openCountPtr == -1) {
+                    D("%s: revenge of the rcCloseColorBuffer  0x%x\n!", __func__, cb->hostHandle);
+                    rcEnc->rcCloseColorBuffer(cb->hostHandle);
+                    *openCountPtr = -2;
+                }
+            }			
+		}
     }
 
     //
@@ -649,6 +847,8 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
     // (through register_buffer)
     //
     if (cb->ashmemSize > 0 && cb->mappedPid == getpid()) {
+		PUT_ASHMEM_REGION(cb);
+		if (!SHOULD_UNMAP) goto done;
         void *vaddr;
         int err = munmap((void *)cb->ashmemBase, cb->ashmemSize);
         if (err) {
@@ -657,10 +857,12 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
         }
         cb->ashmemBase = 0;
         cb->mappedPid = 0;
+        D("set colorbuffer 0x%x clear cb:%p", cb->hostHandle, cb);
     }
 
-    D("gralloc_unregister_buffer(%p) done\n", cb);
-
+    D("gralloc_unregister_buffer color 0x%x done cb:%p", cb->hostHandle, cb);
+done:
+	D("gralloc_unregister_buffer(%p) done\n", cb);
     //EXIT_GRALLOCONLY_HOST_CONNECTION;
     return 0;
 }
@@ -863,13 +1065,7 @@ static int gralloc_lock(gralloc_module_t const* module,
             return -EACCES;
         }
 
-        if (cb->canBePosted()) {
-            postCount = *((intptr_t *)cb->ashmemBase);
-            cpu_addr = (void *)(cb->ashmemBase + sizeof(intptr_t));
-        }
-        else {
-            cpu_addr = (void *)(cb->ashmemBase);
-        }
+        cpu_addr = (void *)(cb->ashmemBase + getAshmemColorOffset(cb));
     }
 
     if (cb->hostHandle) {
@@ -1093,13 +1289,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
         // Make sure we have host connection
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
-        void *cpu_addr;
-        if (cb->canBePosted()) {
-            cpu_addr = (void *)(cb->ashmemBase + sizeof(int));
-        }
-        else {
-            cpu_addr = (void *)(cb->ashmemBase);
-        }
+        void *cpu_addr = (void *)(cb->ashmemBase + getAshmemColorOffset(cb));
 
         char* rgb_addr = (char *)cpu_addr;
         if (cb->lockedWidth < cb->width || cb->lockedHeight < cb->height) {
@@ -1204,12 +1394,7 @@ static int gralloc_lock_ycbcr(gralloc_module_t const* module,
 
     uint8_t *cpu_addr = NULL;
 
-    if (cb->canBePosted()) {
-        cpu_addr = (uint8_t *)(cb->ashmemBase + sizeof(int));
-    }
-    else {
-        cpu_addr = (uint8_t *)(cb->ashmemBase);
-    }
+    cpu_addr = (uint8_t *)(cb->ashmemBase) + getAshmemColorOffset(cb);
 
     // Calculate offsets to underlying YUV data
     size_t yStride;
