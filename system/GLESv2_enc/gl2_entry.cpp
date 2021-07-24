@@ -2926,3 +2926,61 @@ void glGetTexLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* p
 	GET_CONTEXT;
 	ctx->glGetTexLevelParameteriv(ctx, target, level, pname, params);
 }
+
+void glEnableiEXT(GLenum target, GLuint index)
+{
+	GET_CONTEXT;
+	ctx->glEnableiEXT(ctx, target, index);
+}
+
+void glDisableiEXT(GLenum target, GLuint index)
+{
+	GET_CONTEXT;
+	ctx->glDisableiEXT(ctx, target, index);
+}
+
+void glBlendEquationiEXT(GLuint buf, GLenum mode)
+{
+	GET_CONTEXT;
+	ctx->glBlendEquationiEXT(ctx, buf, mode);
+}
+
+void glBlendEquationSeparateiEXT(GLuint buf, GLenum modeRGB, GLenum modeAlpha)
+{
+	GET_CONTEXT;
+	ctx->glBlendEquationSeparateiEXT(ctx, buf, modeRGB, modeAlpha);
+}
+
+void glBlendFunciEXT(GLuint buf, GLenum src, GLenum dst)
+{
+	GET_CONTEXT;
+	ctx->glBlendFunciEXT(ctx, buf, src, dst);
+}
+
+void glBlendFuncSeparateiEXT(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
+{
+	GET_CONTEXT;
+	ctx->glBlendFuncSeparateiEXT(ctx, buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+}
+
+void glColorMaskiEXT(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a)
+{
+	GET_CONTEXT;
+	ctx->glColorMaskiEXT(ctx, index, r, g, b, a);
+}
+
+GLboolean glIsEnablediEXT(GLenum target, GLuint index)
+{
+	GET_CONTEXT;
+	return ctx->glIsEnablediEXT(ctx, target, index);
+}
+
+void glCopyImageSubDataEXT(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ,
+        GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth,
+        GLsizei srcHeight, GLsizei srcDepth)
+{
+	GET_CONTEXT;
+	ctx->glCopyImageSubDataEXT(ctx, srcName, srcTarget, srcLevel, srcX, srcY, srcZ,
+        dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth,
+        srcHeight, srcDepth);
+}
