@@ -24,7 +24,7 @@ LOCAL_C_INCLUDES += \
     $(EMUGL_PATH)/goldfishinclude
 
 LOCAL_SHARED_LIBRARIES += \
-    libInstructionEngine \
+    libVmiInstructionEngine \
     libVmiInsCommon \
     libVmiCommonInstr
 
