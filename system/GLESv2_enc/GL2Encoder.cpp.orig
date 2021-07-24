@@ -340,7 +340,6 @@ GL2Encoder::GL2Encoder(IStream *stream, ChecksumCalculator *protocol)
     OVERRIDE(glVertexBindingDivisor);
     OVERRIDE(glVertexAttribBinding);
     OVERRIDE(glBindVertexBuffer);
-    OVERRIDE(glCopyTexSubImage2D);
 
     OVERRIDE_CUSTOM(glDrawArraysIndirect);
     OVERRIDE_CUSTOM(glDrawElementsIndirect);
@@ -2251,24 +2250,6 @@ void GL2Encoder::s_glCopyTexImage2D(void* self, GLenum target, GLint level,
 {
     GL2Encoder* ctx = (GL2Encoder*)self;
     GLClientState* state = ctx->m_state;
-
-    SET_ERROR_IF(!GLESv2Validation::textureTarget(ctx, target), GL_INVALID_ENUM);
-    SET_ERROR_IF(!GLESv2Validation::pixelFormat(ctx, internalformat) && !GLESv2Validation::pixelInternalFormat(internalformat), GL_INVALID_ENUM);
-    GLint max_texture_size;
-    GLint max_cube_map_texture_size;
-    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
-    ctx->glGetIntegerv(ctx, GL_MAX_CUBE_MAP_TEXTURE_SIZE, &max_cube_map_texture_size);
-    SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
-    SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
-    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP) &&
-                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
-    SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
-    SET_ERROR_IF(width > max_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(height > max_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(GLESv2Validation::isCubeMapTarget(target) && width > max_cube_map_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(GLESv2Validation::isCubeMapTarget(target) && height > max_cube_map_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(GLESv2Validation::isCubeMapTarget(target) && (width != height), GL_INVALID_VALUE);
-    SET_ERROR_IF(border != 0, GL_INVALID_VALUE);
 
     SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
                  GL_INVALID_FRAMEBUFFER_OPERATION);
@@ -5094,33 +5075,4 @@ void GL2Encoder::s_glTexStorage2DMultisample(void* self, GLenum target, GLsizei 
     state->setBoundTextureSamples(target, samples);
 
     ctx->m_glTexStorage2DMultisample_enc(ctx, target, samples, internalformat, width, height, fixedsamplelocations);
-}
-
-void GL2Encoder::s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
-    GL2Encoder *ctx = (GL2Encoder*)self;
-    SET_ERROR_IF(!GLESv2Validation::textureTarget(ctx, target), GL_INVALID_ENUM);
-    SET_ERROR_IF(level < 0, GL_INVALID_VALUE);
-    GLint max_texture_size;
-    GLint max_cube_map_texture_size;
-    ctx->glGetIntegerv(ctx, GL_MAX_TEXTURE_SIZE, &max_texture_size);
-    ctx->glGetIntegerv(ctx, GL_MAX_CUBE_MAP_TEXTURE_SIZE, &max_cube_map_texture_size);
-    SET_ERROR_IF(level > ilog2(max_texture_size), GL_INVALID_VALUE);
-    SET_ERROR_IF((target == GL_TEXTURE_CUBE_MAP || GLESv2Validation::isCubeMapTarget(target)) &&
-                 (level > ilog2(max_cube_map_texture_size)), GL_INVALID_VALUE);
-    SET_ERROR_IF(xoffset < 0 || yoffset < 0, GL_INVALID_VALUE);
-    SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
-    SET_ERROR_IF(width > max_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(height > max_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(GLESv2Validation::isCubeMapTarget(target) && width > max_cube_map_texture_size, GL_INVALID_VALUE);
-    SET_ERROR_IF(GLESv2Validation::isCubeMapTarget(target) && height > max_cube_map_texture_size, GL_INVALID_VALUE);
-    GLuint tex = ctx->m_state->getBoundTexture(target);
-    GLsizei neededWidth = xoffset + width;
-    GLsizei neededHeight = yoffset + height;
-    SET_ERROR_IF(tex &&
-                 (neededWidth > ctx->m_state->queryTexWidth(level, tex) ||
-                  neededHeight > ctx->m_state->queryTexHeight(level, tex)),
-                 GL_INVALID_VALUE);
-    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
-                 GL_INVALID_FRAMEBUFFER_OPERATION);
-    ctx->m_glCopyTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, x, y, width, height);
 }

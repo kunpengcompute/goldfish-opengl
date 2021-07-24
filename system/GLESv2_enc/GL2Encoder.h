@@ -705,6 +705,8 @@ private:
     glTexStorage2DMultisample_client_proc_t m_glTexStorage2DMultisample_enc;
     static void s_glTexStorage2DMultisample(void* self, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 
+    glCopyTexSubImage2D_client_proc_t m_glCopyTexSubImage2D_enc;
+    static void s_glCopyTexSubImage2D(void *self , GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 public:
     glEGLImageTargetTexture2DOES_client_proc_t m_glEGLImageTargetTexture2DOES_enc;
 
