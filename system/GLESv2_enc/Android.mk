@@ -15,7 +15,7 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES := \
     libVmiInstructionEngine \
-    libVmiCommonInstr
+    libVmiInstructionCommon
 
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
 $(call emugl-import,libOpenglCodecCommon)

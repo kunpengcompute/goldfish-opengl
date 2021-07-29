@@ -18,6 +18,6 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES += \
     libVmiInstructionEngine \
-    libVmiCommonInstr
+    libVmiInstructionCommon
 
 $(call emugl-end-module)

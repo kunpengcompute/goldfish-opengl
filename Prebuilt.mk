@@ -25,10 +25,10 @@ include $(BUILD_PREBUILT)
 include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_SUFFIX := .so
-LOCAL_MODULE := libVmiCommonInstr
+LOCAL_MODULE := libVmiInstructionCommon
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
-LOCAL_SRC_FILES_arm :=${PARTITION}/lib/libVmiCommonInstr.so
-LOCAL_SRC_FILES_arm64 :=${PARTITION}/lib64/libVmiCommonInstr.so
+LOCAL_SRC_FILES_arm :=${PARTITION}/lib/libVmiInstructionCommon.so
+LOCAL_SRC_FILES_arm64 :=${PARTITION}/lib64/libVmiInstructionCommon.so
 LOCAL_MODULE_TARGET_ARCHS:= arm arm64
 LOCAL_VENDOR_MODULE := ${IS_BUILD_VENDOR_MODULE}
 LOCAL_MULTILIB := both
