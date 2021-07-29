@@ -73,7 +73,7 @@ package()
     fi
     if [ -z "${MODULE_SYMBOL_DIR}" ];then
         cd output/symbols
-        tar zcvf ../GoldfishOpengl.tar.gz *
+        tar zcvf ../GoldfishOpenglSymbols.tar.gz *
         cd -
     fi
 }
