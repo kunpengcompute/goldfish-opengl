@@ -10,13 +10,6 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS += -DLOG_TAG=\"emuglGLESv2_enc\"
 
-LOCAL_C_INCLUDES += \
-    $(EMUGL_PATH)/goldfishinclude
-
-LOCAL_SHARED_LIBRARIES := \
-    libVmiInstructionEngine \
-    libVmiInstructionCommon
-
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
 $(call emugl-import,libOpenglCodecCommon)
 

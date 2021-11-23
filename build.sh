@@ -29,7 +29,7 @@ goldfish_opengl_so_list=(
     vendor/lib64/libOpenglSystemCommon.so
     vendor/lib/libGLESv1_enc.so
     vendor/lib64/libGLESv1_enc.so
-    vendor/lib64/libGLESv2_enc.so
+    vendor/lib/libGLESv2_enc.so
     vendor/lib64/libGLESv2_enc.so
     vendor/lib/libRenderControl_enc.so
     vendor/lib64/libRenderControl_enc.so
@@ -80,17 +80,6 @@ package()
     fi
 }
 
-unpack_binary_lib()
-{
-    mkdir -p Libs
-    cp Prebuilt.mk ./Libs/Android.mk
-    cp CloudPhoneInstructionEngine.tar.gz ./Libs
-    cd Libs
-    tar zxvf CloudPhoneInstructionEngine.tar.gz
-    [ ${?} != 0 ] && error "Failed to decompress" && return -1
-    cd -
-}
-
 clean()
 {
     rm -rf output
@@ -101,7 +90,6 @@ inc()
     clean
     setup_env
     [ ${?} != 0 ] && error "Failed to setup env" && return -1
-    unpack_binary_lib
     cd ${AN_AOSPDIR}
     source build/envsetup.sh
     lunch aosp_arm64-eng

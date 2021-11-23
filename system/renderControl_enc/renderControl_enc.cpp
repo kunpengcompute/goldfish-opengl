@@ -1395,7 +1395,6 @@ void rcWaitSyncKHR_enc(void *self , uint64_t sync, EGLint flags)
 
 renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream, ChecksumCalculator *checksumCalculator)
 {
-	m_stream = stream;
-	m_checksumCalculator = checksumCalculator;
+    m_stream = stream;
+    m_checksumCalculator = checksumCalculator;
 }
-

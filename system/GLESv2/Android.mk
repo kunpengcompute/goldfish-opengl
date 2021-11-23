@@ -13,11 +13,4 @@ else
     LOCAL_MODULE_RELATIVE_PATH := egl
 endif
 
-LOCAL_C_INCLUDES += \
-    $(EMUGL_PATH)/goldfishinclude
-
-LOCAL_SHARED_LIBRARIES += \
-    libVmiInstructionEngine \
-    libVmiInstructionCommon
-
 $(call emugl-end-module)

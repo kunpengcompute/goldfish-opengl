@@ -14,436 +14,436 @@
 
 createGLESv2Encoder_proc_t GL2EncoderBase::createGLESv2EncoderFunc = nullptr;
 deleteGLESv2Encoder_proc_t GL2EncoderBase::deleteGLESv2EncoderFunc = nullptr;
-glActiveTexture_client_proc_t GL2EncoderBase::glActiveTextureFunc = nullptr;
-glAttachShader_client_proc_t GL2EncoderBase::glAttachShaderFunc = nullptr;
-glBindAttribLocation_client_proc_t GL2EncoderBase::glBindAttribLocationFunc = nullptr;
-glBindBuffer_client_proc_t GL2EncoderBase::glBindBufferFunc = nullptr;
-glBindFramebuffer_client_proc_t GL2EncoderBase::glBindFramebufferFunc = nullptr;
-glBindRenderbuffer_client_proc_t GL2EncoderBase::glBindRenderbufferFunc = nullptr;
-glBindTexture_client_proc_t GL2EncoderBase::glBindTextureFunc = nullptr;
-glBlendColor_client_proc_t GL2EncoderBase::glBlendColorFunc = nullptr;
-glBlendEquation_client_proc_t GL2EncoderBase::glBlendEquationFunc = nullptr;
-glBlendEquationSeparate_client_proc_t GL2EncoderBase::glBlendEquationSeparateFunc = nullptr;
-glBlendFunc_client_proc_t GL2EncoderBase::glBlendFuncFunc = nullptr;
-glBlendFuncSeparate_client_proc_t GL2EncoderBase::glBlendFuncSeparateFunc = nullptr;
-glBufferData_client_proc_t GL2EncoderBase::glBufferDataFunc = nullptr;
-glBufferSubData_client_proc_t GL2EncoderBase::glBufferSubDataFunc = nullptr;
-glCheckFramebufferStatus_client_proc_t GL2EncoderBase::glCheckFramebufferStatusFunc = nullptr;
-glClear_client_proc_t GL2EncoderBase::glClearFunc = nullptr;
-glClearColor_client_proc_t GL2EncoderBase::glClearColorFunc = nullptr;
-glClearDepthf_client_proc_t GL2EncoderBase::glClearDepthfFunc = nullptr;
-glClearStencil_client_proc_t GL2EncoderBase::glClearStencilFunc = nullptr;
-glColorMask_client_proc_t GL2EncoderBase::glColorMaskFunc = nullptr;
-glCompileShader_client_proc_t GL2EncoderBase::glCompileShaderFunc = nullptr;
-glCompressedTexImage2D_client_proc_t GL2EncoderBase::glCompressedTexImage2DFunc = nullptr;
-glCompressedTexSubImage2D_client_proc_t GL2EncoderBase::glCompressedTexSubImage2DFunc = nullptr;
-glCopyTexImage2D_client_proc_t GL2EncoderBase::glCopyTexImage2DFunc = nullptr;
-glCopyTexSubImage2D_client_proc_t GL2EncoderBase::glCopyTexSubImage2DFunc = nullptr;
-glCreateProgram_client_proc_t GL2EncoderBase::glCreateProgramFunc = nullptr;
-glCreateShader_client_proc_t GL2EncoderBase::glCreateShaderFunc = nullptr;
-glCullFace_client_proc_t GL2EncoderBase::glCullFaceFunc = nullptr;
-glDeleteBuffers_client_proc_t GL2EncoderBase::glDeleteBuffersFunc = nullptr;
-glDeleteFramebuffers_client_proc_t GL2EncoderBase::glDeleteFramebuffersFunc = nullptr;
-glDeleteProgram_client_proc_t GL2EncoderBase::glDeleteProgramFunc = nullptr;
-glDeleteRenderbuffers_client_proc_t GL2EncoderBase::glDeleteRenderbuffersFunc = nullptr;
-glDeleteShader_client_proc_t GL2EncoderBase::glDeleteShaderFunc = nullptr;
-glDeleteTextures_client_proc_t GL2EncoderBase::glDeleteTexturesFunc = nullptr;
-glDepthFunc_client_proc_t GL2EncoderBase::glDepthFuncFunc = nullptr;
-glDepthMask_client_proc_t GL2EncoderBase::glDepthMaskFunc = nullptr;
-glDepthRangef_client_proc_t GL2EncoderBase::glDepthRangefFunc = nullptr;
-glDetachShader_client_proc_t GL2EncoderBase::glDetachShaderFunc = nullptr;
-glDisable_client_proc_t GL2EncoderBase::glDisableFunc = nullptr;
-glDisableVertexAttribArray_client_proc_t GL2EncoderBase::glDisableVertexAttribArrayFunc = nullptr;
-glDrawArrays_client_proc_t GL2EncoderBase::glDrawArraysFunc = nullptr;
-glDrawElements_client_proc_t GL2EncoderBase::glDrawElementsFunc = nullptr;
-glEnable_client_proc_t GL2EncoderBase::glEnableFunc = nullptr;
-glEnableVertexAttribArray_client_proc_t GL2EncoderBase::glEnableVertexAttribArrayFunc = nullptr;
-glFlush_client_proc_t GL2EncoderBase::glFlushFunc = nullptr;
-glFramebufferRenderbuffer_client_proc_t GL2EncoderBase::glFramebufferRenderbufferFunc = nullptr;
-glFramebufferTexture2D_client_proc_t GL2EncoderBase::glFramebufferTexture2DFunc = nullptr;
-glFrontFace_client_proc_t GL2EncoderBase::glFrontFaceFunc = nullptr;
-glGenBuffers_client_proc_t GL2EncoderBase::glGenBuffersFunc = nullptr;
-glGenerateMipmap_client_proc_t GL2EncoderBase::glGenerateMipmapFunc = nullptr;
-glGenFramebuffers_client_proc_t GL2EncoderBase::glGenFramebuffersFunc = nullptr;
-glGenRenderbuffers_client_proc_t GL2EncoderBase::glGenRenderbuffersFunc = nullptr;
-glGenTextures_client_proc_t GL2EncoderBase::glGenTexturesFunc = nullptr;
-glGetActiveAttrib_client_proc_t GL2EncoderBase::glGetActiveAttribFunc = nullptr;
-glGetActiveUniform_client_proc_t GL2EncoderBase::glGetActiveUniformFunc = nullptr;
-glGetAttachedShaders_client_proc_t GL2EncoderBase::glGetAttachedShadersFunc = nullptr;
-glGetAttribLocation_client_proc_t GL2EncoderBase::glGetAttribLocationFunc = nullptr;
-glGetBooleanv_client_proc_t GL2EncoderBase::glGetBooleanvFunc = nullptr;
-glGetBufferParameteriv_client_proc_t GL2EncoderBase::glGetBufferParameterivFunc = nullptr;
-glGetError_client_proc_t GL2EncoderBase::glGetErrorFunc = nullptr;
-glGetFloatv_client_proc_t GL2EncoderBase::glGetFloatvFunc = nullptr;
-glGetFramebufferAttachmentParameteriv_client_proc_t GL2EncoderBase::glGetFramebufferAttachmentParameterivFunc = nullptr;
-glGetIntegerv_client_proc_t GL2EncoderBase::glGetIntegervFunc = nullptr;
-glGetProgramiv_client_proc_t GL2EncoderBase::glGetProgramivFunc = nullptr;
-glGetProgramInfoLog_client_proc_t GL2EncoderBase::glGetProgramInfoLogFunc = nullptr;
-glGetRenderbufferParameteriv_client_proc_t GL2EncoderBase::glGetRenderbufferParameterivFunc = nullptr;
-glGetShaderiv_client_proc_t GL2EncoderBase::glGetShaderivFunc = nullptr;
-glGetShaderInfoLog_client_proc_t GL2EncoderBase::glGetShaderInfoLogFunc = nullptr;
-glGetShaderPrecisionFormat_client_proc_t GL2EncoderBase::glGetShaderPrecisionFormatFunc = nullptr;
-glGetShaderSource_client_proc_t GL2EncoderBase::glGetShaderSourceFunc = nullptr;
-glGetString_client_proc_t GL2EncoderBase::glGetStringFunc = nullptr;
-glGetTexParameterfv_client_proc_t GL2EncoderBase::glGetTexParameterfvFunc = nullptr;
-glGetTexParameteriv_client_proc_t GL2EncoderBase::glGetTexParameterivFunc = nullptr;
-glGetUniformfv_client_proc_t GL2EncoderBase::glGetUniformfvFunc = nullptr;
-glGetUniformiv_client_proc_t GL2EncoderBase::glGetUniformivFunc = nullptr;
-glGetUniformLocation_client_proc_t GL2EncoderBase::glGetUniformLocationFunc = nullptr;
-glGetVertexAttribfv_client_proc_t GL2EncoderBase::glGetVertexAttribfvFunc = nullptr;
-glGetVertexAttribiv_client_proc_t GL2EncoderBase::glGetVertexAttribivFunc = nullptr;
-glGetVertexAttribPointerv_client_proc_t GL2EncoderBase::glGetVertexAttribPointervFunc = nullptr;
-glHint_client_proc_t GL2EncoderBase::glHintFunc = nullptr;
-glIsBuffer_client_proc_t GL2EncoderBase::glIsBufferFunc = nullptr;
-glIsEnabled_client_proc_t GL2EncoderBase::glIsEnabledFunc = nullptr;
-glIsFramebuffer_client_proc_t GL2EncoderBase::glIsFramebufferFunc = nullptr;
-glIsProgram_client_proc_t GL2EncoderBase::glIsProgramFunc = nullptr;
-glIsRenderbuffer_client_proc_t GL2EncoderBase::glIsRenderbufferFunc = nullptr;
-glIsShader_client_proc_t GL2EncoderBase::glIsShaderFunc = nullptr;
-glIsTexture_client_proc_t GL2EncoderBase::glIsTextureFunc = nullptr;
-glLineWidth_client_proc_t GL2EncoderBase::glLineWidthFunc = nullptr;
-glLinkProgram_client_proc_t GL2EncoderBase::glLinkProgramFunc = nullptr;
-glPixelStorei_client_proc_t GL2EncoderBase::glPixelStoreiFunc = nullptr;
-glPolygonOffset_client_proc_t GL2EncoderBase::glPolygonOffsetFunc = nullptr;
-glReadPixels_client_proc_t GL2EncoderBase::glReadPixelsFunc = nullptr;
-glReleaseShaderCompiler_client_proc_t GL2EncoderBase::glReleaseShaderCompilerFunc = nullptr;
-glRenderbufferStorage_client_proc_t GL2EncoderBase::glRenderbufferStorageFunc = nullptr;
-glSampleCoverage_client_proc_t GL2EncoderBase::glSampleCoverageFunc = nullptr;
-glScissor_client_proc_t GL2EncoderBase::glScissorFunc = nullptr;
-glShaderBinary_client_proc_t GL2EncoderBase::glShaderBinaryFunc = nullptr;
-glShaderSource_client_proc_t GL2EncoderBase::glShaderSourceFunc = nullptr;
-glStencilFunc_client_proc_t GL2EncoderBase::glStencilFuncFunc = nullptr;
-glStencilFuncSeparate_client_proc_t GL2EncoderBase::glStencilFuncSeparateFunc = nullptr;
-glStencilMask_client_proc_t GL2EncoderBase::glStencilMaskFunc = nullptr;
-glStencilMaskSeparate_client_proc_t GL2EncoderBase::glStencilMaskSeparateFunc = nullptr;
-glStencilOp_client_proc_t GL2EncoderBase::glStencilOpFunc = nullptr;
-glStencilOpSeparate_client_proc_t GL2EncoderBase::glStencilOpSeparateFunc = nullptr;
-glTexImage2D_client_proc_t GL2EncoderBase::glTexImage2DFunc = nullptr;
-glTexParameterf_client_proc_t GL2EncoderBase::glTexParameterfFunc = nullptr;
-glTexParameterfv_client_proc_t GL2EncoderBase::glTexParameterfvFunc = nullptr;
-glTexParameteri_client_proc_t GL2EncoderBase::glTexParameteriFunc = nullptr;
-glTexParameteriv_client_proc_t GL2EncoderBase::glTexParameterivFunc = nullptr;
-glTexSubImage2D_client_proc_t GL2EncoderBase::glTexSubImage2DFunc = nullptr;
-glUniform1f_client_proc_t GL2EncoderBase::glUniform1fFunc = nullptr;
-glUniform1fv_client_proc_t GL2EncoderBase::glUniform1fvFunc = nullptr;
-glUniform1i_client_proc_t GL2EncoderBase::glUniform1iFunc = nullptr;
-glUniform1iv_client_proc_t GL2EncoderBase::glUniform1ivFunc = nullptr;
-glUniform2f_client_proc_t GL2EncoderBase::glUniform2fFunc = nullptr;
-glUniform2fv_client_proc_t GL2EncoderBase::glUniform2fvFunc = nullptr;
-glUniform2i_client_proc_t GL2EncoderBase::glUniform2iFunc = nullptr;
-glUniform2iv_client_proc_t GL2EncoderBase::glUniform2ivFunc = nullptr;
-glUniform3f_client_proc_t GL2EncoderBase::glUniform3fFunc = nullptr;
-glUniform3fv_client_proc_t GL2EncoderBase::glUniform3fvFunc = nullptr;
-glUniform3i_client_proc_t GL2EncoderBase::glUniform3iFunc = nullptr;
-glUniform3iv_client_proc_t GL2EncoderBase::glUniform3ivFunc = nullptr;
-glUniform4f_client_proc_t GL2EncoderBase::glUniform4fFunc = nullptr;
-glUniform4fv_client_proc_t GL2EncoderBase::glUniform4fvFunc = nullptr;
-glUniform4i_client_proc_t GL2EncoderBase::glUniform4iFunc = nullptr;
-glUniform4iv_client_proc_t GL2EncoderBase::glUniform4ivFunc = nullptr;
-glUniformMatrix2fv_client_proc_t GL2EncoderBase::glUniformMatrix2fvFunc = nullptr;
-glUniformMatrix3fv_client_proc_t GL2EncoderBase::glUniformMatrix3fvFunc = nullptr;
-glUniformMatrix4fv_client_proc_t GL2EncoderBase::glUniformMatrix4fvFunc = nullptr;
-glUseProgram_client_proc_t GL2EncoderBase::glUseProgramFunc = nullptr;
-glValidateProgram_client_proc_t GL2EncoderBase::glValidateProgramFunc = nullptr;
-glVertexAttrib1f_client_proc_t GL2EncoderBase::glVertexAttrib1fFunc = nullptr;
-glVertexAttrib1fv_client_proc_t GL2EncoderBase::glVertexAttrib1fvFunc = nullptr;
-glVertexAttrib2f_client_proc_t GL2EncoderBase::glVertexAttrib2fFunc = nullptr;
-glVertexAttrib2fv_client_proc_t GL2EncoderBase::glVertexAttrib2fvFunc = nullptr;
-glVertexAttrib3f_client_proc_t GL2EncoderBase::glVertexAttrib3fFunc = nullptr;
-glVertexAttrib3fv_client_proc_t GL2EncoderBase::glVertexAttrib3fvFunc = nullptr;
-glVertexAttrib4f_client_proc_t GL2EncoderBase::glVertexAttrib4fFunc = nullptr;
-glVertexAttrib4fv_client_proc_t GL2EncoderBase::glVertexAttrib4fvFunc = nullptr;
-glVertexAttribPointer_client_proc_t GL2EncoderBase::glVertexAttribPointerFunc = nullptr;
-glViewport_client_proc_t GL2EncoderBase::glViewportFunc = nullptr;
-glEGLImageTargetTexture2DOES_client_proc_t GL2EncoderBase::glEGLImageTargetTexture2DOESFunc = nullptr;
-glEGLImageTargetRenderbufferStorageOES_client_proc_t GL2EncoderBase::glEGLImageTargetRenderbufferStorageOESFunc =
+glActiveTexture_proc_t GL2EncoderBase::glActiveTextureFunc = nullptr;
+glAttachShader_proc_t GL2EncoderBase::glAttachShaderFunc = nullptr;
+glBindAttribLocation_proc_t GL2EncoderBase::glBindAttribLocationFunc = nullptr;
+glBindBuffer_proc_t GL2EncoderBase::glBindBufferFunc = nullptr;
+glBindFramebuffer_proc_t GL2EncoderBase::glBindFramebufferFunc = nullptr;
+glBindRenderbuffer_proc_t GL2EncoderBase::glBindRenderbufferFunc = nullptr;
+glBindTexture_proc_t GL2EncoderBase::glBindTextureFunc = nullptr;
+glBlendColor_proc_t GL2EncoderBase::glBlendColorFunc = nullptr;
+glBlendEquation_proc_t GL2EncoderBase::glBlendEquationFunc = nullptr;
+glBlendEquationSeparate_proc_t GL2EncoderBase::glBlendEquationSeparateFunc = nullptr;
+glBlendFunc_proc_t GL2EncoderBase::glBlendFuncFunc = nullptr;
+glBlendFuncSeparate_proc_t GL2EncoderBase::glBlendFuncSeparateFunc = nullptr;
+glBufferData_proc_t GL2EncoderBase::glBufferDataFunc = nullptr;
+glBufferSubData_proc_t GL2EncoderBase::glBufferSubDataFunc = nullptr;
+glCheckFramebufferStatus_proc_t GL2EncoderBase::glCheckFramebufferStatusFunc = nullptr;
+glClear_proc_t GL2EncoderBase::glClearFunc = nullptr;
+glClearColor_proc_t GL2EncoderBase::glClearColorFunc = nullptr;
+glClearDepthf_proc_t GL2EncoderBase::glClearDepthfFunc = nullptr;
+glClearStencil_proc_t GL2EncoderBase::glClearStencilFunc = nullptr;
+glColorMask_proc_t GL2EncoderBase::glColorMaskFunc = nullptr;
+glCompileShader_proc_t GL2EncoderBase::glCompileShaderFunc = nullptr;
+glCompressedTexImage2D_proc_t GL2EncoderBase::glCompressedTexImage2DFunc = nullptr;
+glCompressedTexSubImage2D_proc_t GL2EncoderBase::glCompressedTexSubImage2DFunc = nullptr;
+glCopyTexImage2D_proc_t GL2EncoderBase::glCopyTexImage2DFunc = nullptr;
+glCopyTexSubImage2D_proc_t GL2EncoderBase::glCopyTexSubImage2DFunc = nullptr;
+glCreateProgram_proc_t GL2EncoderBase::glCreateProgramFunc = nullptr;
+glCreateShader_proc_t GL2EncoderBase::glCreateShaderFunc = nullptr;
+glCullFace_proc_t GL2EncoderBase::glCullFaceFunc = nullptr;
+glDeleteBuffers_proc_t GL2EncoderBase::glDeleteBuffersFunc = nullptr;
+glDeleteFramebuffers_proc_t GL2EncoderBase::glDeleteFramebuffersFunc = nullptr;
+glDeleteProgram_proc_t GL2EncoderBase::glDeleteProgramFunc = nullptr;
+glDeleteRenderbuffers_proc_t GL2EncoderBase::glDeleteRenderbuffersFunc = nullptr;
+glDeleteShader_proc_t GL2EncoderBase::glDeleteShaderFunc = nullptr;
+glDeleteTextures_proc_t GL2EncoderBase::glDeleteTexturesFunc = nullptr;
+glDepthFunc_proc_t GL2EncoderBase::glDepthFuncFunc = nullptr;
+glDepthMask_proc_t GL2EncoderBase::glDepthMaskFunc = nullptr;
+glDepthRangef_proc_t GL2EncoderBase::glDepthRangefFunc = nullptr;
+glDetachShader_proc_t GL2EncoderBase::glDetachShaderFunc = nullptr;
+glDisable_proc_t GL2EncoderBase::glDisableFunc = nullptr;
+glDisableVertexAttribArray_proc_t GL2EncoderBase::glDisableVertexAttribArrayFunc = nullptr;
+glDrawArrays_proc_t GL2EncoderBase::glDrawArraysFunc = nullptr;
+glDrawElements_proc_t GL2EncoderBase::glDrawElementsFunc = nullptr;
+glEnable_proc_t GL2EncoderBase::glEnableFunc = nullptr;
+glEnableVertexAttribArray_proc_t GL2EncoderBase::glEnableVertexAttribArrayFunc = nullptr;
+glFlush_proc_t GL2EncoderBase::glFlushFunc = nullptr;
+glFramebufferRenderbuffer_proc_t GL2EncoderBase::glFramebufferRenderbufferFunc = nullptr;
+glFramebufferTexture2D_proc_t GL2EncoderBase::glFramebufferTexture2DFunc = nullptr;
+glFrontFace_proc_t GL2EncoderBase::glFrontFaceFunc = nullptr;
+glGenBuffers_proc_t GL2EncoderBase::glGenBuffersFunc = nullptr;
+glGenerateMipmap_proc_t GL2EncoderBase::glGenerateMipmapFunc = nullptr;
+glGenFramebuffers_proc_t GL2EncoderBase::glGenFramebuffersFunc = nullptr;
+glGenRenderbuffers_proc_t GL2EncoderBase::glGenRenderbuffersFunc = nullptr;
+glGenTextures_proc_t GL2EncoderBase::glGenTexturesFunc = nullptr;
+glGetActiveAttrib_proc_t GL2EncoderBase::glGetActiveAttribFunc = nullptr;
+glGetActiveUniform_proc_t GL2EncoderBase::glGetActiveUniformFunc = nullptr;
+glGetAttachedShaders_proc_t GL2EncoderBase::glGetAttachedShadersFunc = nullptr;
+glGetAttribLocation_proc_t GL2EncoderBase::glGetAttribLocationFunc = nullptr;
+glGetBooleanv_proc_t GL2EncoderBase::glGetBooleanvFunc = nullptr;
+glGetBufferParameteriv_proc_t GL2EncoderBase::glGetBufferParameterivFunc = nullptr;
+glGetError_proc_t GL2EncoderBase::glGetErrorFunc = nullptr;
+glGetFloatv_proc_t GL2EncoderBase::glGetFloatvFunc = nullptr;
+glGetFramebufferAttachmentParameteriv_proc_t GL2EncoderBase::glGetFramebufferAttachmentParameterivFunc = nullptr;
+glGetIntegerv_proc_t GL2EncoderBase::glGetIntegervFunc = nullptr;
+glGetProgramiv_proc_t GL2EncoderBase::glGetProgramivFunc = nullptr;
+glGetProgramInfoLog_proc_t GL2EncoderBase::glGetProgramInfoLogFunc = nullptr;
+glGetRenderbufferParameteriv_proc_t GL2EncoderBase::glGetRenderbufferParameterivFunc = nullptr;
+glGetShaderiv_proc_t GL2EncoderBase::glGetShaderivFunc = nullptr;
+glGetShaderInfoLog_proc_t GL2EncoderBase::glGetShaderInfoLogFunc = nullptr;
+glGetShaderPrecisionFormat_proc_t GL2EncoderBase::glGetShaderPrecisionFormatFunc = nullptr;
+glGetShaderSource_proc_t GL2EncoderBase::glGetShaderSourceFunc = nullptr;
+glGetString_proc_t GL2EncoderBase::glGetStringFunc = nullptr;
+glGetTexParameterfv_proc_t GL2EncoderBase::glGetTexParameterfvFunc = nullptr;
+glGetTexParameteriv_proc_t GL2EncoderBase::glGetTexParameterivFunc = nullptr;
+glGetUniformfv_proc_t GL2EncoderBase::glGetUniformfvFunc = nullptr;
+glGetUniformiv_proc_t GL2EncoderBase::glGetUniformivFunc = nullptr;
+glGetUniformLocation_proc_t GL2EncoderBase::glGetUniformLocationFunc = nullptr;
+glGetVertexAttribfv_proc_t GL2EncoderBase::glGetVertexAttribfvFunc = nullptr;
+glGetVertexAttribiv_proc_t GL2EncoderBase::glGetVertexAttribivFunc = nullptr;
+glGetVertexAttribPointerv_proc_t GL2EncoderBase::glGetVertexAttribPointervFunc = nullptr;
+glHint_proc_t GL2EncoderBase::glHintFunc = nullptr;
+glIsBuffer_proc_t GL2EncoderBase::glIsBufferFunc = nullptr;
+glIsEnabled_proc_t GL2EncoderBase::glIsEnabledFunc = nullptr;
+glIsFramebuffer_proc_t GL2EncoderBase::glIsFramebufferFunc = nullptr;
+glIsProgram_proc_t GL2EncoderBase::glIsProgramFunc = nullptr;
+glIsRenderbuffer_proc_t GL2EncoderBase::glIsRenderbufferFunc = nullptr;
+glIsShader_proc_t GL2EncoderBase::glIsShaderFunc = nullptr;
+glIsTexture_proc_t GL2EncoderBase::glIsTextureFunc = nullptr;
+glLineWidth_proc_t GL2EncoderBase::glLineWidthFunc = nullptr;
+glLinkProgram_proc_t GL2EncoderBase::glLinkProgramFunc = nullptr;
+glPixelStorei_proc_t GL2EncoderBase::glPixelStoreiFunc = nullptr;
+glPolygonOffset_proc_t GL2EncoderBase::glPolygonOffsetFunc = nullptr;
+glReadPixels_proc_t GL2EncoderBase::glReadPixelsFunc = nullptr;
+glReleaseShaderCompiler_proc_t GL2EncoderBase::glReleaseShaderCompilerFunc = nullptr;
+glRenderbufferStorage_proc_t GL2EncoderBase::glRenderbufferStorageFunc = nullptr;
+glSampleCoverage_proc_t GL2EncoderBase::glSampleCoverageFunc = nullptr;
+glScissor_proc_t GL2EncoderBase::glScissorFunc = nullptr;
+glShaderBinary_proc_t GL2EncoderBase::glShaderBinaryFunc = nullptr;
+glShaderSource_proc_t GL2EncoderBase::glShaderSourceFunc = nullptr;
+glStencilFunc_proc_t GL2EncoderBase::glStencilFuncFunc = nullptr;
+glStencilFuncSeparate_proc_t GL2EncoderBase::glStencilFuncSeparateFunc = nullptr;
+glStencilMask_proc_t GL2EncoderBase::glStencilMaskFunc = nullptr;
+glStencilMaskSeparate_proc_t GL2EncoderBase::glStencilMaskSeparateFunc = nullptr;
+glStencilOp_proc_t GL2EncoderBase::glStencilOpFunc = nullptr;
+glStencilOpSeparate_proc_t GL2EncoderBase::glStencilOpSeparateFunc = nullptr;
+glTexImage2D_proc_t GL2EncoderBase::glTexImage2DFunc = nullptr;
+glTexParameterf_proc_t GL2EncoderBase::glTexParameterfFunc = nullptr;
+glTexParameterfv_proc_t GL2EncoderBase::glTexParameterfvFunc = nullptr;
+glTexParameteri_proc_t GL2EncoderBase::glTexParameteriFunc = nullptr;
+glTexParameteriv_proc_t GL2EncoderBase::glTexParameterivFunc = nullptr;
+glTexSubImage2D_proc_t GL2EncoderBase::glTexSubImage2DFunc = nullptr;
+glUniform1f_proc_t GL2EncoderBase::glUniform1fFunc = nullptr;
+glUniform1fv_proc_t GL2EncoderBase::glUniform1fvFunc = nullptr;
+glUniform1i_proc_t GL2EncoderBase::glUniform1iFunc = nullptr;
+glUniform1iv_proc_t GL2EncoderBase::glUniform1ivFunc = nullptr;
+glUniform2f_proc_t GL2EncoderBase::glUniform2fFunc = nullptr;
+glUniform2fv_proc_t GL2EncoderBase::glUniform2fvFunc = nullptr;
+glUniform2i_proc_t GL2EncoderBase::glUniform2iFunc = nullptr;
+glUniform2iv_proc_t GL2EncoderBase::glUniform2ivFunc = nullptr;
+glUniform3f_proc_t GL2EncoderBase::glUniform3fFunc = nullptr;
+glUniform3fv_proc_t GL2EncoderBase::glUniform3fvFunc = nullptr;
+glUniform3i_proc_t GL2EncoderBase::glUniform3iFunc = nullptr;
+glUniform3iv_proc_t GL2EncoderBase::glUniform3ivFunc = nullptr;
+glUniform4f_proc_t GL2EncoderBase::glUniform4fFunc = nullptr;
+glUniform4fv_proc_t GL2EncoderBase::glUniform4fvFunc = nullptr;
+glUniform4i_proc_t GL2EncoderBase::glUniform4iFunc = nullptr;
+glUniform4iv_proc_t GL2EncoderBase::glUniform4ivFunc = nullptr;
+glUniformMatrix2fv_proc_t GL2EncoderBase::glUniformMatrix2fvFunc = nullptr;
+glUniformMatrix3fv_proc_t GL2EncoderBase::glUniformMatrix3fvFunc = nullptr;
+glUniformMatrix4fv_proc_t GL2EncoderBase::glUniformMatrix4fvFunc = nullptr;
+glUseProgram_proc_t GL2EncoderBase::glUseProgramFunc = nullptr;
+glValidateProgram_proc_t GL2EncoderBase::glValidateProgramFunc = nullptr;
+glVertexAttrib1f_proc_t GL2EncoderBase::glVertexAttrib1fFunc = nullptr;
+glVertexAttrib1fv_proc_t GL2EncoderBase::glVertexAttrib1fvFunc = nullptr;
+glVertexAttrib2f_proc_t GL2EncoderBase::glVertexAttrib2fFunc = nullptr;
+glVertexAttrib2fv_proc_t GL2EncoderBase::glVertexAttrib2fvFunc = nullptr;
+glVertexAttrib3f_proc_t GL2EncoderBase::glVertexAttrib3fFunc = nullptr;
+glVertexAttrib3fv_proc_t GL2EncoderBase::glVertexAttrib3fvFunc = nullptr;
+glVertexAttrib4f_proc_t GL2EncoderBase::glVertexAttrib4fFunc = nullptr;
+glVertexAttrib4fv_proc_t GL2EncoderBase::glVertexAttrib4fvFunc = nullptr;
+glVertexAttribPointer_proc_t GL2EncoderBase::glVertexAttribPointerFunc = nullptr;
+glViewport_proc_t GL2EncoderBase::glViewportFunc = nullptr;
+glEGLImageTargetTexture2DOES_proc_t GL2EncoderBase::glEGLImageTargetTexture2DOESFunc = nullptr;
+glEGLImageTargetRenderbufferStorageOES_proc_t GL2EncoderBase::glEGLImageTargetRenderbufferStorageOESFunc =
     nullptr;
-glGetProgramBinaryOES_client_proc_t GL2EncoderBase::glGetProgramBinaryOESFunc = nullptr;
-glProgramBinaryOES_client_proc_t GL2EncoderBase::glProgramBinaryOESFunc = nullptr;
-glMapBufferOES_client_proc_t GL2EncoderBase::glMapBufferOESFunc = nullptr;
-glUnmapBufferOES_client_proc_t GL2EncoderBase::glUnmapBufferOESFunc = nullptr;
-glTexImage3DOES_client_proc_t GL2EncoderBase::glTexImage3DOESFunc = nullptr;
-glTexSubImage3DOES_client_proc_t GL2EncoderBase::glTexSubImage3DOESFunc = nullptr;
-glCopyTexSubImage3DOES_client_proc_t GL2EncoderBase::glCopyTexSubImage3DOESFunc = nullptr;
-glCompressedTexImage3DOES_client_proc_t GL2EncoderBase::glCompressedTexImage3DOESFunc = nullptr;
-glCompressedTexSubImage3DOES_client_proc_t GL2EncoderBase::glCompressedTexSubImage3DOESFunc = nullptr;
-glFramebufferTexture3DOES_client_proc_t GL2EncoderBase::glFramebufferTexture3DOESFunc = nullptr;
-glBindVertexArrayOES_client_proc_t GL2EncoderBase::glBindVertexArrayOESFunc = nullptr;
-glDeleteVertexArraysOES_client_proc_t GL2EncoderBase::glDeleteVertexArraysOESFunc = nullptr;
-glGenVertexArraysOES_client_proc_t GL2EncoderBase::glGenVertexArraysOESFunc = nullptr;
-glIsVertexArrayOES_client_proc_t GL2EncoderBase::glIsVertexArrayOESFunc = nullptr;
-glDiscardFramebufferEXT_client_proc_t GL2EncoderBase::glDiscardFramebufferEXTFunc = nullptr;
-glMultiDrawArraysEXT_client_proc_t GL2EncoderBase::glMultiDrawArraysEXTFunc = nullptr;
-glMultiDrawElementsEXT_client_proc_t GL2EncoderBase::glMultiDrawElementsEXTFunc = nullptr;
-glGetPerfMonitorGroupsAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorGroupsAMDFunc = nullptr;
-glGetPerfMonitorCountersAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorCountersAMDFunc = nullptr;
-glGetPerfMonitorGroupStringAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorGroupStringAMDFunc = nullptr;
-glGetPerfMonitorCounterStringAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorCounterStringAMDFunc = nullptr;
-glGetPerfMonitorCounterInfoAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorCounterInfoAMDFunc = nullptr;
-glGenPerfMonitorsAMD_client_proc_t GL2EncoderBase::glGenPerfMonitorsAMDFunc = nullptr;
-glDeletePerfMonitorsAMD_client_proc_t GL2EncoderBase::glDeletePerfMonitorsAMDFunc = nullptr;
-glSelectPerfMonitorCountersAMD_client_proc_t GL2EncoderBase::glSelectPerfMonitorCountersAMDFunc = nullptr;
-glBeginPerfMonitorAMD_client_proc_t GL2EncoderBase::glBeginPerfMonitorAMDFunc = nullptr;
-glEndPerfMonitorAMD_client_proc_t GL2EncoderBase::glEndPerfMonitorAMDFunc = nullptr;
-glGetPerfMonitorCounterDataAMD_client_proc_t GL2EncoderBase::glGetPerfMonitorCounterDataAMDFunc = nullptr;
-glRenderbufferStorageMultisampleIMG_client_proc_t GL2EncoderBase::glRenderbufferStorageMultisampleIMGFunc = nullptr;
-glFramebufferTexture2DMultisampleIMG_client_proc_t GL2EncoderBase::glFramebufferTexture2DMultisampleIMGFunc = nullptr;
-glDeleteFencesNV_client_proc_t GL2EncoderBase::glDeleteFencesNVFunc = nullptr;
-glGenFencesNV_client_proc_t GL2EncoderBase::glGenFencesNVFunc = nullptr;
-glIsFenceNV_client_proc_t GL2EncoderBase::glIsFenceNVFunc = nullptr;
-glTestFenceNV_client_proc_t GL2EncoderBase::glTestFenceNVFunc = nullptr;
-glGetFenceivNV_client_proc_t GL2EncoderBase::glGetFenceivNVFunc = nullptr;
-glFinishFenceNV_client_proc_t GL2EncoderBase::glFinishFenceNVFunc = nullptr;
-glSetFenceNV_client_proc_t GL2EncoderBase::glSetFenceNVFunc = nullptr;
-glCoverageMaskNV_client_proc_t GL2EncoderBase::glCoverageMaskNVFunc = nullptr;
-glCoverageOperationNV_client_proc_t GL2EncoderBase::glCoverageOperationNVFunc = nullptr;
-glGetDriverControlsQCOM_client_proc_t GL2EncoderBase::glGetDriverControlsQCOMFunc = nullptr;
-glGetDriverControlStringQCOM_client_proc_t GL2EncoderBase::glGetDriverControlStringQCOMFunc = nullptr;
-glEnableDriverControlQCOM_client_proc_t GL2EncoderBase::glEnableDriverControlQCOMFunc = nullptr;
-glDisableDriverControlQCOM_client_proc_t GL2EncoderBase::glDisableDriverControlQCOMFunc = nullptr;
-glExtGetTexturesQCOM_client_proc_t GL2EncoderBase::glExtGetTexturesQCOMFunc = nullptr;
-glExtGetBuffersQCOM_client_proc_t GL2EncoderBase::glExtGetBuffersQCOMFunc = nullptr;
-glExtGetRenderbuffersQCOM_client_proc_t GL2EncoderBase::glExtGetRenderbuffersQCOMFunc = nullptr;
-glExtGetFramebuffersQCOM_client_proc_t GL2EncoderBase::glExtGetFramebuffersQCOMFunc = nullptr;
-glExtGetTexLevelParameterivQCOM_client_proc_t GL2EncoderBase::glExtGetTexLevelParameterivQCOMFunc = nullptr;
-glExtTexObjectStateOverrideiQCOM_client_proc_t GL2EncoderBase::glExtTexObjectStateOverrideiQCOMFunc = nullptr;
-glExtGetTexSubImageQCOM_client_proc_t GL2EncoderBase::glExtGetTexSubImageQCOMFunc = nullptr;
-glExtGetBufferPointervQCOM_client_proc_t GL2EncoderBase::glExtGetBufferPointervQCOMFunc = nullptr;
-glExtGetShadersQCOM_client_proc_t GL2EncoderBase::glExtGetShadersQCOMFunc = nullptr;
-glExtGetProgramsQCOM_client_proc_t GL2EncoderBase::glExtGetProgramsQCOMFunc = nullptr;
-glExtIsProgramBinaryQCOM_client_proc_t GL2EncoderBase::glExtIsProgramBinaryQCOMFunc = nullptr;
-glExtGetProgramBinarySourceQCOM_client_proc_t GL2EncoderBase::glExtGetProgramBinarySourceQCOMFunc = nullptr;
-glStartTilingQCOM_client_proc_t GL2EncoderBase::glStartTilingQCOMFunc = nullptr;
-glEndTilingQCOM_client_proc_t GL2EncoderBase::glEndTilingQCOMFunc = nullptr;
-glGenVertexArrays_client_proc_t GL2EncoderBase::glGenVertexArraysFunc = nullptr;
-glBindVertexArray_client_proc_t GL2EncoderBase::glBindVertexArrayFunc = nullptr;
-glDeleteVertexArrays_client_proc_t GL2EncoderBase::glDeleteVertexArraysFunc = nullptr;
-glIsVertexArray_client_proc_t GL2EncoderBase::glIsVertexArrayFunc = nullptr;
-glMapBufferRange_client_proc_t GL2EncoderBase::glMapBufferRangeFunc = nullptr;
-glUnmapBuffer_client_proc_t GL2EncoderBase::glUnmapBufferFunc = nullptr;
-glFlushMappedBufferRange_client_proc_t GL2EncoderBase::glFlushMappedBufferRangeFunc = nullptr;
-glBindBufferRange_client_proc_t GL2EncoderBase::glBindBufferRangeFunc = nullptr;
-glBindBufferBase_client_proc_t GL2EncoderBase::glBindBufferBaseFunc = nullptr;
-glCopyBufferSubData_client_proc_t GL2EncoderBase::glCopyBufferSubDataFunc = nullptr;
-glClearBufferiv_client_proc_t GL2EncoderBase::glClearBufferivFunc = nullptr;
-glClearBufferuiv_client_proc_t GL2EncoderBase::glClearBufferuivFunc = nullptr;
-glClearBufferfv_client_proc_t GL2EncoderBase::glClearBufferfvFunc = nullptr;
-glClearBufferfi_client_proc_t GL2EncoderBase::glClearBufferfiFunc = nullptr;
-glGetBufferParameteri64v_client_proc_t GL2EncoderBase::glGetBufferParameteri64vFunc = nullptr;
-glGetBufferPointerv_client_proc_t GL2EncoderBase::glGetBufferPointervFunc = nullptr;
-glUniformBlockBinding_client_proc_t GL2EncoderBase::glUniformBlockBindingFunc = nullptr;
-glGetUniformBlockIndex_client_proc_t GL2EncoderBase::glGetUniformBlockIndexFunc = nullptr;
-glGetUniformIndices_client_proc_t GL2EncoderBase::glGetUniformIndicesFunc = nullptr;
-glGetActiveUniformBlockiv_client_proc_t GL2EncoderBase::glGetActiveUniformBlockivFunc = nullptr;
-glGetActiveUniformBlockName_client_proc_t GL2EncoderBase::glGetActiveUniformBlockNameFunc = nullptr;
-glUniform1ui_client_proc_t GL2EncoderBase::glUniform1uiFunc = nullptr;
-glUniform2ui_client_proc_t GL2EncoderBase::glUniform2uiFunc = nullptr;
-glUniform3ui_client_proc_t GL2EncoderBase::glUniform3uiFunc = nullptr;
-glUniform4ui_client_proc_t GL2EncoderBase::glUniform4uiFunc = nullptr;
-glUniform1uiv_client_proc_t GL2EncoderBase::glUniform1uivFunc = nullptr;
-glUniform2uiv_client_proc_t GL2EncoderBase::glUniform2uivFunc = nullptr;
-glUniform3uiv_client_proc_t GL2EncoderBase::glUniform3uivFunc = nullptr;
-glUniform4uiv_client_proc_t GL2EncoderBase::glUniform4uivFunc = nullptr;
-glUniformMatrix2x3fv_client_proc_t GL2EncoderBase::glUniformMatrix2x3fvFunc = nullptr;
-glUniformMatrix3x2fv_client_proc_t GL2EncoderBase::glUniformMatrix3x2fvFunc = nullptr;
-glUniformMatrix2x4fv_client_proc_t GL2EncoderBase::glUniformMatrix2x4fvFunc = nullptr;
-glUniformMatrix4x2fv_client_proc_t GL2EncoderBase::glUniformMatrix4x2fvFunc = nullptr;
-glUniformMatrix3x4fv_client_proc_t GL2EncoderBase::glUniformMatrix3x4fvFunc = nullptr;
-glUniformMatrix4x3fv_client_proc_t GL2EncoderBase::glUniformMatrix4x3fvFunc = nullptr;
-glGetUniformuiv_client_proc_t GL2EncoderBase::glGetUniformuivFunc = nullptr;
-glGetActiveUniformsiv_client_proc_t GL2EncoderBase::glGetActiveUniformsivFunc = nullptr;
-glVertexAttribI4i_client_proc_t GL2EncoderBase::glVertexAttribI4iFunc = nullptr;
-glVertexAttribI4ui_client_proc_t GL2EncoderBase::glVertexAttribI4uiFunc = nullptr;
-glVertexAttribI4iv_client_proc_t GL2EncoderBase::glVertexAttribI4ivFunc = nullptr;
-glVertexAttribI4uiv_client_proc_t GL2EncoderBase::glVertexAttribI4uivFunc = nullptr;
-glVertexAttribIPointer_client_proc_t GL2EncoderBase::glVertexAttribIPointerFunc = nullptr;
-glGetVertexAttribIiv_client_proc_t GL2EncoderBase::glGetVertexAttribIivFunc = nullptr;
-glGetVertexAttribIuiv_client_proc_t GL2EncoderBase::glGetVertexAttribIuivFunc = nullptr;
-glVertexAttribDivisor_client_proc_t GL2EncoderBase::glVertexAttribDivisorFunc = nullptr;
-glDrawArraysInstanced_client_proc_t GL2EncoderBase::glDrawArraysInstancedFunc = nullptr;
-glDrawElementsInstanced_client_proc_t GL2EncoderBase::glDrawElementsInstancedFunc = nullptr;
-glDrawRangeElements_client_proc_t GL2EncoderBase::glDrawRangeElementsFunc = nullptr;
-glFenceSync_client_proc_t GL2EncoderBase::glFenceSyncFunc = nullptr;
-glClientWaitSync_client_proc_t GL2EncoderBase::glClientWaitSyncFunc = nullptr;
-glWaitSync_client_proc_t GL2EncoderBase::glWaitSyncFunc = nullptr;
-glDeleteSync_client_proc_t GL2EncoderBase::glDeleteSyncFunc = nullptr;
-glIsSync_client_proc_t GL2EncoderBase::glIsSyncFunc = nullptr;
-glGetSynciv_client_proc_t GL2EncoderBase::glGetSyncivFunc = nullptr;
-glDrawBuffers_client_proc_t GL2EncoderBase::glDrawBuffersFunc = nullptr;
-glReadBuffer_client_proc_t GL2EncoderBase::glReadBufferFunc = nullptr;
-glBlitFramebuffer_client_proc_t GL2EncoderBase::glBlitFramebufferFunc = nullptr;
-glInvalidateFramebuffer_client_proc_t GL2EncoderBase::glInvalidateFramebufferFunc = nullptr;
-glInvalidateSubFramebuffer_client_proc_t GL2EncoderBase::glInvalidateSubFramebufferFunc = nullptr;
-glFramebufferTextureLayer_client_proc_t GL2EncoderBase::glFramebufferTextureLayerFunc = nullptr;
-glRenderbufferStorageMultisample_client_proc_t GL2EncoderBase::glRenderbufferStorageMultisampleFunc = nullptr;
-glTexStorage2D_client_proc_t GL2EncoderBase::glTexStorage2DFunc = nullptr;
-glGetInternalformativ_client_proc_t GL2EncoderBase::glGetInternalformativFunc = nullptr;
-glBeginTransformFeedback_client_proc_t GL2EncoderBase::glBeginTransformFeedbackFunc = nullptr;
-glEndTransformFeedback_client_proc_t GL2EncoderBase::glEndTransformFeedbackFunc = nullptr;
-glGenTransformFeedbacks_client_proc_t GL2EncoderBase::glGenTransformFeedbacksFunc = nullptr;
-glDeleteTransformFeedbacks_client_proc_t GL2EncoderBase::glDeleteTransformFeedbacksFunc = nullptr;
-glBindTransformFeedback_client_proc_t GL2EncoderBase::glBindTransformFeedbackFunc = nullptr;
-glPauseTransformFeedback_client_proc_t GL2EncoderBase::glPauseTransformFeedbackFunc = nullptr;
-glResumeTransformFeedback_client_proc_t GL2EncoderBase::glResumeTransformFeedbackFunc = nullptr;
-glIsTransformFeedback_client_proc_t GL2EncoderBase::glIsTransformFeedbackFunc = nullptr;
-glTransformFeedbackVaryings_client_proc_t GL2EncoderBase::glTransformFeedbackVaryingsFunc = nullptr;
-glGetTransformFeedbackVarying_client_proc_t GL2EncoderBase::glGetTransformFeedbackVaryingFunc = nullptr;
-glGenSamplers_client_proc_t GL2EncoderBase::glGenSamplersFunc = nullptr;
-glDeleteSamplers_client_proc_t GL2EncoderBase::glDeleteSamplersFunc = nullptr;
-glBindSampler_client_proc_t GL2EncoderBase::glBindSamplerFunc = nullptr;
-glSamplerParameterf_client_proc_t GL2EncoderBase::glSamplerParameterfFunc = nullptr;
-glSamplerParameteri_client_proc_t GL2EncoderBase::glSamplerParameteriFunc = nullptr;
-glSamplerParameterfv_client_proc_t GL2EncoderBase::glSamplerParameterfvFunc = nullptr;
-glSamplerParameteriv_client_proc_t GL2EncoderBase::glSamplerParameterivFunc = nullptr;
-glGetSamplerParameterfv_client_proc_t GL2EncoderBase::glGetSamplerParameterfvFunc = nullptr;
-glGetSamplerParameteriv_client_proc_t GL2EncoderBase::glGetSamplerParameterivFunc = nullptr;
-glIsSampler_client_proc_t GL2EncoderBase::glIsSamplerFunc = nullptr;
-glGenQueries_client_proc_t GL2EncoderBase::glGenQueriesFunc = nullptr;
-glDeleteQueries_client_proc_t GL2EncoderBase::glDeleteQueriesFunc = nullptr;
-glBeginQuery_client_proc_t GL2EncoderBase::glBeginQueryFunc = nullptr;
-glEndQuery_client_proc_t GL2EncoderBase::glEndQueryFunc = nullptr;
-glGetQueryiv_client_proc_t GL2EncoderBase::glGetQueryivFunc = nullptr;
-glGetQueryObjectuiv_client_proc_t GL2EncoderBase::glGetQueryObjectuivFunc = nullptr;
-glIsQuery_client_proc_t GL2EncoderBase::glIsQueryFunc = nullptr;
-glProgramParameteri_client_proc_t GL2EncoderBase::glProgramParameteriFunc = nullptr;
-glProgramBinary_client_proc_t GL2EncoderBase::glProgramBinaryFunc = nullptr;
-glGetProgramBinary_client_proc_t GL2EncoderBase::glGetProgramBinaryFunc = nullptr;
-glGetFragDataLocation_client_proc_t GL2EncoderBase::glGetFragDataLocationFunc = nullptr;
-glGetInteger64v_client_proc_t GL2EncoderBase::glGetInteger64vFunc = nullptr;
-glGetIntegeri_v_client_proc_t GL2EncoderBase::glGetIntegeri_vFunc = nullptr;
-glGetInteger64i_v_client_proc_t GL2EncoderBase::glGetInteger64i_vFunc = nullptr;
-glTexImage3D_client_proc_t GL2EncoderBase::glTexImage3DFunc = nullptr;
-glTexStorage3D_client_proc_t GL2EncoderBase::glTexStorage3DFunc = nullptr;
-glTexSubImage3D_client_proc_t GL2EncoderBase::glTexSubImage3DFunc = nullptr;
-glCompressedTexImage3D_client_proc_t GL2EncoderBase::glCompressedTexImage3DFunc = nullptr;
-glCompressedTexSubImage3D_client_proc_t GL2EncoderBase::glCompressedTexSubImage3DFunc = nullptr;
-glCopyTexSubImage3D_client_proc_t GL2EncoderBase::glCopyTexSubImage3DFunc = nullptr;
-glGetStringi_client_proc_t GL2EncoderBase::glGetStringiFunc = nullptr;
-glGetBooleani_v_client_proc_t GL2EncoderBase::glGetBooleani_vFunc = nullptr;
-glMemoryBarrier_client_proc_t GL2EncoderBase::glMemoryBarrierFunc = nullptr;
-glMemoryBarrierByRegion_client_proc_t GL2EncoderBase::glMemoryBarrierByRegionFunc = nullptr;
-glGenProgramPipelines_client_proc_t GL2EncoderBase::glGenProgramPipelinesFunc = nullptr;
-glDeleteProgramPipelines_client_proc_t GL2EncoderBase::glDeleteProgramPipelinesFunc = nullptr;
-glBindProgramPipeline_client_proc_t GL2EncoderBase::glBindProgramPipelineFunc = nullptr;
-glGetProgramPipelineiv_client_proc_t GL2EncoderBase::glGetProgramPipelineivFunc = nullptr;
-glGetProgramPipelineInfoLog_client_proc_t GL2EncoderBase::glGetProgramPipelineInfoLogFunc = nullptr;
-glValidateProgramPipeline_client_proc_t GL2EncoderBase::glValidateProgramPipelineFunc = nullptr;
-glIsProgramPipeline_client_proc_t GL2EncoderBase::glIsProgramPipelineFunc = nullptr;
-glUseProgramStages_client_proc_t GL2EncoderBase::glUseProgramStagesFunc = nullptr;
-glActiveShaderProgram_client_proc_t GL2EncoderBase::glActiveShaderProgramFunc = nullptr;
-glCreateShaderProgramv_client_proc_t GL2EncoderBase::glCreateShaderProgramvFunc = nullptr;
-glProgramUniform1f_client_proc_t GL2EncoderBase::glProgramUniform1fFunc = nullptr;
-glProgramUniform2f_client_proc_t GL2EncoderBase::glProgramUniform2fFunc = nullptr;
-glProgramUniform3f_client_proc_t GL2EncoderBase::glProgramUniform3fFunc = nullptr;
-glProgramUniform4f_client_proc_t GL2EncoderBase::glProgramUniform4fFunc = nullptr;
-glProgramUniform1i_client_proc_t GL2EncoderBase::glProgramUniform1iFunc = nullptr;
-glProgramUniform2i_client_proc_t GL2EncoderBase::glProgramUniform2iFunc = nullptr;
-glProgramUniform3i_client_proc_t GL2EncoderBase::glProgramUniform3iFunc = nullptr;
-glProgramUniform4i_client_proc_t GL2EncoderBase::glProgramUniform4iFunc = nullptr;
-glProgramUniform1ui_client_proc_t GL2EncoderBase::glProgramUniform1uiFunc = nullptr;
-glProgramUniform2ui_client_proc_t GL2EncoderBase::glProgramUniform2uiFunc = nullptr;
-glProgramUniform3ui_client_proc_t GL2EncoderBase::glProgramUniform3uiFunc = nullptr;
-glProgramUniform4ui_client_proc_t GL2EncoderBase::glProgramUniform4uiFunc = nullptr;
-glProgramUniform1fv_client_proc_t GL2EncoderBase::glProgramUniform1fvFunc = nullptr;
-glProgramUniform2fv_client_proc_t GL2EncoderBase::glProgramUniform2fvFunc = nullptr;
-glProgramUniform3fv_client_proc_t GL2EncoderBase::glProgramUniform3fvFunc = nullptr;
-glProgramUniform4fv_client_proc_t GL2EncoderBase::glProgramUniform4fvFunc = nullptr;
-glProgramUniform1iv_client_proc_t GL2EncoderBase::glProgramUniform1ivFunc = nullptr;
-glProgramUniform2iv_client_proc_t GL2EncoderBase::glProgramUniform2ivFunc = nullptr;
-glProgramUniform3iv_client_proc_t GL2EncoderBase::glProgramUniform3ivFunc = nullptr;
-glProgramUniform4iv_client_proc_t GL2EncoderBase::glProgramUniform4ivFunc = nullptr;
-glProgramUniform1uiv_client_proc_t GL2EncoderBase::glProgramUniform1uivFunc = nullptr;
-glProgramUniform2uiv_client_proc_t GL2EncoderBase::glProgramUniform2uivFunc = nullptr;
-glProgramUniform3uiv_client_proc_t GL2EncoderBase::glProgramUniform3uivFunc = nullptr;
-glProgramUniform4uiv_client_proc_t GL2EncoderBase::glProgramUniform4uivFunc = nullptr;
-glProgramUniformMatrix2fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix2fvFunc = nullptr;
-glProgramUniformMatrix3fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix3fvFunc = nullptr;
-glProgramUniformMatrix4fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix4fvFunc = nullptr;
-glProgramUniformMatrix2x3fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix2x3fvFunc = nullptr;
-glProgramUniformMatrix3x2fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix3x2fvFunc = nullptr;
-glProgramUniformMatrix2x4fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix2x4fvFunc = nullptr;
-glProgramUniformMatrix4x2fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix4x2fvFunc = nullptr;
-glProgramUniformMatrix3x4fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix3x4fvFunc = nullptr;
-glProgramUniformMatrix4x3fv_client_proc_t GL2EncoderBase::glProgramUniformMatrix4x3fvFunc = nullptr;
-glGetProgramInterfaceiv_client_proc_t GL2EncoderBase::glGetProgramInterfaceivFunc = nullptr;
-glGetProgramResourceiv_client_proc_t GL2EncoderBase::glGetProgramResourceivFunc = nullptr;
-glGetProgramResourceIndex_client_proc_t GL2EncoderBase::glGetProgramResourceIndexFunc = nullptr;
-glGetProgramResourceLocation_client_proc_t GL2EncoderBase::glGetProgramResourceLocationFunc = nullptr;
-glGetProgramResourceName_client_proc_t GL2EncoderBase::glGetProgramResourceNameFunc = nullptr;
-glBindImageTexture_client_proc_t GL2EncoderBase::glBindImageTextureFunc = nullptr;
-glDispatchCompute_client_proc_t GL2EncoderBase::glDispatchComputeFunc = nullptr;
-glDispatchComputeIndirect_client_proc_t GL2EncoderBase::glDispatchComputeIndirectFunc = nullptr;
-glBindVertexBuffer_client_proc_t GL2EncoderBase::glBindVertexBufferFunc = nullptr;
-glVertexAttribBinding_client_proc_t GL2EncoderBase::glVertexAttribBindingFunc = nullptr;
-glVertexAttribFormat_client_proc_t GL2EncoderBase::glVertexAttribFormatFunc = nullptr;
-glVertexAttribIFormat_client_proc_t GL2EncoderBase::glVertexAttribIFormatFunc = nullptr;
-glVertexBindingDivisor_client_proc_t GL2EncoderBase::glVertexBindingDivisorFunc = nullptr;
-glDrawArraysIndirect_client_proc_t GL2EncoderBase::glDrawArraysIndirectFunc = nullptr;
-glDrawElementsIndirect_client_proc_t GL2EncoderBase::glDrawElementsIndirectFunc = nullptr;
-glTexStorage2DMultisample_client_proc_t GL2EncoderBase::glTexStorage2DMultisampleFunc = nullptr;
-glSampleMaski_client_proc_t GL2EncoderBase::glSampleMaskiFunc = nullptr;
-glGetMultisamplefv_client_proc_t GL2EncoderBase::glGetMultisamplefvFunc = nullptr;
-glFramebufferParameteri_client_proc_t GL2EncoderBase::glFramebufferParameteriFunc = nullptr;
-glGetFramebufferParameteriv_client_proc_t GL2EncoderBase::glGetFramebufferParameterivFunc = nullptr;
-glGetTexLevelParameterfv_client_proc_t GL2EncoderBase::glGetTexLevelParameterfvFunc = nullptr;
-glGetTexLevelParameteriv_client_proc_t GL2EncoderBase::glGetTexLevelParameterivFunc = nullptr;
-glEnableiEXT_client_proc_t GL2EncoderBase::glEnableiEXTFunc = nullptr;
-glDisableiEXT_client_proc_t GL2EncoderBase::glDisableiEXTFunc = nullptr;
-glBlendEquationiEXT_client_proc_t GL2EncoderBase::glBlendEquationiEXTFunc = nullptr;
-glBlendEquationSeparateiEXT_client_proc_t GL2EncoderBase::glBlendEquationSeparateiEXTFunc = nullptr;
-glBlendFunciEXT_client_proc_t GL2EncoderBase::glBlendFunciEXTFunc = nullptr;
-glBlendFuncSeparateiEXT_client_proc_t GL2EncoderBase::glBlendFuncSeparateiEXTFunc = nullptr;
-glColorMaskiEXT_client_proc_t GL2EncoderBase::glColorMaskiEXTFunc = nullptr;
-glIsEnablediEXT_client_proc_t GL2EncoderBase::glIsEnablediEXTFunc = nullptr;
-glCopyImageSubDataEXT_client_proc_t GL2EncoderBase::glCopyImageSubDataEXTFunc = nullptr;
-glBlendBarrierKHR_client_proc_t GL2EncoderBase::glBlendBarrierKHRFunc = nullptr;
-glTexParameterIivEXT_client_proc_t GL2EncoderBase::glTexParameterIivEXTFunc = nullptr;
-glTexParameterIuivEXT_client_proc_t GL2EncoderBase::glTexParameterIuivEXTFunc = nullptr;
-glGetTexParameterIivEXT_client_proc_t GL2EncoderBase::glGetTexParameterIivEXTFunc = nullptr;
-glGetTexParameterIuivEXT_client_proc_t GL2EncoderBase::glGetTexParameterIuivEXTFunc = nullptr;
-glSamplerParameterIivEXT_client_proc_t GL2EncoderBase::glSamplerParameterIivEXTFunc = nullptr;
-glSamplerParameterIuivEXT_client_proc_t GL2EncoderBase::glSamplerParameterIuivEXTFunc = nullptr;
-glGetSamplerParameterIivEXT_client_proc_t GL2EncoderBase::glGetSamplerParameterIivEXTFunc = nullptr;
-glGetSamplerParameterIuivEXT_client_proc_t GL2EncoderBase::glGetSamplerParameterIuivEXTFunc = nullptr;
-glVertexAttribPointerData_client_proc_t GL2EncoderBase::glVertexAttribPointerDataFunc = nullptr;
-glVertexAttribPointerOffset_client_proc_t GL2EncoderBase::glVertexAttribPointerOffsetFunc = nullptr;
-glDrawElementsOffset_client_proc_t GL2EncoderBase::glDrawElementsOffsetFunc = nullptr;
-glDrawElementsData_client_proc_t GL2EncoderBase::glDrawElementsDataFunc = nullptr;
-glGetCompressedTextureFormats_client_proc_t GL2EncoderBase::glGetCompressedTextureFormatsFunc = nullptr;
-glShaderString_client_proc_t GL2EncoderBase::glShaderStringFunc = nullptr;
-glFinishRoundTrip_client_proc_t GL2EncoderBase::glFinishRoundTripFunc = nullptr;
-glMapBufferRangeAEMU_client_proc_t GL2EncoderBase::glMapBufferRangeAEMUFunc = nullptr;
-glUnmapBufferAEMU_client_proc_t GL2EncoderBase::glUnmapBufferAEMUFunc = nullptr;
-glFlushMappedBufferRangeAEMU_client_proc_t GL2EncoderBase::glFlushMappedBufferRangeAEMUFunc = nullptr;
-glReadPixelsOffsetAEMU_client_proc_t GL2EncoderBase::glReadPixelsOffsetAEMUFunc = nullptr;
-glCompressedTexImage2DOffsetAEMU_client_proc_t GL2EncoderBase::glCompressedTexImage2DOffsetAEMUFunc = nullptr;
-glCompressedTexSubImage2DOffsetAEMU_client_proc_t GL2EncoderBase::glCompressedTexSubImage2DOffsetAEMUFunc = nullptr;
-glTexImage2DOffsetAEMU_client_proc_t GL2EncoderBase::glTexImage2DOffsetAEMUFunc = nullptr;
-glTexSubImage2DOffsetAEMU_client_proc_t GL2EncoderBase::glTexSubImage2DOffsetAEMUFunc = nullptr;
-glGetUniformIndicesAEMU_client_proc_t GL2EncoderBase::glGetUniformIndicesAEMUFunc = nullptr;
-glVertexAttribIPointerOffsetAEMU_client_proc_t GL2EncoderBase::glVertexAttribIPointerOffsetAEMUFunc = nullptr;
-glVertexAttribIPointerDataAEMU_client_proc_t GL2EncoderBase::glVertexAttribIPointerDataAEMUFunc = nullptr;
-glDrawElementsInstancedDataAEMU_client_proc_t GL2EncoderBase::glDrawElementsInstancedDataAEMUFunc = nullptr;
-glDrawElementsInstancedOffsetAEMU_client_proc_t GL2EncoderBase::glDrawElementsInstancedOffsetAEMUFunc = nullptr;
-glDrawRangeElementsDataAEMU_client_proc_t GL2EncoderBase::glDrawRangeElementsDataAEMUFunc = nullptr;
-glDrawRangeElementsOffsetAEMU_client_proc_t GL2EncoderBase::glDrawRangeElementsOffsetAEMUFunc = nullptr;
-glFenceSyncAEMU_client_proc_t GL2EncoderBase::glFenceSyncAEMUFunc = nullptr;
-glClientWaitSyncAEMU_client_proc_t GL2EncoderBase::glClientWaitSyncAEMUFunc = nullptr;
-glWaitSyncAEMU_client_proc_t GL2EncoderBase::glWaitSyncAEMUFunc = nullptr;
-glDeleteSyncAEMU_client_proc_t GL2EncoderBase::glDeleteSyncAEMUFunc = nullptr;
-glIsSyncAEMU_client_proc_t GL2EncoderBase::glIsSyncAEMUFunc = nullptr;
-glGetSyncivAEMU_client_proc_t GL2EncoderBase::glGetSyncivAEMUFunc = nullptr;
-glTransformFeedbackVaryingsAEMU_client_proc_t GL2EncoderBase::glTransformFeedbackVaryingsAEMUFunc = nullptr;
-glTexImage3DOffsetAEMU_client_proc_t GL2EncoderBase::glTexImage3DOffsetAEMUFunc = nullptr;
-glTexSubImage3DOffsetAEMU_client_proc_t GL2EncoderBase::glTexSubImage3DOffsetAEMUFunc = nullptr;
-glCompressedTexImage3DOffsetAEMU_client_proc_t GL2EncoderBase::glCompressedTexImage3DOffsetAEMUFunc = nullptr;
-glCompressedTexSubImage3DOffsetAEMU_client_proc_t GL2EncoderBase::glCompressedTexSubImage3DOffsetAEMUFunc = nullptr;
-glCreateShaderProgramvAEMU_client_proc_t GL2EncoderBase::glCreateShaderProgramvAEMUFunc = nullptr;
-glDrawArraysIndirectDataAEMU_client_proc_t GL2EncoderBase::glDrawArraysIndirectDataAEMUFunc = nullptr;
-glDrawArraysIndirectOffsetAEMU_client_proc_t GL2EncoderBase::glDrawArraysIndirectOffsetAEMUFunc = nullptr;
-glDrawElementsIndirectDataAEMU_client_proc_t GL2EncoderBase::glDrawElementsIndirectDataAEMUFunc = nullptr;
-glDrawElementsIndirectOffsetAEMU_client_proc_t GL2EncoderBase::glDrawElementsIndirectOffsetAEMUFunc = nullptr;
-glUniformLayout_client_proc_t GL2EncoderBase::glUniformLayoutFunc = nullptr;
+glGetProgramBinaryOES_proc_t GL2EncoderBase::glGetProgramBinaryOESFunc = nullptr;
+glProgramBinaryOES_proc_t GL2EncoderBase::glProgramBinaryOESFunc = nullptr;
+glMapBufferOES_proc_t GL2EncoderBase::glMapBufferOESFunc = nullptr;
+glUnmapBufferOES_proc_t GL2EncoderBase::glUnmapBufferOESFunc = nullptr;
+glTexImage3DOES_proc_t GL2EncoderBase::glTexImage3DOESFunc = nullptr;
+glTexSubImage3DOES_proc_t GL2EncoderBase::glTexSubImage3DOESFunc = nullptr;
+glCopyTexSubImage3DOES_proc_t GL2EncoderBase::glCopyTexSubImage3DOESFunc = nullptr;
+glCompressedTexImage3DOES_proc_t GL2EncoderBase::glCompressedTexImage3DOESFunc = nullptr;
+glCompressedTexSubImage3DOES_proc_t GL2EncoderBase::glCompressedTexSubImage3DOESFunc = nullptr;
+glFramebufferTexture3DOES_proc_t GL2EncoderBase::glFramebufferTexture3DOESFunc = nullptr;
+glBindVertexArrayOES_proc_t GL2EncoderBase::glBindVertexArrayOESFunc = nullptr;
+glDeleteVertexArraysOES_proc_t GL2EncoderBase::glDeleteVertexArraysOESFunc = nullptr;
+glGenVertexArraysOES_proc_t GL2EncoderBase::glGenVertexArraysOESFunc = nullptr;
+glIsVertexArrayOES_proc_t GL2EncoderBase::glIsVertexArrayOESFunc = nullptr;
+glDiscardFramebufferEXT_proc_t GL2EncoderBase::glDiscardFramebufferEXTFunc = nullptr;
+glMultiDrawArraysEXT_proc_t GL2EncoderBase::glMultiDrawArraysEXTFunc = nullptr;
+glMultiDrawElementsEXT_proc_t GL2EncoderBase::glMultiDrawElementsEXTFunc = nullptr;
+glGetPerfMonitorGroupsAMD_proc_t GL2EncoderBase::glGetPerfMonitorGroupsAMDFunc = nullptr;
+glGetPerfMonitorCountersAMD_proc_t GL2EncoderBase::glGetPerfMonitorCountersAMDFunc = nullptr;
+glGetPerfMonitorGroupStringAMD_proc_t GL2EncoderBase::glGetPerfMonitorGroupStringAMDFunc = nullptr;
+glGetPerfMonitorCounterStringAMD_proc_t GL2EncoderBase::glGetPerfMonitorCounterStringAMDFunc = nullptr;
+glGetPerfMonitorCounterInfoAMD_proc_t GL2EncoderBase::glGetPerfMonitorCounterInfoAMDFunc = nullptr;
+glGenPerfMonitorsAMD_proc_t GL2EncoderBase::glGenPerfMonitorsAMDFunc = nullptr;
+glDeletePerfMonitorsAMD_proc_t GL2EncoderBase::glDeletePerfMonitorsAMDFunc = nullptr;
+glSelectPerfMonitorCountersAMD_proc_t GL2EncoderBase::glSelectPerfMonitorCountersAMDFunc = nullptr;
+glBeginPerfMonitorAMD_proc_t GL2EncoderBase::glBeginPerfMonitorAMDFunc = nullptr;
+glEndPerfMonitorAMD_proc_t GL2EncoderBase::glEndPerfMonitorAMDFunc = nullptr;
+glGetPerfMonitorCounterDataAMD_proc_t GL2EncoderBase::glGetPerfMonitorCounterDataAMDFunc = nullptr;
+glRenderbufferStorageMultisampleIMG_proc_t GL2EncoderBase::glRenderbufferStorageMultisampleIMGFunc = nullptr;
+glFramebufferTexture2DMultisampleIMG_proc_t GL2EncoderBase::glFramebufferTexture2DMultisampleIMGFunc = nullptr;
+glDeleteFencesNV_proc_t GL2EncoderBase::glDeleteFencesNVFunc = nullptr;
+glGenFencesNV_proc_t GL2EncoderBase::glGenFencesNVFunc = nullptr;
+glIsFenceNV_proc_t GL2EncoderBase::glIsFenceNVFunc = nullptr;
+glTestFenceNV_proc_t GL2EncoderBase::glTestFenceNVFunc = nullptr;
+glGetFenceivNV_proc_t GL2EncoderBase::glGetFenceivNVFunc = nullptr;
+glFinishFenceNV_proc_t GL2EncoderBase::glFinishFenceNVFunc = nullptr;
+glSetFenceNV_proc_t GL2EncoderBase::glSetFenceNVFunc = nullptr;
+glCoverageMaskNV_proc_t GL2EncoderBase::glCoverageMaskNVFunc = nullptr;
+glCoverageOperationNV_proc_t GL2EncoderBase::glCoverageOperationNVFunc = nullptr;
+glGetDriverControlsQCOM_proc_t GL2EncoderBase::glGetDriverControlsQCOMFunc = nullptr;
+glGetDriverControlStringQCOM_proc_t GL2EncoderBase::glGetDriverControlStringQCOMFunc = nullptr;
+glEnableDriverControlQCOM_proc_t GL2EncoderBase::glEnableDriverControlQCOMFunc = nullptr;
+glDisableDriverControlQCOM_proc_t GL2EncoderBase::glDisableDriverControlQCOMFunc = nullptr;
+glExtGetTexturesQCOM_proc_t GL2EncoderBase::glExtGetTexturesQCOMFunc = nullptr;
+glExtGetBuffersQCOM_proc_t GL2EncoderBase::glExtGetBuffersQCOMFunc = nullptr;
+glExtGetRenderbuffersQCOM_proc_t GL2EncoderBase::glExtGetRenderbuffersQCOMFunc = nullptr;
+glExtGetFramebuffersQCOM_proc_t GL2EncoderBase::glExtGetFramebuffersQCOMFunc = nullptr;
+glExtGetTexLevelParameterivQCOM_proc_t GL2EncoderBase::glExtGetTexLevelParameterivQCOMFunc = nullptr;
+glExtTexObjectStateOverrideiQCOM_proc_t GL2EncoderBase::glExtTexObjectStateOverrideiQCOMFunc = nullptr;
+glExtGetTexSubImageQCOM_proc_t GL2EncoderBase::glExtGetTexSubImageQCOMFunc = nullptr;
+glExtGetBufferPointervQCOM_proc_t GL2EncoderBase::glExtGetBufferPointervQCOMFunc = nullptr;
+glExtGetShadersQCOM_proc_t GL2EncoderBase::glExtGetShadersQCOMFunc = nullptr;
+glExtGetProgramsQCOM_proc_t GL2EncoderBase::glExtGetProgramsQCOMFunc = nullptr;
+glExtIsProgramBinaryQCOM_proc_t GL2EncoderBase::glExtIsProgramBinaryQCOMFunc = nullptr;
+glExtGetProgramBinarySourceQCOM_proc_t GL2EncoderBase::glExtGetProgramBinarySourceQCOMFunc = nullptr;
+glStartTilingQCOM_proc_t GL2EncoderBase::glStartTilingQCOMFunc = nullptr;
+glEndTilingQCOM_proc_t GL2EncoderBase::glEndTilingQCOMFunc = nullptr;
+glGenVertexArrays_proc_t GL2EncoderBase::glGenVertexArraysFunc = nullptr;
+glBindVertexArray_proc_t GL2EncoderBase::glBindVertexArrayFunc = nullptr;
+glDeleteVertexArrays_proc_t GL2EncoderBase::glDeleteVertexArraysFunc = nullptr;
+glIsVertexArray_proc_t GL2EncoderBase::glIsVertexArrayFunc = nullptr;
+glMapBufferRange_proc_t GL2EncoderBase::glMapBufferRangeFunc = nullptr;
+glUnmapBuffer_proc_t GL2EncoderBase::glUnmapBufferFunc = nullptr;
+glFlushMappedBufferRange_proc_t GL2EncoderBase::glFlushMappedBufferRangeFunc = nullptr;
+glBindBufferRange_proc_t GL2EncoderBase::glBindBufferRangeFunc = nullptr;
+glBindBufferBase_proc_t GL2EncoderBase::glBindBufferBaseFunc = nullptr;
+glCopyBufferSubData_proc_t GL2EncoderBase::glCopyBufferSubDataFunc = nullptr;
+glClearBufferiv_proc_t GL2EncoderBase::glClearBufferivFunc = nullptr;
+glClearBufferuiv_proc_t GL2EncoderBase::glClearBufferuivFunc = nullptr;
+glClearBufferfv_proc_t GL2EncoderBase::glClearBufferfvFunc = nullptr;
+glClearBufferfi_proc_t GL2EncoderBase::glClearBufferfiFunc = nullptr;
+glGetBufferParameteri64v_proc_t GL2EncoderBase::glGetBufferParameteri64vFunc = nullptr;
+glGetBufferPointerv_proc_t GL2EncoderBase::glGetBufferPointervFunc = nullptr;
+glUniformBlockBinding_proc_t GL2EncoderBase::glUniformBlockBindingFunc = nullptr;
+glGetUniformBlockIndex_proc_t GL2EncoderBase::glGetUniformBlockIndexFunc = nullptr;
+glGetUniformIndices_proc_t GL2EncoderBase::glGetUniformIndicesFunc = nullptr;
+glGetActiveUniformBlockiv_proc_t GL2EncoderBase::glGetActiveUniformBlockivFunc = nullptr;
+glGetActiveUniformBlockName_proc_t GL2EncoderBase::glGetActiveUniformBlockNameFunc = nullptr;
+glUniform1ui_proc_t GL2EncoderBase::glUniform1uiFunc = nullptr;
+glUniform2ui_proc_t GL2EncoderBase::glUniform2uiFunc = nullptr;
+glUniform3ui_proc_t GL2EncoderBase::glUniform3uiFunc = nullptr;
+glUniform4ui_proc_t GL2EncoderBase::glUniform4uiFunc = nullptr;
+glUniform1uiv_proc_t GL2EncoderBase::glUniform1uivFunc = nullptr;
+glUniform2uiv_proc_t GL2EncoderBase::glUniform2uivFunc = nullptr;
+glUniform3uiv_proc_t GL2EncoderBase::glUniform3uivFunc = nullptr;
+glUniform4uiv_proc_t GL2EncoderBase::glUniform4uivFunc = nullptr;
+glUniformMatrix2x3fv_proc_t GL2EncoderBase::glUniformMatrix2x3fvFunc = nullptr;
+glUniformMatrix3x2fv_proc_t GL2EncoderBase::glUniformMatrix3x2fvFunc = nullptr;
+glUniformMatrix2x4fv_proc_t GL2EncoderBase::glUniformMatrix2x4fvFunc = nullptr;
+glUniformMatrix4x2fv_proc_t GL2EncoderBase::glUniformMatrix4x2fvFunc = nullptr;
+glUniformMatrix3x4fv_proc_t GL2EncoderBase::glUniformMatrix3x4fvFunc = nullptr;
+glUniformMatrix4x3fv_proc_t GL2EncoderBase::glUniformMatrix4x3fvFunc = nullptr;
+glGetUniformuiv_proc_t GL2EncoderBase::glGetUniformuivFunc = nullptr;
+glGetActiveUniformsiv_proc_t GL2EncoderBase::glGetActiveUniformsivFunc = nullptr;
+glVertexAttribI4i_proc_t GL2EncoderBase::glVertexAttribI4iFunc = nullptr;
+glVertexAttribI4ui_proc_t GL2EncoderBase::glVertexAttribI4uiFunc = nullptr;
+glVertexAttribI4iv_proc_t GL2EncoderBase::glVertexAttribI4ivFunc = nullptr;
+glVertexAttribI4uiv_proc_t GL2EncoderBase::glVertexAttribI4uivFunc = nullptr;
+glVertexAttribIPointer_proc_t GL2EncoderBase::glVertexAttribIPointerFunc = nullptr;
+glGetVertexAttribIiv_proc_t GL2EncoderBase::glGetVertexAttribIivFunc = nullptr;
+glGetVertexAttribIuiv_proc_t GL2EncoderBase::glGetVertexAttribIuivFunc = nullptr;
+glVertexAttribDivisor_proc_t GL2EncoderBase::glVertexAttribDivisorFunc = nullptr;
+glDrawArraysInstanced_proc_t GL2EncoderBase::glDrawArraysInstancedFunc = nullptr;
+glDrawElementsInstanced_proc_t GL2EncoderBase::glDrawElementsInstancedFunc = nullptr;
+glDrawRangeElements_proc_t GL2EncoderBase::glDrawRangeElementsFunc = nullptr;
+glFenceSync_proc_t GL2EncoderBase::glFenceSyncFunc = nullptr;
+glClientWaitSync_proc_t GL2EncoderBase::glClientWaitSyncFunc = nullptr;
+glWaitSync_proc_t GL2EncoderBase::glWaitSyncFunc = nullptr;
+glDeleteSync_proc_t GL2EncoderBase::glDeleteSyncFunc = nullptr;
+glIsSync_proc_t GL2EncoderBase::glIsSyncFunc = nullptr;
+glGetSynciv_proc_t GL2EncoderBase::glGetSyncivFunc = nullptr;
+glDrawBuffers_proc_t GL2EncoderBase::glDrawBuffersFunc = nullptr;
+glReadBuffer_proc_t GL2EncoderBase::glReadBufferFunc = nullptr;
+glBlitFramebuffer_proc_t GL2EncoderBase::glBlitFramebufferFunc = nullptr;
+glInvalidateFramebuffer_proc_t GL2EncoderBase::glInvalidateFramebufferFunc = nullptr;
+glInvalidateSubFramebuffer_proc_t GL2EncoderBase::glInvalidateSubFramebufferFunc = nullptr;
+glFramebufferTextureLayer_proc_t GL2EncoderBase::glFramebufferTextureLayerFunc = nullptr;
+glRenderbufferStorageMultisample_proc_t GL2EncoderBase::glRenderbufferStorageMultisampleFunc = nullptr;
+glTexStorage2D_proc_t GL2EncoderBase::glTexStorage2DFunc = nullptr;
+glGetInternalformativ_proc_t GL2EncoderBase::glGetInternalformativFunc = nullptr;
+glBeginTransformFeedback_proc_t GL2EncoderBase::glBeginTransformFeedbackFunc = nullptr;
+glEndTransformFeedback_proc_t GL2EncoderBase::glEndTransformFeedbackFunc = nullptr;
+glGenTransformFeedbacks_proc_t GL2EncoderBase::glGenTransformFeedbacksFunc = nullptr;
+glDeleteTransformFeedbacks_proc_t GL2EncoderBase::glDeleteTransformFeedbacksFunc = nullptr;
+glBindTransformFeedback_proc_t GL2EncoderBase::glBindTransformFeedbackFunc = nullptr;
+glPauseTransformFeedback_proc_t GL2EncoderBase::glPauseTransformFeedbackFunc = nullptr;
+glResumeTransformFeedback_proc_t GL2EncoderBase::glResumeTransformFeedbackFunc = nullptr;
+glIsTransformFeedback_proc_t GL2EncoderBase::glIsTransformFeedbackFunc = nullptr;
+glTransformFeedbackVaryings_proc_t GL2EncoderBase::glTransformFeedbackVaryingsFunc = nullptr;
+glGetTransformFeedbackVarying_proc_t GL2EncoderBase::glGetTransformFeedbackVaryingFunc = nullptr;
+glGenSamplers_proc_t GL2EncoderBase::glGenSamplersFunc = nullptr;
+glDeleteSamplers_proc_t GL2EncoderBase::glDeleteSamplersFunc = nullptr;
+glBindSampler_proc_t GL2EncoderBase::glBindSamplerFunc = nullptr;
+glSamplerParameterf_proc_t GL2EncoderBase::glSamplerParameterfFunc = nullptr;
+glSamplerParameteri_proc_t GL2EncoderBase::glSamplerParameteriFunc = nullptr;
+glSamplerParameterfv_proc_t GL2EncoderBase::glSamplerParameterfvFunc = nullptr;
+glSamplerParameteriv_proc_t GL2EncoderBase::glSamplerParameterivFunc = nullptr;
+glGetSamplerParameterfv_proc_t GL2EncoderBase::glGetSamplerParameterfvFunc = nullptr;
+glGetSamplerParameteriv_proc_t GL2EncoderBase::glGetSamplerParameterivFunc = nullptr;
+glIsSampler_proc_t GL2EncoderBase::glIsSamplerFunc = nullptr;
+glGenQueries_proc_t GL2EncoderBase::glGenQueriesFunc = nullptr;
+glDeleteQueries_proc_t GL2EncoderBase::glDeleteQueriesFunc = nullptr;
+glBeginQuery_proc_t GL2EncoderBase::glBeginQueryFunc = nullptr;
+glEndQuery_proc_t GL2EncoderBase::glEndQueryFunc = nullptr;
+glGetQueryiv_proc_t GL2EncoderBase::glGetQueryivFunc = nullptr;
+glGetQueryObjectuiv_proc_t GL2EncoderBase::glGetQueryObjectuivFunc = nullptr;
+glIsQuery_proc_t GL2EncoderBase::glIsQueryFunc = nullptr;
+glProgramParameteri_proc_t GL2EncoderBase::glProgramParameteriFunc = nullptr;
+glProgramBinary_proc_t GL2EncoderBase::glProgramBinaryFunc = nullptr;
+glGetProgramBinary_proc_t GL2EncoderBase::glGetProgramBinaryFunc = nullptr;
+glGetFragDataLocation_proc_t GL2EncoderBase::glGetFragDataLocationFunc = nullptr;
+glGetInteger64v_proc_t GL2EncoderBase::glGetInteger64vFunc = nullptr;
+glGetIntegeri_v_proc_t GL2EncoderBase::glGetIntegeri_vFunc = nullptr;
+glGetInteger64i_v_proc_t GL2EncoderBase::glGetInteger64i_vFunc = nullptr;
+glTexImage3D_proc_t GL2EncoderBase::glTexImage3DFunc = nullptr;
+glTexStorage3D_proc_t GL2EncoderBase::glTexStorage3DFunc = nullptr;
+glTexSubImage3D_proc_t GL2EncoderBase::glTexSubImage3DFunc = nullptr;
+glCompressedTexImage3D_proc_t GL2EncoderBase::glCompressedTexImage3DFunc = nullptr;
+glCompressedTexSubImage3D_proc_t GL2EncoderBase::glCompressedTexSubImage3DFunc = nullptr;
+glCopyTexSubImage3D_proc_t GL2EncoderBase::glCopyTexSubImage3DFunc = nullptr;
+glGetStringi_proc_t GL2EncoderBase::glGetStringiFunc = nullptr;
+glGetBooleani_v_proc_t GL2EncoderBase::glGetBooleani_vFunc = nullptr;
+glMemoryBarrier_proc_t GL2EncoderBase::glMemoryBarrierFunc = nullptr;
+glMemoryBarrierByRegion_proc_t GL2EncoderBase::glMemoryBarrierByRegionFunc = nullptr;
+glGenProgramPipelines_proc_t GL2EncoderBase::glGenProgramPipelinesFunc = nullptr;
+glDeleteProgramPipelines_proc_t GL2EncoderBase::glDeleteProgramPipelinesFunc = nullptr;
+glBindProgramPipeline_proc_t GL2EncoderBase::glBindProgramPipelineFunc = nullptr;
+glGetProgramPipelineiv_proc_t GL2EncoderBase::glGetProgramPipelineivFunc = nullptr;
+glGetProgramPipelineInfoLog_proc_t GL2EncoderBase::glGetProgramPipelineInfoLogFunc = nullptr;
+glValidateProgramPipeline_proc_t GL2EncoderBase::glValidateProgramPipelineFunc = nullptr;
+glIsProgramPipeline_proc_t GL2EncoderBase::glIsProgramPipelineFunc = nullptr;
+glUseProgramStages_proc_t GL2EncoderBase::glUseProgramStagesFunc = nullptr;
+glActiveShaderProgram_proc_t GL2EncoderBase::glActiveShaderProgramFunc = nullptr;
+glCreateShaderProgramv_proc_t GL2EncoderBase::glCreateShaderProgramvFunc = nullptr;
+glProgramUniform1f_proc_t GL2EncoderBase::glProgramUniform1fFunc = nullptr;
+glProgramUniform2f_proc_t GL2EncoderBase::glProgramUniform2fFunc = nullptr;
+glProgramUniform3f_proc_t GL2EncoderBase::glProgramUniform3fFunc = nullptr;
+glProgramUniform4f_proc_t GL2EncoderBase::glProgramUniform4fFunc = nullptr;
+glProgramUniform1i_proc_t GL2EncoderBase::glProgramUniform1iFunc = nullptr;
+glProgramUniform2i_proc_t GL2EncoderBase::glProgramUniform2iFunc = nullptr;
+glProgramUniform3i_proc_t GL2EncoderBase::glProgramUniform3iFunc = nullptr;
+glProgramUniform4i_proc_t GL2EncoderBase::glProgramUniform4iFunc = nullptr;
+glProgramUniform1ui_proc_t GL2EncoderBase::glProgramUniform1uiFunc = nullptr;
+glProgramUniform2ui_proc_t GL2EncoderBase::glProgramUniform2uiFunc = nullptr;
+glProgramUniform3ui_proc_t GL2EncoderBase::glProgramUniform3uiFunc = nullptr;
+glProgramUniform4ui_proc_t GL2EncoderBase::glProgramUniform4uiFunc = nullptr;
+glProgramUniform1fv_proc_t GL2EncoderBase::glProgramUniform1fvFunc = nullptr;
+glProgramUniform2fv_proc_t GL2EncoderBase::glProgramUniform2fvFunc = nullptr;
+glProgramUniform3fv_proc_t GL2EncoderBase::glProgramUniform3fvFunc = nullptr;
+glProgramUniform4fv_proc_t GL2EncoderBase::glProgramUniform4fvFunc = nullptr;
+glProgramUniform1iv_proc_t GL2EncoderBase::glProgramUniform1ivFunc = nullptr;
+glProgramUniform2iv_proc_t GL2EncoderBase::glProgramUniform2ivFunc = nullptr;
+glProgramUniform3iv_proc_t GL2EncoderBase::glProgramUniform3ivFunc = nullptr;
+glProgramUniform4iv_proc_t GL2EncoderBase::glProgramUniform4ivFunc = nullptr;
+glProgramUniform1uiv_proc_t GL2EncoderBase::glProgramUniform1uivFunc = nullptr;
+glProgramUniform2uiv_proc_t GL2EncoderBase::glProgramUniform2uivFunc = nullptr;
+glProgramUniform3uiv_proc_t GL2EncoderBase::glProgramUniform3uivFunc = nullptr;
+glProgramUniform4uiv_proc_t GL2EncoderBase::glProgramUniform4uivFunc = nullptr;
+glProgramUniformMatrix2fv_proc_t GL2EncoderBase::glProgramUniformMatrix2fvFunc = nullptr;
+glProgramUniformMatrix3fv_proc_t GL2EncoderBase::glProgramUniformMatrix3fvFunc = nullptr;
+glProgramUniformMatrix4fv_proc_t GL2EncoderBase::glProgramUniformMatrix4fvFunc = nullptr;
+glProgramUniformMatrix2x3fv_proc_t GL2EncoderBase::glProgramUniformMatrix2x3fvFunc = nullptr;
+glProgramUniformMatrix3x2fv_proc_t GL2EncoderBase::glProgramUniformMatrix3x2fvFunc = nullptr;
+glProgramUniformMatrix2x4fv_proc_t GL2EncoderBase::glProgramUniformMatrix2x4fvFunc = nullptr;
+glProgramUniformMatrix4x2fv_proc_t GL2EncoderBase::glProgramUniformMatrix4x2fvFunc = nullptr;
+glProgramUniformMatrix3x4fv_proc_t GL2EncoderBase::glProgramUniformMatrix3x4fvFunc = nullptr;
+glProgramUniformMatrix4x3fv_proc_t GL2EncoderBase::glProgramUniformMatrix4x3fvFunc = nullptr;
+glGetProgramInterfaceiv_proc_t GL2EncoderBase::glGetProgramInterfaceivFunc = nullptr;
+glGetProgramResourceiv_proc_t GL2EncoderBase::glGetProgramResourceivFunc = nullptr;
+glGetProgramResourceIndex_proc_t GL2EncoderBase::glGetProgramResourceIndexFunc = nullptr;
+glGetProgramResourceLocation_proc_t GL2EncoderBase::glGetProgramResourceLocationFunc = nullptr;
+glGetProgramResourceName_proc_t GL2EncoderBase::glGetProgramResourceNameFunc = nullptr;
+glBindImageTexture_proc_t GL2EncoderBase::glBindImageTextureFunc = nullptr;
+glDispatchCompute_proc_t GL2EncoderBase::glDispatchComputeFunc = nullptr;
+glDispatchComputeIndirect_proc_t GL2EncoderBase::glDispatchComputeIndirectFunc = nullptr;
+glBindVertexBuffer_proc_t GL2EncoderBase::glBindVertexBufferFunc = nullptr;
+glVertexAttribBinding_proc_t GL2EncoderBase::glVertexAttribBindingFunc = nullptr;
+glVertexAttribFormat_proc_t GL2EncoderBase::glVertexAttribFormatFunc = nullptr;
+glVertexAttribIFormat_proc_t GL2EncoderBase::glVertexAttribIFormatFunc = nullptr;
+glVertexBindingDivisor_proc_t GL2EncoderBase::glVertexBindingDivisorFunc = nullptr;
+glDrawArraysIndirect_proc_t GL2EncoderBase::glDrawArraysIndirectFunc = nullptr;
+glDrawElementsIndirect_proc_t GL2EncoderBase::glDrawElementsIndirectFunc = nullptr;
+glTexStorage2DMultisample_proc_t GL2EncoderBase::glTexStorage2DMultisampleFunc = nullptr;
+glSampleMaski_proc_t GL2EncoderBase::glSampleMaskiFunc = nullptr;
+glGetMultisamplefv_proc_t GL2EncoderBase::glGetMultisamplefvFunc = nullptr;
+glFramebufferParameteri_proc_t GL2EncoderBase::glFramebufferParameteriFunc = nullptr;
+glGetFramebufferParameteriv_proc_t GL2EncoderBase::glGetFramebufferParameterivFunc = nullptr;
+glGetTexLevelParameterfv_proc_t GL2EncoderBase::glGetTexLevelParameterfvFunc = nullptr;
+glGetTexLevelParameteriv_proc_t GL2EncoderBase::glGetTexLevelParameterivFunc = nullptr;
+glEnableiEXT_proc_t GL2EncoderBase::glEnableiEXTFunc = nullptr;
+glDisableiEXT_proc_t GL2EncoderBase::glDisableiEXTFunc = nullptr;
+glBlendEquationiEXT_proc_t GL2EncoderBase::glBlendEquationiEXTFunc = nullptr;
+glBlendEquationSeparateiEXT_proc_t GL2EncoderBase::glBlendEquationSeparateiEXTFunc = nullptr;
+glBlendFunciEXT_proc_t GL2EncoderBase::glBlendFunciEXTFunc = nullptr;
+glBlendFuncSeparateiEXT_proc_t GL2EncoderBase::glBlendFuncSeparateiEXTFunc = nullptr;
+glColorMaskiEXT_proc_t GL2EncoderBase::glColorMaskiEXTFunc = nullptr;
+glIsEnablediEXT_proc_t GL2EncoderBase::glIsEnablediEXTFunc = nullptr;
+glCopyImageSubDataEXT_proc_t GL2EncoderBase::glCopyImageSubDataEXTFunc = nullptr;
+glBlendBarrierKHR_proc_t GL2EncoderBase::glBlendBarrierKHRFunc = nullptr;
+glTexParameterIivEXT_proc_t GL2EncoderBase::glTexParameterIivEXTFunc = nullptr;
+glTexParameterIuivEXT_proc_t GL2EncoderBase::glTexParameterIuivEXTFunc = nullptr;
+glGetTexParameterIivEXT_proc_t GL2EncoderBase::glGetTexParameterIivEXTFunc = nullptr;
+glGetTexParameterIuivEXT_proc_t GL2EncoderBase::glGetTexParameterIuivEXTFunc = nullptr;
+glSamplerParameterIivEXT_proc_t GL2EncoderBase::glSamplerParameterIivEXTFunc = nullptr;
+glSamplerParameterIuivEXT_proc_t GL2EncoderBase::glSamplerParameterIuivEXTFunc = nullptr;
+glGetSamplerParameterIivEXT_proc_t GL2EncoderBase::glGetSamplerParameterIivEXTFunc = nullptr;
+glGetSamplerParameterIuivEXT_proc_t GL2EncoderBase::glGetSamplerParameterIuivEXTFunc = nullptr;
+glVertexAttribPointerData_proc_t GL2EncoderBase::glVertexAttribPointerDataFunc = nullptr;
+glVertexAttribPointerOffset_proc_t GL2EncoderBase::glVertexAttribPointerOffsetFunc = nullptr;
+glDrawElementsOffset_proc_t GL2EncoderBase::glDrawElementsOffsetFunc = nullptr;
+glDrawElementsData_proc_t GL2EncoderBase::glDrawElementsDataFunc = nullptr;
+glGetCompressedTextureFormats_proc_t GL2EncoderBase::glGetCompressedTextureFormatsFunc = nullptr;
+glShaderString_proc_t GL2EncoderBase::glShaderStringFunc = nullptr;
+glFinishRoundTrip_proc_t GL2EncoderBase::glFinishRoundTripFunc = nullptr;
+glMapBufferRangeAEMU_proc_t GL2EncoderBase::glMapBufferRangeAEMUFunc = nullptr;
+glUnmapBufferAEMU_proc_t GL2EncoderBase::glUnmapBufferAEMUFunc = nullptr;
+glFlushMappedBufferRangeAEMU_proc_t GL2EncoderBase::glFlushMappedBufferRangeAEMUFunc = nullptr;
+glReadPixelsOffsetAEMU_proc_t GL2EncoderBase::glReadPixelsOffsetAEMUFunc = nullptr;
+glCompressedTexImage2DOffsetAEMU_proc_t GL2EncoderBase::glCompressedTexImage2DOffsetAEMUFunc = nullptr;
+glCompressedTexSubImage2DOffsetAEMU_proc_t GL2EncoderBase::glCompressedTexSubImage2DOffsetAEMUFunc = nullptr;
+glTexImage2DOffsetAEMU_proc_t GL2EncoderBase::glTexImage2DOffsetAEMUFunc = nullptr;
+glTexSubImage2DOffsetAEMU_proc_t GL2EncoderBase::glTexSubImage2DOffsetAEMUFunc = nullptr;
+glGetUniformIndicesAEMU_proc_t GL2EncoderBase::glGetUniformIndicesAEMUFunc = nullptr;
+glVertexAttribIPointerOffsetAEMU_proc_t GL2EncoderBase::glVertexAttribIPointerOffsetAEMUFunc = nullptr;
+glVertexAttribIPointerDataAEMU_proc_t GL2EncoderBase::glVertexAttribIPointerDataAEMUFunc = nullptr;
+glDrawElementsInstancedDataAEMU_proc_t GL2EncoderBase::glDrawElementsInstancedDataAEMUFunc = nullptr;
+glDrawElementsInstancedOffsetAEMU_proc_t GL2EncoderBase::glDrawElementsInstancedOffsetAEMUFunc = nullptr;
+glDrawRangeElementsDataAEMU_proc_t GL2EncoderBase::glDrawRangeElementsDataAEMUFunc = nullptr;
+glDrawRangeElementsOffsetAEMU_proc_t GL2EncoderBase::glDrawRangeElementsOffsetAEMUFunc = nullptr;
+glFenceSyncAEMU_proc_t GL2EncoderBase::glFenceSyncAEMUFunc = nullptr;
+glClientWaitSyncAEMU_proc_t GL2EncoderBase::glClientWaitSyncAEMUFunc = nullptr;
+glWaitSyncAEMU_proc_t GL2EncoderBase::glWaitSyncAEMUFunc = nullptr;
+glDeleteSyncAEMU_proc_t GL2EncoderBase::glDeleteSyncAEMUFunc = nullptr;
+glIsSyncAEMU_proc_t GL2EncoderBase::glIsSyncAEMUFunc = nullptr;
+glGetSyncivAEMU_proc_t GL2EncoderBase::glGetSyncivAEMUFunc = nullptr;
+glTransformFeedbackVaryingsAEMU_proc_t GL2EncoderBase::glTransformFeedbackVaryingsAEMUFunc = nullptr;
+glTexImage3DOffsetAEMU_proc_t GL2EncoderBase::glTexImage3DOffsetAEMUFunc = nullptr;
+glTexSubImage3DOffsetAEMU_proc_t GL2EncoderBase::glTexSubImage3DOffsetAEMUFunc = nullptr;
+glCompressedTexImage3DOffsetAEMU_proc_t GL2EncoderBase::glCompressedTexImage3DOffsetAEMUFunc = nullptr;
+glCompressedTexSubImage3DOffsetAEMU_proc_t GL2EncoderBase::glCompressedTexSubImage3DOffsetAEMUFunc = nullptr;
+glCreateShaderProgramvAEMU_proc_t GL2EncoderBase::glCreateShaderProgramvAEMUFunc = nullptr;
+glDrawArraysIndirectDataAEMU_proc_t GL2EncoderBase::glDrawArraysIndirectDataAEMUFunc = nullptr;
+glDrawArraysIndirectOffsetAEMU_proc_t GL2EncoderBase::glDrawArraysIndirectOffsetAEMUFunc = nullptr;
+glDrawElementsIndirectDataAEMU_proc_t GL2EncoderBase::glDrawElementsIndirectDataAEMUFunc = nullptr;
+glDrawElementsIndirectOffsetAEMU_proc_t GL2EncoderBase::glDrawElementsIndirectOffsetAEMUFunc = nullptr;
+glUniformLayout_proc_t GL2EncoderBase::glUniformLayoutFunc = nullptr;
 bool GL2EncoderBase::m_isInit = false;
 std::mutex GL2EncoderBase::m_lock {};
 std::unique_ptr<LoadSharedLib> GL2EncoderBase::m_loader = nullptr;
@@ -1479,19 +1479,19 @@ bool GL2EncoderBase::InitGLESv2Export()
     return true;
 }
 
-void *GL2EncoderBase::GetGLESv2Encoder(void *self)
+uint32_t GL2EncoderBase::GetGLESv2Encoder(void *self)
 {
     GL2Encoder *ctx = static_cast<GL2Encoder *>(self);
     return ctx->m_GLESv2Encoder;
 }
 
-bool GL2EncoderBase::CreateVmiGLESv2Encoder(void *stream)
+bool GL2EncoderBase::CreateVmiGLESv2Encoder(uint32_t streamHandle)
 {
     if (createGLESv2EncoderFunc == nullptr) {
         return false;
     }
-    m_GLESv2Encoder = createGLESv2EncoderFunc(stream);
-    if (m_GLESv2Encoder == nullptr) {
+    m_GLESv2Encoder = createGLESv2EncoderFunc(streamHandle);
+    if (m_GLESv2Encoder == 0) {
         return false;
     }
     return true;
@@ -1508,222 +1508,134 @@ void GL2EncoderBase::DeleteVmiGLESv2Encoder()
 
 void GL2EncoderBase::glActiveTexture_s(void *self, unsigned int texture)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glActiveTexture_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glActiveTextureFunc(ctx->GetGLESv2Encoder(self), texture);
 }
 
 void GL2EncoderBase::glAttachShader_s(void *self, GLuint program, GLuint shader)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glAttachShader_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glAttachShaderFunc(ctx->GetGLESv2Encoder(self), program, shader);
 }
 
 void GL2EncoderBase::glBindAttribLocation_s(void *self, GLuint program, GLuint index, const GLchar *name)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBindAttribLocation_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBindAttribLocationFunc(ctx->GetGLESv2Encoder(self), program, index, name);
 }
 
 void GL2EncoderBase::glBindBuffer_s(void *self, GLenum target, GLuint buffer)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBindBuffer_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBindBufferFunc(ctx->GetGLESv2Encoder(self), target, buffer);
 }
 
 void GL2EncoderBase::glBindFramebuffer_s(void *self, GLenum target, GLuint framebuffer)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBindFramebuffer_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBindFramebufferFunc(ctx->GetGLESv2Encoder(self), target, framebuffer);
 }
 
 void GL2EncoderBase::glBindRenderbuffer_s(void *self, GLenum target, GLuint renderbuffer)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBindRenderbuffer_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBindRenderbufferFunc(ctx->GetGLESv2Encoder(self), target, renderbuffer);
 }
 
 void GL2EncoderBase::glBindTexture_s(void *self, GLenum target, GLuint texture)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBindTexture_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBindTextureFunc(ctx->GetGLESv2Encoder(self), target, texture);
 }
 
 void GL2EncoderBase::glBlendColor_s(void *self, GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBlendColor_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBlendColorFunc(ctx->GetGLESv2Encoder(self), red, green, blue, alpha);
 }
 
 void GL2EncoderBase::glBlendEquation_s(void *self, GLenum mode)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBlendEquation_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBlendEquationFunc(ctx->GetGLESv2Encoder(self), mode);
 }
 
 void GL2EncoderBase::glBlendEquationSeparate_s(void *self, GLenum modeRGB, GLenum modeAlpha)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBlendEquationSeparate_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBlendEquationSeparateFunc(ctx->GetGLESv2Encoder(self), modeRGB, modeAlpha);
 }
 
 void GL2EncoderBase::glBlendFunc_s(void *self, GLenum sfactor, GLenum dfactor)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBlendFunc_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBlendFuncFunc(ctx->GetGLESv2Encoder(self), sfactor, dfactor);
 }
 
 void GL2EncoderBase::glBlendFuncSeparate_s(void *self, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBlendFuncSeparate_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBlendFuncSeparateFunc(ctx->GetGLESv2Encoder(self), srcRGB, dstRGB, srcAlpha, dstAlpha);
 }
 
 void GL2EncoderBase::glBufferData_s(void *self, GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBufferData_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBufferDataFunc(ctx->GetGLESv2Encoder(self), target, size, data, usage);
 }
 
 void GL2EncoderBase::glBufferSubData_s(void *self, GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glBufferSubData_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glBufferSubDataFunc(ctx->GetGLESv2Encoder(self), target, offset, size, data);
 }
 
 GLenum GL2EncoderBase::glCheckFramebufferStatus_s(void *self, GLenum target)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCheckFramebufferStatus_s: parameters error. ctx==nullptr");
-        return 0;
-    }
+    GET_CONTEXT;
     return ctx->glCheckFramebufferStatusFunc(ctx->GetGLESv2Encoder(self), target);
 }
 
 void GL2EncoderBase::glClear_s(void *self, GLbitfield mask)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glClear_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glClearFunc(ctx->GetGLESv2Encoder(self), mask);
 }
 
 void GL2EncoderBase::glClearColor_s(void *self, GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glClearColor_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glClearColorFunc(ctx->GetGLESv2Encoder(self), red, green, blue, alpha);
 }
 
 void GL2EncoderBase::glClearDepthf_s(void *self, GLfloat d)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glClearDepthf_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glClearDepthfFunc(ctx->GetGLESv2Encoder(self), d);
 }
 
 void GL2EncoderBase::glClearStencil_s(void *self, GLint s)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glClearStencil_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glClearStencilFunc(ctx->GetGLESv2Encoder(self), s);
 }
 
 void GL2EncoderBase::glColorMask_s(void *self, GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glColorMask_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glColorMaskFunc(ctx->GetGLESv2Encoder(self), red, green, blue, alpha);
 }
 
 void GL2EncoderBase::glCompileShader_s(void *self, GLuint shader)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCompileShader_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCompileShaderFunc(ctx->GetGLESv2Encoder(self), shader);
 }
 
 void GL2EncoderBase::glCompressedTexImage2D_s(void *self, GLenum target, GLint level, GLenum internalformat,
     GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCompressedTexImage2D_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCompressedTexImage2DFunc(ctx->GetGLESv2Encoder(self), target, level, internalformat, width, height, border,
         imageSize, data);
 }
@@ -1731,11 +1643,7 @@ void GL2EncoderBase::glCompressedTexImage2D_s(void *self, GLenum target, GLint l
 void GL2EncoderBase::glCompressedTexSubImage2D_s(void *self, GLenum target, GLint level, GLint xoffset, GLint yoffset,
     GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCompressedTexSubImage2D_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCompressedTexSubImage2DFunc(ctx->GetGLESv2Encoder(self), target, level, xoffset, yoffset, width, height,
         format, imageSize, data);
 }
@@ -1743,92 +1651,56 @@ void GL2EncoderBase::glCompressedTexSubImage2D_s(void *self, GLenum target, GLin
 void GL2EncoderBase::glCopyTexImage2D_s(void *self, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y,
     GLsizei width, GLsizei height, GLint border)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCopyTexImage2D_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCopyTexImage2DFunc(ctx->GetGLESv2Encoder(self), target, level, internalformat, x, y, width, height, border);
 }
 
 void GL2EncoderBase::glCopyTexSubImage2D_s(void *self, GLenum target, GLint level, GLint xoffset, GLint yoffset,
     GLint x, GLint y, GLsizei width, GLsizei height)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCopyTexSubImage2D_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCopyTexSubImage2DFunc(ctx->GetGLESv2Encoder(self), target, level, xoffset, yoffset, x, y, width, height);
 }
 
 GLuint GL2EncoderBase::glCreateProgram_s(void *self)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCreateProgram_s: parameters error. ctx==nullptr");
-        return 0;
-    }
+    GET_CONTEXT;
     return ctx->glCreateProgramFunc(ctx->GetGLESv2Encoder(self));
 }
 
 GLuint GL2EncoderBase::glCreateShader_s(void *self, GLenum type)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCreateShader_s: parameters error. ctx==nullptr");
-        return 0;
-    }
+    GET_CONTEXT;
     return ctx->glCreateShaderFunc(ctx->GetGLESv2Encoder(self), type);
 }
 
 void GL2EncoderBase::glCullFace_s(void *self, GLenum mode)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glCullFace_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glCullFaceFunc(ctx->GetGLESv2Encoder(self), mode);
 }
 
 void GL2EncoderBase::glDeleteBuffers_s(void *self, GLsizei n, const GLuint *buffers)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glDeleteBuffers_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glDeleteBuffersFunc(ctx->GetGLESv2Encoder(self), n, buffers);
 }
 
 void GL2EncoderBase::glDeleteFramebuffers_s(void *self, GLsizei n, const GLuint *framebuffers)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glDeleteFramebuffers_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glDeleteFramebuffersFunc(ctx->GetGLESv2Encoder(self), n, framebuffers);
 }
 
 void GL2EncoderBase::glDeleteProgram_s(void *self, GLuint program)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glDeleteProgram_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glDeleteProgramFunc(ctx->GetGLESv2Encoder(self), program);
 }
 
 void GL2EncoderBase::glDeleteRenderbuffers_s(void *self, GLsizei n, const GLuint *renderbuffers)
 {
-    GL2EncoderBase *ctx = static_cast<GL2EncoderBase *>(self);
-    if (ctx == nullptr) {
-        ALOGE("glDeleteRenderbuffers_s: parameters error. ctx==nullptr");
-        return;
-    }
+    GET_CONTEXT;
     ctx->glDeleteRenderbuffersFunc(ctx->GetGLESv2Encoder(self), n, renderbuffers);
 }
 
