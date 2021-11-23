@@ -420,6 +420,24 @@ typedef void (gl2_APIENTRY *glFramebufferParameteri_client_proc_t) (void * ctx, 
 typedef void (gl2_APIENTRY *glGetFramebufferParameteriv_client_proc_t) (void * ctx, GLenum, GLenum, GLint*);
 typedef void (gl2_APIENTRY *glGetTexLevelParameterfv_client_proc_t) (void * ctx, GLenum, GLint, GLenum, GLfloat*);
 typedef void (gl2_APIENTRY *glGetTexLevelParameteriv_client_proc_t) (void * ctx, GLenum, GLint, GLenum, GLint*);
-
+typedef void (gl2_APIENTRY *glEnableiEXT_client_proc_t) (void * ctx, GLenum target, GLuint index);
+typedef void (gl2_APIENTRY *glDisableiEXT_client_proc_t) (void * ctx, GLenum target, GLuint index);
+typedef void (gl2_APIENTRY *glBlendEquationiEXT_client_proc_t) (void * ctx, GLuint buf, GLenum mode);
+typedef void (gl2_APIENTRY *glBlendEquationSeparateiEXT_client_proc_t) (void * ctx, GLuint buf, GLenum modeRGB, GLenum modeAlpha);
+typedef void (gl2_APIENTRY *glBlendFunciEXT_client_proc_t) (void * ctx, GLuint buf, GLenum src, GLenum dst);
+typedef void (gl2_APIENTRY *glBlendFuncSeparateiEXT_client_proc_t) (void * ctx, GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+typedef void (gl2_APIENTRY *glColorMaskiEXT_client_proc_t) (void * ctx, GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
+typedef GLboolean (gl2_APIENTRY *glIsEnablediEXT_client_proc_t) (void * ctx, GLenum target, GLuint index);
+typedef void (gl2_APIENTRY *glCopyImageSubDataEXT_client_proc_t) (void * ctx, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
+typedef void (gl2_APIENTRY *glBlendBarrierKHR_client_proc_t) (void * ctx);
+typedef void (gl2_APIENTRY *glTexParameterIivEXT_client_proc_t) (void * ctx, GLenum target, GLenum pname, const GLint *params);
+typedef void (gl2_APIENTRY *glTexParameterIuivEXT_client_proc_t) (void * ctx, GLenum target, GLenum pname, const GLuint *params);
+typedef void (gl2_APIENTRY *glGetTexParameterIivEXT_client_proc_t) (void * ctx, GLenum target, GLenum pname, GLint *params);
+typedef void (gl2_APIENTRY *glGetTexParameterIuivEXT_client_proc_t) (void * ctx, GLenum target, GLenum pname, GLuint *params);
+typedef void (gl2_APIENTRY *glSamplerParameterIivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, const GLint *param);
+typedef void (gl2_APIENTRY *glSamplerParameterIuivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, const GLuint *param);
+typedef void (gl2_APIENTRY *glGetSamplerParameterIivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, GLint *params);
+typedef void (gl2_APIENTRY *glGetSamplerParameterIuivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, GLuint *params);
+typedef void (gl2_APIENTRY *glUniformLayout_client_proc_t)(void * ctx, GLuint program);
 
 #endif

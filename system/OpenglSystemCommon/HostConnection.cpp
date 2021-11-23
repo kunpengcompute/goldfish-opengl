@@ -27,6 +27,13 @@
 /* Set to 1 to use a QEMU pipe, or 0 for a TCP connection */
 #define  USE_QEMU_PIPE  1
 
+GetStreamFunc HostConnection::getStream = nullptr;
+ReleaseStreamFunc HostConnection::releaseStream = nullptr;
+WaitRebuildStateMachineFunc HostConnection::waitRebuildStateMachine = nullptr;
+bool HostConnection::m_streamLoaded = false;
+std::mutex HostConnection::m_loaderLock {};
+std::unique_ptr<LoadSharedLib> HostConnection::m_loader = nullptr;
+
 HostConnection::HostConnection() :
     m_stream(NULL),
     m_glEnc(NULL),
@@ -42,7 +49,7 @@ HostConnection::HostConnection() :
 
 HostConnection::~HostConnection()
 {
-    delete m_stream;
+    releaseStream(m_stream);
     m_stream = nullptr;
     delete m_glEnc;
     m_glEnc = nullptr;
@@ -73,15 +80,19 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
         if (NULL == con) {
             return NULL;
         }
-        con->m_stream = IStream::GetStream();
+
+        if (!con->initStreamExport()) {
+            return NULL;
+        }
+        con->m_stream = con->getStream();
         if (con->m_stream == nullptr) {
-            ALOGE("Failed to create IStream for host connection!!!");
-            return nullptr;
+            ALOGE("Failed to create stream for host connection!!!");
+            return NULL;
         }
         QemuPipeStream* qStream = new (std::nothrow) QemuPipeStream();
-        if (qStream == nullptr) {
+        if (qStream == NULL) {
             ERR("Failed to create QemuPipeStream for host connection!!!");
-            return nullptr;
+            return NULL;
         }
         con->m_iostream = qStream;
         ALOGD("HostConnection::get() New Host Connection established %p, tid %d\n", con, gettid());
@@ -123,14 +134,14 @@ GL2Encoder *HostConnection::gl2Encoder()
             ALOGD("HostConnection::gl2Encoder new failed");
             return nullptr;
         }
-        if (!m_gl2Enc->InitEncoder()) {
+        if (!m_gl2Enc->CreateVmiGLESv2Encoder(m_stream)) {
             ALOGD("HostConnection::gl2Encoder init statemachine exports failed");
             return nullptr;
         }
         ALOGD("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
         m_gl2Enc->setNoHostError(m_noHostError);
     }
-    m_stream->WaitRebuildStateMachine();
+    waitRebuildStateMachine(m_stream);
     return m_gl2Enc;
 }
 
@@ -146,7 +157,7 @@ IRenderControlEncoder *HostConnection::rcEncoder()
         queryAndSetGLESMaxVersion(m_rcEnc);
         queryAndSetNoErrorState(m_rcEnc);
     }
-    m_stream->WaitRebuildStateMachine();
+    waitRebuildStateMachine(m_stream);
     return m_rcEnc;
 }
 
@@ -233,4 +244,44 @@ void HostConnection::queryAndSetNoErrorState(IRenderControlEncoder* rcEnc) {
     if (glExtensions.find(kGLESNoHostError) != std::string::npos) {
         m_noHostError = true;
     }
+}
+
+bool HostConnection::initStreamExport() {
+    std::lock_guard<std::mutex> lock(m_loaderLock);
+    if (m_streamLoaded) {
+        ALOGD("already Init stream export!");
+        return true;
+    }
+    ALOGD("hostconnect init stream export begin");
+
+#if defined(__LP64__)
+    const std::string libName = "/vendor/lib64/libVmiInstructionEngine.so";
+#else
+    const std::string libName = "/vendor/lib/libVmiInstructionEngine.so";
+#endif
+    m_loader = std::make_unique<LoadSharedLib>(libName);
+    if (m_loader == nullptr) {
+        ALOGE("Failed to create loader %s", libName.c_str());
+        return false;
+    }
+
+    getStream = reinterpret_cast<decltype(getStream)>(m_loader->GetProcAddress("GetStream"));
+    if (getStream == nullptr) {
+        ALOGE("Failed to find GetStream Api!");
+        return false;
+    }
+    releaseStream = reinterpret_cast<decltype(releaseStream)>(m_loader->GetProcAddress("ReleaseStream"));
+    if (releaseStream == nullptr) {
+        ALOGE("Failed to find RelaseStream Api!");
+        return false;
+    }
+    waitRebuildStateMachine = reinterpret_cast<decltype(waitRebuildStateMachine)>(m_loader->
+        GetProcAddress("WaitRebuildStateMachine"));
+    if (waitRebuildStateMachine == nullptr) {
+        ALOGE("Failed to find WaitRebuildStateMachine Api!");
+        return false;
+    }
+
+    m_streamLoaded = true;
+    return true;
 }

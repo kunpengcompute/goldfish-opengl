@@ -15,7 +15,6 @@
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "IStream.h"
 
 enum SyncImpl {
     SYNC_IMPL_NONE = 0,

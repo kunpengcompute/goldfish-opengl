@@ -12,6 +12,7 @@ commonSources := \
         IndexRangeCache.cpp \
         SocketStream.cpp \
         TcpStream.cpp \
+        LoadSharedLib.cpp \
 
 ### CodecCommon  guest ##############################################
 $(call emugl-begin-static-library,libOpenglCodecCommon)

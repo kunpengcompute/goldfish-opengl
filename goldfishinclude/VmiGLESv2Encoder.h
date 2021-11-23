@@ -15,12 +15,11 @@
 
 #include "GLESAPIEntryList.h"
 #include "VmiPixelDataAlignment.h"
-#include "IStream.h"
 
-struct TexImageInfo;
-struct TexSubImageInfo;
-class BufferWriter;
-class VmiUniformLayout;
+class VmiRebuildStream;
+class SnapshotRestore;
+class VmiTransMatrix;
+class VmiTexVideoEncode;
 
 class VmiGLESv2Encoder {
 public:
@@ -50,16 +49,10 @@ public:
 
     void PixelDataSetAlignment(uint32_t param, GLint value);
 
-    void SendClientGLTexImage2D(TexImageInfo &texInfo);
-    void SendClientGLTexSubImage2D(TexSubImageInfo &texInfo);
-    void EncodeBlocks(BufferWriter &writer, VmiUniformLayout &layout);
-    uint32_t GetEncodeSize(VmiUniformLayout &layout);
-    void EncodeUniforms(BufferWriter &writer, VmiUniformLayout &layout);
-    void EncodeUniformLayout(GLuint program, VmiUniformLayout &layout);
     bool InitEncoder();
-    IStream* GetStream() const;
     SnapshotRestore* GetSnapshotRestore() const;
     VmiTransMatrix* GetTransMatrix() const;
+    VmiTexVideoEncode* GetTexVideoEncode() const;
 private:
     VmiPixelDataAlignment m_pixelData = VmiPixelDataAlignment();
     void InitVmiGLESFunPtrs();

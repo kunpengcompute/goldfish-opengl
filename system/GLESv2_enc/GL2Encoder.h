@@ -28,7 +28,7 @@
 #include <vector>
 #include <log/log.h>
 
-class GL2Encoder : public VmiGLESv2Encoder {
+class GL2Encoder : public GL2EncoderBase {
 public:
     GL2Encoder(void *stream, ChecksumCalculator* protocol);
     virtual ~GL2Encoder();

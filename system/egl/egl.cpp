@@ -855,6 +855,10 @@ static const char *getGLString(int glEnum)
         return NULL;
     }
 
+    if (*strPtr != NULL) {
+        return *strPtr;
+    }
+
     char* hostStr = NULL;
 
     if (glEnum == GL_EXTENSIONS) {

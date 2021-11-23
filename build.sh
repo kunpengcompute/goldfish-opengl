@@ -31,6 +31,8 @@ goldfish_opengl_so_list=(
     vendor/lib64/libGLESv1_enc.so
     vendor/lib64/libGLESv2_enc.so
     vendor/lib64/libGLESv2_enc.so
+    vendor/lib/libRenderControl_enc.so
+    vendor/lib64/libRenderControl_enc.so
 )
 
 setup_env()
@@ -73,7 +75,7 @@ package()
     fi
     if [ -z "${MODULE_SYMBOL_DIR}" ];then
         cd output/symbols
-        tar zcvf ../GoldfishOpenglSymbols.tar.gz *
+        tar zcvf ../GoldfishOpengl.tar.gz *
         cd -
     fi
 }

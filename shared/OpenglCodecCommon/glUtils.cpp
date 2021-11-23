@@ -16,7 +16,6 @@
 #include "glUtils.h"
 #include <string.h>
 #include "ErrorLog.h"
-#include "IStream.h"
 #include <GLES3/gl31.h>
 #include <GLES2/gl2ext.h>
 
