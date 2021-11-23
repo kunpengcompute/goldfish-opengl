@@ -70,7 +70,7 @@ static GLubyte *gExtensionsString= (GLubyte *) "GL_OES_EGL_image_external ";
     } \
 
 GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
-        : VmiGLESv2Encoder(stream)
+          : GL2EncoderBase()
 {
     m_currMajorVersion = 2;
     m_currMinorVersion = 0;
@@ -92,7 +92,6 @@ GL2Encoder::GL2Encoder(void *stream, ChecksumCalculator *protocol)
     m_drawCallFlushCount = 0;
     m_primitiveRestartEnabled = false;
     m_primitiveRestartIndex = 0;
-    InitVmiGLESEntryList();
 
     // overrides
 #define OVERRIDE(name)  m_##name##_enc = this-> name ; this-> name = &s_##name
@@ -1138,7 +1137,9 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count, bool hasClient
                                 "clientArray? %d attribute %d vbo %u allocedBufferSize %u bufferDataSpecified? %d wantedStart %u wantedEnd %u",
                                 hasClientArrays, i, bufferObject, buf->m_size, buf != NULL, firstIndex, firstIndex + bufLen);
                     }
-                    m_glDisableVertexAttribArray_enc(this, i);
+                    // 将m_glDisableVertexAttribArray_enc(this, i)注释了，因为出现这种情况：表示element最大的顶点索引值超过了当前顶点数据的最大长度
+                    // 注释掉后，保持了和应用相同的逻辑
+                    // 修复宾果游戏，图标会闪烁问题
                 }
             }
         } else {

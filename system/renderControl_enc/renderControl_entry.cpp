@@ -149,7 +149,7 @@ void rcSetWindowColorBuffer(uint32_t windowSurface, uint32_t colorBuffer)
 int rcFlushWindowColorBuffer(uint32_t windowSurface)
 {
 	GET_CONTEXT;
-	return ctx->rcFlushWindowColorBuffer(ctx, windowSurface);
+	return ctx->rcFlushWindowColorBuffer(ctx, windowSurface, nullptr, 0);
 }
 
 EGLint rcMakeCurrent(uint32_t context, uint32_t drawSurf, uint32_t readSurf)
@@ -239,7 +239,7 @@ EGLint rcClientWaitSyncKHR(uint64_t sync, EGLint flags, uint64_t timeout)
 void rcFlushWindowColorBufferAsync(uint32_t windowSurface)
 {
 	GET_CONTEXT;
-	ctx->rcFlushWindowColorBufferAsync(ctx, windowSurface);
+	ctx->rcFlushWindowColorBufferAsync(ctx, windowSurface, nullptr, 0);
 }
 
 int rcDestroySyncKHR(uint64_t sync)

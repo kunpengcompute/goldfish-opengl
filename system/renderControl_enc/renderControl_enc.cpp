@@ -1397,43 +1397,5 @@ renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *strea
 {
 	m_stream = stream;
 	m_checksumCalculator = checksumCalculator;
-
-	this->rcGetRendererVersion = &rcGetRendererVersion_enc;
-	this->rcGetEGLVersion = &rcGetEGLVersion_enc;
-	this->rcQueryEGLString = &rcQueryEGLString_enc;
-	this->rcGetGLString = &rcGetGLString_enc;
-	this->rcGetNumConfigs = &rcGetNumConfigs_enc;
-	this->rcGetConfigs = &rcGetConfigs_enc;
-	this->rcChooseConfig = &rcChooseConfig_enc;
-	this->rcGetFBParam = &rcGetFBParam_enc;
-	this->rcCreateContext = &rcCreateContext_enc;
-	this->rcDestroyContext = &rcDestroyContext_enc;
-	this->rcCreateWindowSurface = &rcCreateWindowSurface_enc;
-	this->rcDestroyWindowSurface = &rcDestroyWindowSurface_enc;
-	this->rcCreateColorBuffer = &rcCreateColorBuffer_enc;
-	this->rcOpenColorBuffer = &rcOpenColorBuffer_enc;
-	this->rcCloseColorBuffer = &rcCloseColorBuffer_enc;
-	this->rcSetWindowColorBuffer = &rcSetWindowColorBuffer_enc;
-	this->rcFlushWindowColorBuffer = &rcFlushWindowColorBuffer_enc;
-	this->rcMakeCurrent = &rcMakeCurrent_enc;
-	this->rcFBPost = &rcFBPost_enc;
-	this->rcFBSetSwapInterval = &rcFBSetSwapInterval_enc;
-	this->rcBindTexture = &rcBindTexture_enc;
-	this->rcBindRenderbuffer = &rcBindRenderbuffer_enc;
-	this->rcColorBufferCacheFlush = &rcColorBufferCacheFlush_enc;
-	this->rcReadColorBuffer = &rcReadColorBuffer_enc;
-	this->rcUpdateColorBuffer = &rcUpdateColorBuffer_enc;
-	this->rcOpenColorBuffer2 = &rcOpenColorBuffer2_enc;
-	this->rcCreateClientImage = &rcCreateClientImage_enc;
-	this->rcDestroyClientImage = &rcDestroyClientImage_enc;
-	this->rcSelectChecksumHelper = &rcSelectChecksumHelper_enc;
-	this->rcCreateSyncKHR = &rcCreateSyncKHR_enc;
-	this->rcClientWaitSyncKHR = &rcClientWaitSyncKHR_enc;
-	this->rcFlushWindowColorBufferAsync = &rcFlushWindowColorBufferAsync_enc;
-	this->rcDestroySyncKHR = &rcDestroySyncKHR_enc;
-	this->rcSetPuid = &rcSetPuid_enc;
-	this->rcUpdateColorBufferDMA = &rcUpdateColorBufferDMA_enc;
-	this->rcCreateColorBufferDMA = &rcCreateColorBufferDMA_enc;
-	this->rcWaitSyncKHR = &rcWaitSyncKHR_enc;
 }
 

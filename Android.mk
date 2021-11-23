@@ -95,7 +95,7 @@ include $(EMUGL_PATH)/shared/OpenglCodecCommon/Android.mk
 # System static libraries
 include $(EMUGL_PATH)/system/GLESv1_enc/Android.mk
 include $(EMUGL_PATH)/system/GLESv2_enc/Android.mk
-#include $(EMUGL_PATH)/system/renderControl_enc/Android.mk
+include $(EMUGL_PATH)/system/renderControl_enc/Android.mk
 include $(EMUGL_PATH)/system/OpenglSystemCommon/Android.mk
 
 # System shared libraries

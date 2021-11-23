@@ -16,13 +16,15 @@
 #ifndef __COMMON_HOST_CONNECTION_H
 #define __COMMON_HOST_CONNECTION_H
 
-#include "IStream.h"
 #include "IOStream.h"
 #include "IRenderControlEncoder.h"
 #include "ChecksumCalculator.h"
 #include "goldfish_dma.h"
+#include "LoadSharedLib.h"
 
 #include <string>
+#include <memory>
+#include <mutex>
 
 class GLEncoder;
 struct gl_client_context_t;
@@ -75,6 +77,10 @@ static const char kGLESMaxVersion_3_2[] = "ANDROID_EMU_gles_max_version_3_2";
 // No querying errors from host extension
 static const char kGLESNoHostError[] = "ANDROID_EMU_gles_no_host_error";
 
+typedef void *(*GetStreamFunc)();
+typedef void (*ReleaseStreamFunc)(void* stream);
+typedef void (*WaitRebuildStateMachineFunc)(void* stream);
+
 struct EGLThreadInfo;
 
 class HostConnection
@@ -85,6 +91,10 @@ public:
     static void exit();
     ~HostConnection();
 
+    bool initStreamExport();
+    static GetStreamFunc getStream;
+    static ReleaseStreamFunc releaseStream;
+    static WaitRebuildStateMachineFunc waitRebuildStateMachine;
     GLEncoder *glEncoder();
     GL2Encoder *gl2Encoder();
     IRenderControlEncoder *rcEncoder();
@@ -113,7 +123,7 @@ private:
 
 private:
     IOStream *m_iostream;
-    IStream *m_stream;
+    void *m_stream;
     GLEncoder   *m_glEnc;
     GL2Encoder  *m_gl2Enc;
     IRenderControlEncoder *m_rcEnc;
@@ -122,6 +132,9 @@ private:
     bool m_grallocOnly;
     int m_pipeFd;
     bool m_noHostError;
+    static std::unique_ptr<LoadSharedLib> m_loader;
+    static bool m_streamLoaded;
+    static std::mutex m_loaderLock;
 };
 
 #endif
