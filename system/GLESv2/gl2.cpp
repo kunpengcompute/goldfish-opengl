@@ -42,7 +42,7 @@ static EGLClient_glesInterface * s_gl = NULL;
         ALOGE("egl: Failed to get host connection\n"); \
         return ret; \
     } \
-    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
+    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("egl: Failed to get renderControl encoder context\n"); \
         return ret; \
@@ -76,7 +76,8 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
 
         ctx->override2DTextureTarget(target);
         ctx->associateEGLImage(target, hostImage);
-        rcEnc->rcBindTexture(((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc),
+            ((cb_handle_t *)(native_buffer->handle))->hostHandle);
         ctx->restore2DTextureTarget(target);
     }
     else {
@@ -109,7 +110,8 @@ void glEGLImageTargetRenderbufferStorageOES(void *self, GLenum target, GLeglImag
         }
 
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
-        rcEnc->rcBindRenderbuffer(((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        rcEnc->rcBindRenderbuffer(rcEnc->GetRenderControlEncoder(rcEnc),
+            ((cb_handle_t *)(native_buffer->handle))->hostHandle);
     } else {
         GLeglImageOES hostImage = reinterpret_cast<GLeglImageOES>((intptr_t)image->host_egl_image);
         GET_CONTEXT;

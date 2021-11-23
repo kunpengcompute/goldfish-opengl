@@ -4,7 +4,7 @@ LOCAL_PATH := $(call my-dir)
 
 define gralloc_recipe
 $$(call emugl-begin-shared-library,gralloc.$(1))
-$$(call emugl-import,libGLESv1_enc libOpenglSystemCommon)
+$$(call emugl-import,libGLESv1_enc libOpenglSystemCommon libRenderControl_enc)
 $$(call emugl-set-shared-library-subpath,hw)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_$(1)\"
@@ -15,12 +15,6 @@ LOCAL_SRC_FILES := gralloc.cpp
 # Need to access the special OPENGL TLS Slot
 LOCAL_C_INCLUDES += bionic/libc/private
 LOCAL_SHARED_LIBRARIES += libdl
-
-LOCAL_C_INCLUDES += \
-    $(EMUGL_PATH)/goldfishinclude
-
-LOCAL_SHARED_LIBRARIES += \
-    libVmiInstructionEngine
 
 $$(call emugl-end-module)
 endef  # define gralloc_recipe

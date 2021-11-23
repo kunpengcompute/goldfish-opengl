@@ -35,7 +35,7 @@ std::mutex HostConnection::m_loaderLock {};
 std::unique_ptr<LoadSharedLib> HostConnection::m_loader = nullptr;
 
 HostConnection::HostConnection() :
-    m_stream(NULL),
+    m_streamHandle(0),
     m_glEnc(NULL),
     m_gl2Enc(NULL),
     m_rcEnc(NULL),
@@ -49,8 +49,8 @@ HostConnection::HostConnection() :
 
 HostConnection::~HostConnection()
 {
-    releaseStream(m_stream);
-    m_stream = nullptr;
+    releaseStream(m_streamHandle);
+    m_streamHandle = 0;
     delete m_glEnc;
     m_glEnc = nullptr;
     delete m_gl2Enc;
@@ -76,7 +76,7 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
     }
 
     if (tinfo->hostConn == NULL) {
-        HostConnection *con = new HostConnection();
+        HostConnection *con = new (std::nothrow) HostConnection();
         if (NULL == con) {
             return NULL;
         }
@@ -84,8 +84,8 @@ HostConnection *HostConnection::getWithThreadInfo(EGLThreadInfo* tinfo) {
         if (!con->initStreamExport()) {
             return NULL;
         }
-        con->m_stream = con->getStream();
-        if (con->m_stream == nullptr) {
+        con->m_streamHandle = con->getStream();
+        if (con->m_streamHandle == 0) {
             ALOGE("Failed to create stream for host connection!!!");
             return NULL;
         }
@@ -119,7 +119,7 @@ void HostConnection::exit() {
 GLEncoder *HostConnection::glEncoder()
 {
     if (!m_glEnc) {
-        m_glEnc = new GLEncoder(m_iostream, checksumHelper());
+        m_glEnc = new (std::nothrow) GLEncoder(m_iostream, checksumHelper());
         ALOGD("HostConnection::glEncoder new encoder %p, tid %d", m_glEnc, gettid());
         m_glEnc->setContextAccessor(s_getGLContext);
     }
@@ -129,35 +129,47 @@ GLEncoder *HostConnection::glEncoder()
 GL2Encoder *HostConnection::gl2Encoder()
 {
     if (!m_gl2Enc) {
-        m_gl2Enc = new GL2Encoder(m_stream, checksumHelper());
+        m_gl2Enc = new (std::nothrow) GL2Encoder();
         if (!m_gl2Enc) {
             ALOGD("HostConnection::gl2Encoder new failed");
             return nullptr;
         }
-        if (!m_gl2Enc->CreateVmiGLESv2Encoder(m_stream)) {
+        if (!m_gl2Enc->CreateVmiGLESv2Encoder(m_streamHandle)) {
             ALOGD("HostConnection::gl2Encoder init statemachine exports failed");
             return nullptr;
         }
         ALOGD("HostConnection::gl2Encoder new encoder %p, tid %d", m_gl2Enc, gettid());
         m_gl2Enc->setNoHostError(m_noHostError);
     }
-    waitRebuildStateMachine(m_stream);
+    waitRebuildStateMachine(m_streamHandle);
     return m_gl2Enc;
 }
 
-IRenderControlEncoder *HostConnection::rcEncoder()
+ExtendedRCEncoderContext *HostConnection::rcEncoder()
 {
     if (!m_rcEnc) {
-        m_rcEnc = InstantiateRenderControlEncoder(m_stream);
+        m_rcEnc = new (std::nothrow) ExtendedRCEncoderContext();
         if (m_rcEnc == nullptr) {
             ALOGE("Failed to instantiate VmiRenderControlWrap");
             return nullptr;
         }
+        if (!m_rcEnc->InitRenderControlExport()) {
+            delete m_rcEnc;
+            m_rcEnc = nullptr;
+            return nullptr;
+        }
+        if (!m_rcEnc->CreateVmiRenderControlEncoder(m_streamHandle)) {
+            ALOGE("HostConnection::rcEncoder CreateVmiRenderControlEncoder failed");
+            delete m_rcEnc;
+            m_rcEnc = nullptr;
+            return nullptr;
+        }
+        ALOGD("HostConnection::rcEncoder new encoder %p, tid %d", m_rcEnc, gettid());
         queryAndSetSyncImpl(m_rcEnc);
         queryAndSetGLESMaxVersion(m_rcEnc);
         queryAndSetNoErrorState(m_rcEnc);
     }
-    waitRebuildStateMachine(m_stream);
+    waitRebuildStateMachine(m_streamHandle);
     return m_rcEnc;
 }
 
@@ -179,7 +191,7 @@ gl2_client_context_t *HostConnection::s_getGL2Context()
     return NULL;
 }
 
-const std::string& HostConnection::queryGLExtensions(IRenderControlEncoder *rcEnc) {
+const std::string& HostConnection::queryGLExtensions(ExtendedRCEncoderContext *rcEnc) {
     if (!m_glExtensions.empty()) {
         return m_glExtensions;
     }
@@ -189,12 +201,14 @@ const std::string& HostConnection::queryGLExtensions(IRenderControlEncoder *rcEn
 
     // rcGetGLString() returns required size including the 0-terminator, so
     // account it when passing/using the sizes.
-    int extensionSize = rcEnc->rcGetGLString(GL_EXTENSIONS,
+    int extensionSize = rcEnc->rcGetGLString(rcEnc->GetRenderControlEncoder(rcEnc),
+                                             GL_EXTENSIONS,
                                              &extensions_buffer[0],
                                              extensions_buffer.size() + 1);
     if (extensionSize < 0) {
         extensions_buffer.resize(-extensionSize);
-        extensionSize = rcEnc->rcGetGLString(GL_EXTENSIONS,
+        extensionSize = rcEnc->rcGetGLString(rcEnc->GetRenderControlEncoder(rcEnc),
+                                             GL_EXTENSIONS,
                                              &extensions_buffer[0],
                                             -extensionSize + 1);
     }
@@ -207,39 +221,39 @@ const std::string& HostConnection::queryGLExtensions(IRenderControlEncoder *rcEn
     return m_glExtensions;
 }
 
-void HostConnection::queryAndSetSyncImpl(IRenderControlEncoder *rcEnc) {
+void HostConnection::queryAndSetSyncImpl(ExtendedRCEncoderContext *rcEnc) {
     const std::string& glExtensions = queryGLExtensions(rcEnc);
 #if PLATFORM_SDK_VERSION <= 16 || (!defined(__i386__) && !defined(__x86_64__))
-    rcEnc->setSyncImpl(SYNC_IMPL_NONE);
+    rcEnc->setSyncImpl(rcEnc->GetRenderControlEncoder(rcEnc), SYNC_IMPL_NONE);
 #else
     if (glExtensions.find(kRCNativeSyncV3) != std::string::npos) {
-        rcEnc->setSyncImpl(SYNC_IMPL_NATIVE_SYNC_V3);
+        rcEnc->setSyncImpl(rcEnc->GetRenderControlEncoder(rcEnc), SYNC_IMPL_NATIVE_SYNC_V3);
     } else if (glExtensions.find(kRCNativeSyncV2) != std::string::npos) {
-        rcEnc->setSyncImpl(SYNC_IMPL_NATIVE_SYNC_V2);
+        rcEnc->setSyncImpl(rcEnc->GetRenderControlEncoder(rcEnc), SYNC_IMPL_NATIVE_SYNC_V2);
     } else {
-        rcEnc->setSyncImpl(SYNC_IMPL_NONE);
+        rcEnc->setSyncImpl(rcEnc->GetRenderControlEncoder(rcEnc), SYNC_IMPL_NONE);
     }
 #endif
 }
 
-void HostConnection::queryAndSetGLESMaxVersion(IRenderControlEncoder* rcEnc) {
+void HostConnection::queryAndSetGLESMaxVersion(ExtendedRCEncoderContext* rcEnc) {
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kGLESMaxVersion_2) != std::string::npos) {
-        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_2);
+        rcEnc->setGLESMaxVersion(rcEnc->GetRenderControlEncoder(rcEnc), GLES_MAX_VERSION_2);
     } else if (glExtensions.find(kGLESMaxVersion_3_0) != std::string::npos) {
-        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_0);
+        rcEnc->setGLESMaxVersion(rcEnc->GetRenderControlEncoder(rcEnc), GLES_MAX_VERSION_3_0);
     } else if (glExtensions.find(kGLESMaxVersion_3_1) != std::string::npos) {
-        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_1);
+        rcEnc->setGLESMaxVersion(rcEnc->GetRenderControlEncoder(rcEnc), GLES_MAX_VERSION_3_1);
     } else if (glExtensions.find(kGLESMaxVersion_3_2) != std::string::npos) {
-        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_3_2);
+        rcEnc->setGLESMaxVersion(rcEnc->GetRenderControlEncoder(rcEnc), GLES_MAX_VERSION_3_2);
     } else {
         ALOGW("Unrecognized GLES max version string in extensions: %s",
               glExtensions.c_str());
-        rcEnc->setGLESMaxVersion(GLES_MAX_VERSION_2);
+        rcEnc->setGLESMaxVersion(rcEnc->GetRenderControlEncoder(rcEnc), GLES_MAX_VERSION_2);
     }
 }
 
-void HostConnection::queryAndSetNoErrorState(IRenderControlEncoder* rcEnc) {
+void HostConnection::queryAndSetNoErrorState(ExtendedRCEncoderContext* rcEnc) {
     std::string glExtensions = queryGLExtensions(rcEnc);
     if (glExtensions.find(kGLESNoHostError) != std::string::npos) {
         m_noHostError = true;

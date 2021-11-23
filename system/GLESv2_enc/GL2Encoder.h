@@ -16,7 +16,6 @@
 #ifndef _GL2_ENCODER_H_
 #define _GL2_ENCODER_H_
 
-#include "VmiGLESv2Encoder.h"
 #include "GL2EncoderBase.h"
 #include "gl2_enc.h"
 #include "GLClientState.h"
@@ -30,7 +29,7 @@
 
 class GL2Encoder : public GL2EncoderBase {
 public:
-    GL2Encoder(void *stream, ChecksumCalculator* protocol);
+    GL2Encoder();
     virtual ~GL2Encoder();
     void setNoHostError(bool noHostError) {
         m_noHostError = noHostError;

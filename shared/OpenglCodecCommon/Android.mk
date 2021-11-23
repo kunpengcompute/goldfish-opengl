@@ -21,9 +21,6 @@ LOCAL_SRC_FILES := $(commonSources)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"eglCodecCommon\"
 
-LOCAL_C_INCLUDES += \
-    $(EMUGL_PATH)/goldfishinclude
-
 $(call emugl-export,SHARED_LIBRARIES,libcutils libutils liblog)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
 $(call emugl-end-module)

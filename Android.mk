@@ -88,8 +88,6 @@ include $(EMUGL_PATH)/common.mk
 # module that hasn't been declared yet anyway.
 #
 
-include $(EMUGL_PATH)/Libs/Android.mk
-
 include $(EMUGL_PATH)/shared/OpenglCodecCommon/Android.mk
 
 # System static libraries

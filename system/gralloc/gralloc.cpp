@@ -252,7 +252,7 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
         ALOGE("gralloc: Failed to get host connection\n"); \
         return -EIO; \
     } \
-    IRenderControlEncoder *rcEnc = hostCon->rcEncoder(); \
+    ExtendedRCEncoderContext *rcEnc = hostCon->rcEncoder(); \
     if (!rcEnc) { \
         ALOGE("gralloc: Failed to get renderControl encoder context\n"); \
         return -EIO; \
@@ -547,7 +547,8 @@ static int gralloc_alloc(alloc_device_t* dev,
     if (needHostCb) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         if (hostCon && rcEnc) {
-            cb->hostHandle = rcEnc->rcCreateColorBuffer(w, h, glFormat, glType, format);
+            cb->hostHandle =
+                rcEnc->rcCreateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), w, h, glFormat, glType, format);
             D("Created host ColorBuffer 0x%x\n", cb->hostHandle);
         }
 
@@ -606,7 +607,7 @@ static int gralloc_free(alloc_device_t* dev,
         }
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
-        rcEnc->rcCloseColorBuffer(cb->hostHandle);
+        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
     }
 
     //
@@ -695,7 +696,7 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
     (*postCountPtr)++;
 
     // send post request to host
-    rcEnc->rcFBPost(cb->hostHandle);
+    rcEnc->rcFBPost(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
 
     return 0;
 }
@@ -737,7 +738,7 @@ static int fb_setSwapInterval(struct framebuffer_device_t* dev,
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
     // send request to host
-    rcEnc->rcFBSetSwapInterval(interval);
+    rcEnc->rcFBSetSwapInterval(rcEnc->GetRenderControlEncoder(rcEnc), interval);
 
     return 0;
 }
@@ -775,7 +776,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
     if (cb->hostHandle != 0) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Opening host cb:%p ColorBuffer 0x%x", cb, cb->hostHandle);
-        rcEnc->rcOpenColorBuffer2(cb->hostHandle);
+        rcEnc->rcOpenColorBuffer2(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
     }
 
     //
@@ -821,7 +822,7 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
     if (cb->hostHandle != 0) {
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Closing host cb:%p, ColorBuffer 0x%x", cb, cb->hostHandle);
-        rcEnc->rcCloseColorBuffer(cb->hostHandle);
+        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
 		if (isHidlGralloc) {
             int32_t* openCountPtr = getOpenCountPtr(cb);
             (*openCountPtr)--;
@@ -1061,7 +1062,8 @@ static int gralloc_lock(gralloc_module_t const* module,
         //
         // flush color buffer write cache on host and get its sync status.
         //
-        int hostSyncStatus = rcEnc->rcColorBufferCacheFlush(cb->hostHandle,
+        int hostSyncStatus = rcEnc->rcColorBufferCacheFlush(rcEnc->GetRenderControlEncoder(rcEnc),
+                                                            cb->hostHandle,
                                                             postCount,
                                                             sw_read);
         if (hostSyncStatus < 0) {
@@ -1080,8 +1082,8 @@ static int gralloc_lock(gralloc_module_t const* module,
                 rgb_addr = tmpBuf;
             }
             D("gralloc_lock read back color buffer %d %d\n", cb->width, cb->height);
-            rcEnc->rcReadColorBuffer(cb->hostHandle,
-                    0, 0, cb->width, cb->height, cb->glFormat, cb->glType, rgb_addr);
+            rcEnc->rcReadColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, 0, 0, cb->width, cb->height,
+                cb->glFormat, cb->glType, rgb_addr);
             if (tmpBuf) {
                 if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
                     rgb888_to_yv12((char*)cpu_addr, tmpBuf, cb->width, cb->height, l, t, l+w-1, t+h-1);
@@ -1299,7 +1301,8 @@ static int gralloc_unlock(gralloc_module_t const* module,
                 }
             }
 
-            rcEnc->rcUpdateColorBuffer(cb->hostHandle,
+            rcEnc->rcUpdateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc),
+                                       cb->hostHandle,
                                        cb->lockedLeft, cb->lockedTop,
                                        cb->lockedWidth, cb->lockedHeight,
                                        cb->glFormat, cb->glType,
@@ -1323,7 +1326,8 @@ static int gralloc_unlock(gralloc_module_t const* module,
                 rgb_addr = rgbBuf;
             }
 
-            rcEnc->rcUpdateColorBuffer(cb->hostHandle, 0, 0,
+            rcEnc->rcUpdateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc),
+                                       cb->hostHandle, 0, 0,
                                        cb->width, cb->height,
                                        cb->glFormat, cb->glType,
                                        rgb_addr);
@@ -1624,7 +1628,7 @@ fallback_init(void)
     // qemu.gles=1 -> host-side GPU emulation through EmuGL
     // qemu.gles=2 -> guest-side GPU emulation.
     property_get("ro.kernel.qemu.gles", prop, "0");
-    if (atoi(prop) == 1) {
+    if (true /* atoi(prop) == 1 */) {
         return;
     }
     ALOGD("Emulator without host-side GPU emulation detected.");

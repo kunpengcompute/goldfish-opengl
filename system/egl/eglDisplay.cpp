@@ -139,7 +139,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // get renderControl encoder instance
         //
-        IRenderControlEncoder *rcEnc = hcon->rcEncoder();
+        ExtendedRCEncoderContext *rcEnc = hcon->rcEncoder();
         if (!rcEnc) {
             pthread_mutex_unlock(&m_lock);
             ALOGE("Failed to get renderControl encoder instance");
@@ -149,8 +149,8 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // Query host reneder and EGL version
         //
-        m_hostRendererVersion = rcEnc->rcGetRendererVersion();
-        EGLint status = rcEnc->rcGetEGLVersion(&m_major, &m_minor);
+        m_hostRendererVersion = rcEnc->rcGetRendererVersion(rcEnc->GetRenderControlEncoder(rcEnc));
+        EGLint status = rcEnc->rcGetEGLVersion(rcEnc->GetRenderControlEncoder(rcEnc), &m_major, &m_minor);
         if (status != EGL_TRUE) {
             // host EGL initialization failed !!
             pthread_mutex_unlock(&m_lock);
@@ -172,7 +172,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         //
         // Query the host for the set of configs
         //
-        m_numConfigs = rcEnc->rcGetNumConfigs((uint32_t*)&m_numConfigAttribs);
+        m_numConfigs = rcEnc->rcGetNumConfigs(rcEnc->GetRenderControlEncoder(rcEnc), (uint32_t*)&m_numConfigAttribs);
         if (m_numConfigs <= 0 || m_numConfigAttribs <= 0) {
             // just sanity check - should never happen
             pthread_mutex_unlock(&m_lock);
@@ -188,7 +188,7 @@ bool eglDisplay::initialize(EGLClient_eglInterface *eglIface)
         }
 
         //EGLint n = rcEnc->rcGetConfigs(rcEnc, nInts*sizeof(EGLint), m_configs);
-        EGLint n = rcEnc->rcGetConfigs(nInts*sizeof(EGLint), (GLuint*)tmp_buf);
+        EGLint n = rcEnc->rcGetConfigs(rcEnc->GetRenderControlEncoder(rcEnc), nInts*sizeof(EGLint), (GLuint*)tmp_buf);
         if (n != m_numConfigs) {
             pthread_mutex_unlock(&m_lock);
             return false;
@@ -287,13 +287,13 @@ static char *queryHostEGLString(EGLint name)
 {
     HostConnection *hcon = HostConnection::get();
     if (hcon) {
-        IRenderControlEncoder *rcEnc = hcon->rcEncoder();
+        ExtendedRCEncoderContext *rcEnc = hcon->rcEncoder();
         if (rcEnc) {
-            int n = rcEnc->rcQueryEGLString(name, NULL, 0);
+            int n = rcEnc->rcQueryEGLString(rcEnc->GetRenderControlEncoder(rcEnc), name, NULL, 0);
             if (n < 0) {
                 // allocate space for the string.
                 char *str = (char *)malloc(-n);
-                n = rcEnc->rcQueryEGLString(name, str, -n);
+                n = rcEnc->rcQueryEGLString(rcEnc->GetRenderControlEncoder(rcEnc), name, str, -n);
                 if (n > 0) {
                     return str;
                 }

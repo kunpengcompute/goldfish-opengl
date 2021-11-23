@@ -17,11 +17,11 @@
 #define __COMMON_HOST_CONNECTION_H
 
 #include "IOStream.h"
-#include "IRenderControlEncoder.h"
+#include "renderControl_enc.h"
 #include "ChecksumCalculator.h"
 #include "goldfish_dma.h"
 #include "LoadSharedLib.h"
-
+#include "ExtendedRCEncoderContext.h"
 #include <string>
 #include <memory>
 #include <mutex>
@@ -60,15 +60,6 @@ enum DmaImpl {
 };
 
 static const char kDmaExtStr_v1[] = "ANDROID_EMU_dma_v1";
-
-// // OpenGL ES max supported version
-// enum GLESMaxVersion {
-//     GLES_MAX_VERSION_2 = 0,
-//     GLES_MAX_VERSION_3_0 = 1,
-//     GLES_MAX_VERSION_3_1 = 2,
-//     GLES_MAX_VERSION_3_2 = 3,
-// };
-
 static const char kGLESMaxVersion_2[] = "ANDROID_EMU_gles_max_version_2";
 static const char kGLESMaxVersion_3_0[] = "ANDROID_EMU_gles_max_version_3_0";
 static const char kGLESMaxVersion_3_1[] = "ANDROID_EMU_gles_max_version_3_1";
@@ -77,9 +68,9 @@ static const char kGLESMaxVersion_3_2[] = "ANDROID_EMU_gles_max_version_3_2";
 // No querying errors from host extension
 static const char kGLESNoHostError[] = "ANDROID_EMU_gles_no_host_error";
 
-typedef void *(*GetStreamFunc)();
-typedef void (*ReleaseStreamFunc)(void* stream);
-typedef void (*WaitRebuildStateMachineFunc)(void* stream);
+typedef uint32_t (*GetStreamFunc)();
+typedef void (*ReleaseStreamFunc)(uint32_t streamHandle);
+typedef void (*WaitRebuildStateMachineFunc)(uint32_t streamHandle);
 
 struct EGLThreadInfo;
 
@@ -97,7 +88,7 @@ public:
     static WaitRebuildStateMachineFunc waitRebuildStateMachine;
     GLEncoder *glEncoder();
     GL2Encoder *gl2Encoder();
-    IRenderControlEncoder *rcEncoder();
+    ExtendedRCEncoderContext *rcEncoder();
     ChecksumCalculator *checksumHelper() { return &m_checksumHelper; }
 
     void setGrallocOnly(bool gralloc_only) {
@@ -112,21 +103,21 @@ private:
     HostConnection();
     static gl_client_context_t  *s_getGLContext();
     static gl2_client_context_t *s_getGL2Context();
-    const std::string& queryGLExtensions(IRenderControlEncoder *rcEnc);
+    const std::string& queryGLExtensions(ExtendedRCEncoderContext *rcEnc);
     // setProtocol initilizes GL communication protocol for checksums
     // should be called when m_rcEnc is created
     //void setChecksumHelper(ExtendedRCEncoderContext *rcEnc);
-    void queryAndSetSyncImpl(IRenderControlEncoder *rcEnc);
+    void queryAndSetSyncImpl(ExtendedRCEncoderContext *rcEnc);
     //void queryAndSetDmaImpl(ExtendedRCEncoderContext *rcEnc);
-    void queryAndSetGLESMaxVersion(IRenderControlEncoder *rcEnc);
-    void queryAndSetNoErrorState(IRenderControlEncoder *rcEnc);
+    void queryAndSetGLESMaxVersion(ExtendedRCEncoderContext *rcEnc);
+    void queryAndSetNoErrorState(ExtendedRCEncoderContext *rcEnc);
 
 private:
     IOStream *m_iostream;
-    void *m_stream;
+    uint32_t m_streamHandle;
     GLEncoder   *m_glEnc;
     GL2Encoder  *m_gl2Enc;
-    IRenderControlEncoder *m_rcEnc;
+    ExtendedRCEncoderContext *m_rcEnc;
     ChecksumCalculator m_checksumHelper;
     std::string m_glExtensions;
     bool m_grallocOnly;

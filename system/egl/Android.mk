@@ -3,7 +3,7 @@ ifneq (false,$(BUILD_EMULATOR_OPENGL_DRIVER))
 LOCAL_PATH := $(call my-dir)
 
 $(call emugl-begin-shared-library,libEGL_emulation)
-$(call emugl-import,libOpenglSystemCommon)
+$(call emugl-import,libOpenglSystemCommon,libRenderControl_enc)
 $(call emugl-set-shared-library-subpath,egl)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"EGL_emulation\" -DEGL_EGLEXT_PROTOTYPES -DWITH_GLES2
@@ -33,13 +33,6 @@ endif
 
 # Used to access the Bionic private OpenGL TLS slot
 LOCAL_C_INCLUDES += bionic/libc/private
-
-LOCAL_C_INCLUDES += \
-     $(EMUGL_PATH)/goldfishinclude
-
-LOCAL_SHARED_LIBRARIES += \
-    libVmiInstructionEngine \
-    libVmiInstructionCommon
 
 $(call emugl-end-module)
 
