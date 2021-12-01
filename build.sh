@@ -1,6 +1,5 @@
 #!/bin/bash
 # goldfish opengl build sh
-# Copyright © Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
 
 cur_file_path=$(cd $(dirname "${0}");pwd)
 
