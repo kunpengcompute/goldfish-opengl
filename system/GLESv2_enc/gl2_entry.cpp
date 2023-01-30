@@ -269,6 +269,7 @@ extern "C" {
 	void glGetVertexAttribIiv(GLuint index, GLenum pname, GLint* params);
 	void glGetVertexAttribIuiv(GLuint index, GLenum pname, GLuint* params);
 	void glVertexAttribDivisor(GLuint index, GLuint divisor);
+	void glVertexAttribDivisorEXT(GLuint index, GLuint divisor);
 	void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount);
 	void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount);
 	void glDrawElementsInstancedDataAEMU(GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount, GLsizei datalen);
@@ -436,6 +437,59 @@ extern "C" {
     void glSamplerParameterIuivEXT(GLuint sampler, GLenum pname, const GLuint *param);
     void glGetSamplerParameterIivEXT(GLuint sampler, GLenum pname, GLint *params);
     void glGetSamplerParameterIuivEXT(GLuint sampler, GLenum pname, GLuint *params);
+    void glMinSampleShadingOES(GLfloat value);
+    void glFramebufferTextureOES(GLenum target, GLenum attachment, GLuint texture, GLint level);
+    void glFramebufferTextureEXT(GLenum target, GLenum attachment, GLuint texture, GLint level);
+    void glPatchParameteriEXT(GLenum pname, GLint value);
+    void glTexBufferEXT(GLenum target, GLenum internalFormat, GLuint buffer);
+    void glTexBufferRangeEXT(GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    void glPrimitiveBoundingBoxEXT(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+    void glTexStorage3DMultisampleOES(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+	// opengles 3.2
+    void glBlendBarrier(void);
+    void glCopyImageSubData(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
+    void glDebugMessageControl(GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
+    void glDebugMessageInsert(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
+    void glDebugMessageCallback(GLDEBUGPROC callback, const void *userParam);
+    GLuint glGetDebugMessageLog(GLuint count, GLsizei bufSize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
+    void glPushDebugGroup(GLenum source, GLuint id, GLsizei length, const GLchar *message);
+    void glPopDebugGroup(void);
+    void glObjectLabel(GLenum identifier, GLuint name, GLsizei length, const GLchar *label);
+    void glGetObjectLabel(GLenum identifier, GLuint name, GLsizei bufSize, GLsizei *length, GLchar *label);
+    void glObjectPtrLabel(const void *ptr, GLsizei length, const GLchar *label);
+    void glGetObjectPtrLabel(const void *ptr, GLsizei bufSize, GLsizei *length, GLchar *label);
+    void glGetPointerv(GLenum pname, void **params);
+    void glEnablei(GLenum target, GLuint index);
+    void glDisablei(GLenum target, GLuint index);
+    void glBlendEquationi(GLuint buf, GLenum mode);
+    void glBlendEquationSeparatei(GLuint buf, GLenum modeRGB, GLenum modeAlpha);
+    void glBlendFunci(GLuint buf, GLenum src, GLenum dst);
+    void glBlendFuncSeparatei(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+    void glColorMaski(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
+    GLboolean glIsEnabledi(GLenum target, GLuint index);
+    void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex);
+    void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void *indices, GLint basevertex);
+    void glDrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex);
+    void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
+    void glPrimitiveBoundingBox(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+    GLenum glGetGraphicsResetStatus(void);
+    void glReadnPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, void *data);
+    void glGetnUniformfv(GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+    void glGetnUniformiv(GLuint program, GLint location, GLsizei bufSize, GLint *params);
+    void glGetnUniformuiv(GLuint program, GLint location, GLsizei bufSize, GLuint *params);
+    void glMinSampleShading(GLfloat value);
+    void glPatchParameteri(GLenum pname, GLint value);
+    void glTexParameterIiv(GLenum target, GLenum pname, const GLint *params);
+    void glTexParameterIuiv(GLenum target, GLenum pname, const GLuint *params);
+    void glGetTexParameterIiv(GLenum target, GLenum pname, GLint *params);
+    void glGetTexParameterIuiv(GLenum target, GLenum pname, GLuint *params);
+    void glSamplerParameterIiv(GLuint sampler, GLenum pname, const GLint *param);
+    void glSamplerParameterIuiv(GLuint sampler, GLenum pname, const GLuint *param);
+    void glGetSamplerParameterIiv(GLuint sampler, GLenum pname, GLint *params);
+    void glGetSamplerParameterIuiv(GLuint sampler, GLenum pname, GLuint *params);
+    void glTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer);
+    void glTexBufferRange(GLenum target, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    void glTexStorage3DMultisample(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);	
 };
 
 #ifndef GET_CONTEXT
@@ -3057,4 +3111,297 @@ void glGetSamplerParameterIuivEXT(GLuint sampler, GLenum pname, GLuint *params)
 {
 	GET_CONTEXT;
 	ctx->glGetSamplerParameterIuivEXT(ctx, sampler, pname, params);
+}
+
+void glMinSampleShading(GLfloat value)
+{
+    GET_CONTEXT;
+    ctx->glMinSampleShading(ctx, value);
+}
+
+void glMinSampleShadingOES(GLfloat value)
+{
+    GET_CONTEXT;
+    ctx->glMinSampleShading(ctx, value);
+}
+
+void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level)
+{
+    GET_CONTEXT;
+    ctx->glFramebufferTexture(ctx, target, attachment, texture, level);
+}
+
+void glFramebufferTextureOES(GLenum target, GLenum attachment, GLuint texture, GLint level)
+{
+    GET_CONTEXT;
+    ctx->glFramebufferTexture(ctx, target, attachment, texture, level);
+}
+
+void glFramebufferTextureEXT(GLenum target, GLenum attachment, GLuint texture, GLint level)
+{
+    GET_CONTEXT;
+    ctx->glFramebufferTexture(ctx, target, attachment, texture, level);
+}
+
+void glPatchParameteri(GLenum pname, GLint value)
+{
+    GET_CONTEXT;
+    ctx->glPatchParameteri(ctx, pname, value);
+}
+
+void glPatchParameteriEXT(GLenum pname, GLint value)
+{
+    GET_CONTEXT;
+    ctx->glPatchParameteri(ctx, pname, value);
+}
+
+void glTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer)
+{
+    GET_CONTEXT;
+    ctx->glTexBuffer(ctx, target, internalFormat, buffer);
+}
+
+void glTexBufferEXT(GLenum target, GLenum internalFormat, GLuint buffer)
+{
+    GET_CONTEXT;
+    ctx->glTexBuffer(ctx, target, internalFormat, buffer);
+}
+
+void glTexBufferRange(GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size)
+{
+    GET_CONTEXT;
+    ctx->glTexBufferRange(ctx, target, internalFormat, buffer, offset, size);
+}
+
+void glTexBufferRangeEXT(GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size)
+{
+    GET_CONTEXT;
+    ctx->glTexBufferRange(ctx, target, internalFormat, buffer, offset, size);
+}
+
+void glPrimitiveBoundingBox(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+{
+    GET_CONTEXT;
+    ctx->glPrimitiveBoundingBox(ctx, minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+}
+
+void glPrimitiveBoundingBoxEXT(GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+{
+    GET_CONTEXT;
+    ctx->glPrimitiveBoundingBox(ctx, minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+}
+
+void glTexStorage3DMultisample(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
+{
+    GET_CONTEXT;
+    ctx->glTexStorage3DMultisample(ctx, target, samples, internalformat, width, height, depth, fixedsamplelocations);
+}
+
+void glTexStorage3DMultisampleOES(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
+{
+    GET_CONTEXT;
+    ctx->glTexStorage3DMultisample(ctx, target, samples, internalformat, width, height, depth, fixedsamplelocations);
+}
+
+void glVertexAttribDivisorEXT(GLuint index, GLuint divisor)
+{
+    GET_CONTEXT;
+    ctx->glVertexAttribDivisor(ctx, index, divisor);
+}
+
+void glBlendBarrier(void)
+{
+    glBlendBarrierKHR();
+}
+
+void glCopyImageSubData(GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ,
+    GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth,
+    GLsizei srcHeight, GLsizei srcDepth)
+{
+    glCopyImageSubDataEXT(srcName, srcTarget, srcLevel, srcX, srcY, srcZ,
+        dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth,
+        srcHeight, srcDepth);
+}
+
+void glDebugMessageControl(GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glDebugMessageInsert(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glDebugMessageCallback(GLDEBUGPROC callback, const void *userParam)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+GLuint glGetDebugMessageLog(GLuint count, GLsizei bufSize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog)
+{
+    return 0; // KHR_Debug特性，云手机不支持
+}
+
+void glPushDebugGroup(GLenum source, GLuint id, GLsizei length, const GLchar *message)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glPopDebugGroup(void)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glObjectLabel(GLenum identifier, GLuint name, GLsizei length, const GLchar *label)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glGetObjectLabel(GLenum identifier, GLuint name, GLsizei bufSize, GLsizei *length, GLchar *label)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glObjectPtrLabel(const void *ptr, GLsizei length, const GLchar *label)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glGetObjectPtrLabel(const void *ptr, GLsizei bufSize, GLsizei *length, GLchar *label)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glGetPointerv(GLenum pname, void **params)
+{
+    return; // KHR_Debug特性，云手机不支持
+}
+
+void glEnablei(GLenum target, GLuint index)
+{
+    glEnableiEXT(target, index);
+}
+
+void glDisablei(GLenum target, GLuint index)
+{
+    glDisableiEXT(target, index);
+}
+
+void glBlendEquationi(GLuint buf, GLenum mode)
+{
+    glBlendEquationiEXT(buf, mode);
+}
+
+void glBlendEquationSeparatei(GLuint buf, GLenum modeRGB, GLenum modeAlpha)
+{
+    glBlendEquationSeparateiEXT(buf, modeRGB, modeAlpha);
+}
+
+void glBlendFunci(GLuint buf, GLenum src, GLenum dst)
+{
+    glBlendFunciEXT(buf, src, dst);
+}
+
+void glBlendFuncSeparatei(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
+{
+    glBlendFuncSeparateiEXT(buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+}
+
+void glColorMaski(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a)
+{
+    glColorMaskiEXT(index, r, g, b, a);
+}
+
+GLboolean glIsEnabledi(GLenum target, GLuint index)
+{
+    return glIsEnablediEXT(target, index);
+}
+
+void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsBaseVertex(ctx, mode, count, type, indices, basevertex);
+}
+
+void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void *indices, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawRangeElementsBaseVertex(ctx, mode, start, end, count, type, indices, basevertex);
+}
+
+void glDrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsInstancedBaseVertex(ctx, mode, count, type, indices, instancecount, basevertex);
+}
+
+GLenum glGetGraphicsResetStatus(void)
+{
+    GET_CONTEXT;
+    return ctx->glGetGraphicsResetStatus(ctx);
+}
+
+void glReadnPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, void *data)
+{
+    GET_CONTEXT;
+    ctx->glReadnPixels(ctx, x, y, width, height, format, type, bufSize, data);
+}
+
+void glGetnUniformfv(GLuint program, GLint location, GLsizei bufSize, GLfloat *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformfv(ctx, program, location, bufSize, params);
+}
+
+void glGetnUniformiv(GLuint program, GLint location, GLsizei bufSize, GLint *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformiv(ctx, program, location, bufSize, params);
+}
+
+void glGetnUniformuiv(GLuint program, GLint location, GLsizei bufSize, GLuint *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformuiv(ctx, program, location, bufSize, params);
+}
+
+void glTexParameterIiv(GLenum target, GLenum pname, const GLint *params)
+{
+    glTexParameterIivEXT(target, pname, params);
+}
+
+void glTexParameterIuiv(GLenum target, GLenum pname, const GLuint *params)
+{
+    glTexParameterIuivEXT(target, pname, params);
+}
+
+void glGetTexParameterIiv(GLenum target, GLenum pname, GLint *params)
+{
+    glGetTexParameterIivEXT(target, pname, params);
+}
+
+void glGetTexParameterIuiv(GLenum target, GLenum pname, GLuint *params)
+{
+    glGetTexParameterIuivEXT(target, pname, params);
+}
+
+void glSamplerParameterIiv(GLuint sampler, GLenum pname, const GLint *param)
+{
+    glSamplerParameterIivEXT(sampler, pname, param);
+}
+
+void glSamplerParameterIuiv(GLuint sampler, GLenum pname, const GLuint *param)
+{
+    glSamplerParameterIuivEXT(sampler, pname, param);
+}
+
+void glGetSamplerParameterIiv(GLuint sampler, GLenum pname, GLint *params)
+{
+    glGetSamplerParameterIivEXT(sampler, pname, params);
+}
+
+void glGetSamplerParameterIuiv(GLuint sampler, GLenum pname, GLuint *params)
+{
+    glGetSamplerParameterIuivEXT(sampler, pname, params);
 }

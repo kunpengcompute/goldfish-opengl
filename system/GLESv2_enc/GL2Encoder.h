@@ -91,6 +91,7 @@ public:
     bool isBufferMapped(GLuint buffer) const;
     bool isBufferTargetMapped(GLenum target) const;
     bool isSurpportAtscExtension(void* self);
+    static std::string GetProcessName();
 private:
 
     int m_currMajorVersion;
@@ -604,6 +605,27 @@ private:
     static void s_glActiveShaderProgram(void* self, GLuint pipeline, GLuint program);
     static GLuint s_glCreateShaderProgramv(void* self, GLenum type, GLsizei count, const char* const* strings);
 
+    static void s_glDrawElementsBaseVertex(void *self, GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex);
+
+    glGetnUniformiv_client_proc_t m_glGetnUniformiv_enc;
+    static void s_glGetnUniformiv(void *self, GLuint program, GLint location, GLsizei bufSize, GLint *params);
+
+    glGetnUniformfv_client_proc_t m_glGetnUniformfv_enc;
+    static void s_glGetnUniformfv(void *self, GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+
+    glGetnUniformuiv_client_proc_t m_glGetnUniformuiv_enc;
+    static void s_glGetnUniformuiv(void *self, GLuint program, GLint location, GLsizei bufSize, GLuint* params);
+
+    static void s_glDrawElementsInstancedBaseVertex(void* self, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount, GLint basevertex);
+
+    static void s_glDrawRangeElementsBaseVertex(void* self, GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void* indices, GLint basevertex);
+
+    static void s_glReadnPixels(void* self, GLint x, GLint y, GLsizei width,
+        GLsizei height, GLenum format, GLenum type, GLsizei bufSize, GLvoid* pixels);
+
+    static GLenum s_glGetGraphicsResetStatus(void* self);
+
+    glCreateShaderProgramv_client_proc_t m_glCreateShaderProgramv_enc;
     glProgramUniform1f_client_proc_t m_glProgramUniform1f_enc;
     glProgramUniform1fv_client_proc_t m_glProgramUniform1fv_enc;
     glProgramUniform1i_client_proc_t m_glProgramUniform1i_enc;
@@ -725,6 +747,11 @@ private:
     
     glGetFragDataLocation_client_proc_t m_glGetFragDataLocation_enc;
     static GLint s_glGetFragDataLocation (void *self , GLuint program, const char* name);
+    glFramebufferTexture_client_proc_t m_glFramebufferTexture_enc;
+    static void s_glFramebufferTexture(void * self, GLenum target, GLenum attachment, GLuint texture, GLint level);
+
+    glViewport_client_proc_t m_glViewport_enc;
+    static void s_glViewport(void* self, GLint x, GLint y, GLsizei width, GLsizei height);
 public:
     glEGLImageTargetTexture2DOES_client_proc_t m_glEGLImageTargetTexture2DOES_enc;
     glEGLImageTargetRenderbufferStorageOES_client_proc_t m_glEGLImageTargetRenderbufferStorageOES_enc;

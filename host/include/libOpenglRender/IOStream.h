@@ -86,7 +86,7 @@ public:
     void readbackPixels(void* context, int width, int height, unsigned int format, unsigned int type, void* pixels);
 
 
-private:
+protected:
     unsigned char *m_buf;
     size_t m_bufsize;
     size_t m_free;

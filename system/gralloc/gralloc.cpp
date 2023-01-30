@@ -282,7 +282,7 @@ static int gralloc_alloc(alloc_device_t* dev,
                          int w, int h, int format, int usage,
                          buffer_handle_t* pHandle, int* pStride)
 {
-    D("gralloc_alloc w=%d h=%d usage=0x%x format=0x%x\n", w, h, usage, format);
+    ALOGD("gralloc_alloc w=%d h=%d usage=0x%x format=0x%x\n", w, h, usage, format);
 
     gralloc_device_t *grdev = (gralloc_device_t *)dev;
     if (!grdev || !pHandle || !pStride) {
@@ -507,7 +507,7 @@ static int gralloc_alloc(alloc_device_t* dev,
         }
     }
 
-    D("gralloc_alloc format=%d, ashmem_size=%d, stride=%d, tid %d\n", format,
+    ALOGD("gralloc_alloc format=%d, ashmem_size=%d, stride=%d, tid %d\n", format,
             ashmem_size, stride, gettid());
 
     //
@@ -541,7 +541,7 @@ static int gralloc_alloc(alloc_device_t* dev,
             delete cb;
             return err;
         }
-        D("gralloc_alloc cb:%p colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
+        ALOGD("gralloc_alloc cb:%p colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
         cb->setFd(fd);
     }
     if (needHostCb) {
@@ -549,14 +549,14 @@ static int gralloc_alloc(alloc_device_t* dev,
         if (hostCon && rcEnc) {
             cb->hostHandle =
                 rcEnc->rcCreateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), w, h, glFormat, glType, format);
-            D("Created host ColorBuffer 0x%x\n", cb->hostHandle);
+            ALOGD("Created host ColorBuffer 0x%x\n", cb->hostHandle);
         }
 
         if (!cb->hostHandle) {
             // Could not create colorbuffer on host !!!
             close(fd);
             delete cb;
-            ALOGD("%s: failed to create host cb! -EIO", __FUNCTION__);
+            ALOGE("%s: failed to create host cb! -EIO", __FUNCTION__);
             return -EIO;
         }
         if (isHidlGralloc) { *getOpenCountPtr(cb) = 1; }
@@ -577,6 +577,7 @@ static int gralloc_alloc(alloc_device_t* dev,
     pthread_mutex_unlock(&grdev->lock);
 
     *pHandle = cb;
+    DBG("gralloc_alloc cb:%p", cb);
     switch (frameworkFormat) {
     case HAL_PIXEL_FORMAT_YCbCr_420_888:
         *pStride = 0;
@@ -592,6 +593,7 @@ static int gralloc_free(alloc_device_t* dev,
                         buffer_handle_t handle)
 {
     cb_handle_t *cb = (cb_handle_t *)handle;
+    DBG("gralloc_free cb:%p", cb);
     if (!cb_handle_t::validate((cb_handle_t*)cb)) {
         ERR("gralloc_free: invalid handle");
         return -EINVAL;
@@ -768,6 +770,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
 
     private_module_t *gr = (private_module_t *)module;
     cb_handle_t *cb = (cb_handle_t *)handle;
+    DBG("gralloc_register_buffer cb:%p", cb);
     if (!gr || !cb_handle_t::validate(cb)) {
         ERR("gralloc_register_buffer(%p): invalid buffer", cb);
         return -EINVAL;
@@ -814,6 +817,7 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
 
     private_module_t *gr = (private_module_t *)module;
     cb_handle_t *cb = (cb_handle_t *)handle;
+    DBG("gralloc_unregister_buffer cb:%p", cb);
     if (!gr || !cb_handle_t::validate(cb)) {
         ERR("gralloc_unregister_buffer(%p): invalid buffer", cb);
         return -EINVAL;
@@ -987,6 +991,7 @@ static int gralloc_lock(gralloc_module_t const* module,
 
     private_module_t *gr = (private_module_t *)module;
     cb_handle_t *cb = (cb_handle_t *)handle;
+    DBG("gralloc_lock cb:%p", cb);
     if (!gr || !cb_handle_t::validate(cb)) {
         ALOGE("gralloc_lock bad handle\n");
         return -EINVAL;
@@ -1263,6 +1268,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
 
     private_module_t *gr = (private_module_t *)module;
     cb_handle_t *cb = (cb_handle_t *)handle;
+    DBG("gralloc_unlock cb:%p", cb);
     if (!gr || !cb_handle_t::validate(cb)) {
         ALOGD("%s: invalid gr or cb handle. -EINVAL", __FUNCTION__);
         return -EINVAL;
@@ -1499,6 +1505,7 @@ static int gralloc_device_open(const hw_module_t* module,
 
         dev->device.alloc   = gralloc_alloc;
         dev->device.free    = gralloc_free;
+        dev->device.dump    = NULL;
         dev->allocListHead  = NULL;
         pthread_mutex_init(&dev->lock, NULL);
 

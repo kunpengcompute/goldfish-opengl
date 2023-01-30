@@ -438,6 +438,23 @@ typedef void (gl2_APIENTRY *glSamplerParameterIivEXT_client_proc_t) (void * ctx,
 typedef void (gl2_APIENTRY *glSamplerParameterIuivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, const GLuint *param);
 typedef void (gl2_APIENTRY *glGetSamplerParameterIivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, GLint *params);
 typedef void (gl2_APIENTRY *glGetSamplerParameterIuivEXT_client_proc_t) (void * ctx, GLuint sampler, GLenum pname, GLuint *params);
-typedef void (gl2_APIENTRY *glUniformLayout_client_proc_t)(void * ctx, GLuint program);
-
+typedef void (gl2_APIENTRY *glMinSampleShading_client_proc_t)(void * ctx, GLfloat value);
+typedef void (gl2_APIENTRY *glFramebufferTexture_client_proc_t)(void * ctx, GLenum target, GLenum attachment, GLuint texture, GLint level);
+typedef void (gl2_APIENTRY *glPatchParameteri_client_proc_t)(void * ctx, GLenum pname, GLint value);
+typedef void (gl2_APIENTRY *glTexBuffer_client_proc_t)(void * ctx, GLenum target, GLenum internalFormat, GLuint buffer);
+typedef void (gl2_APIENTRY *glTexBufferRange_client_proc_t)(void * ctx, GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+typedef void (gl2_APIENTRY *glPrimitiveBoundingBox_client_proc_t)(void * ctx, GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+typedef void (gl2_APIENTRY *glTexStorage3DMultisample_client_proc_t)(void * ctx, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+typedef void (gl2_APIENTRY *glGetnUniformfv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, GLfloat*);
+typedef void (gl2_APIENTRY *glGetnUniformiv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, GLint*);
+typedef void (gl2_APIENTRY *glDrawElementsBaseVertex_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, const GLvoid*, GLint);
+typedef void (gl2_APIENTRY *glReadnPixels_client_proc_t) (void * ctx, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, GLsizei, GLvoid*);
+typedef GLenum (gl2_APIENTRY *glGetGraphicsResetStatus_client_proc_t) (void * ctx);
+typedef void (gl2_APIENTRY *glDrawElementsBaseVertexOffset_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, GLuint, GLint);
+typedef void (gl2_APIENTRY *glDrawElementsBaseVertexData_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, void*, GLuint, GLint);
+typedef void (gl2_APIENTRY *glGetnUniformuiv_client_proc_t) (void * ctx, GLuint, GLint, GLsizei, GLuint*);
+typedef void (gl2_APIENTRY *glDrawElementsInstancedBaseVertex_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, const void*, GLsizei, GLint);
+typedef void (gl2_APIENTRY *glDrawElementsInstancedBaseVertexDataAEMU_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, const void*, GLsizei, GLsizei, GLint);
+typedef void (gl2_APIENTRY *glDrawElementsInstancedBaseVertexOffsetAEMU_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, GLuint, GLsizei, GLint);
+typedef void (gl2_APIENTRY *glDrawRangeElementsBaseVertex_client_proc_t) (void * ctx, GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid*, GLint);
 #endif

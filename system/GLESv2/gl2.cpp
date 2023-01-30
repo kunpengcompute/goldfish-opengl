@@ -76,8 +76,13 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
 
         ctx->override2DTextureTarget(target);
         ctx->associateEGLImage(target, hostImage);
+        cb_handle_t *cb = (cb_handle_t *)(native_buffer->handle);
+        if (cb == nullptr) {
+            ALOGE("Failed to gl egl image to texture, get cb failed");
+            return;
+        }
         rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc),
-            ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+            cb->hostHandle, uint32_t(cb->canBePosted()));
         ctx->restore2DTextureTarget(target);
     }
     else {

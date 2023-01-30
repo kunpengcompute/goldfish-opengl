@@ -16,6 +16,83 @@
 #ifndef __SMART_PTR_H
 #define __SMART_PTR_H
 
+#if PLATFORM_SDK_VERSION > 28
+#include  <sys/types.h>
+
+#if !defined(_WIN32)
+#include <pthread.h>
+#else
+#include <windows.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if !defined(_WIN32)
+
+typedef pthread_mutex_t mutex_t;
+
+static __inline__ void mutex_lock(mutex_t* lock) {
+    pthread_mutex_lock(lock);
+}
+
+static __inline__ void mutex_unlock(mutex_t* lock) {
+    pthread_mutex_unlock(lock);
+}
+
+static __inline__ int mutex_init(mutex_t* lock) {
+    return pthread_mutex_init(lock, NULL);
+}
+
+static __inline__ void mutex_destroy(mutex_t* lock) {
+    pthread_mutex_destroy(lock);
+}
+
+#else // !defined(_WIN32)
+
+typedef struct {
+    int init;
+    CRITICAL_SECTION lock[1];
+} mutex_t;
+
+#define MUTEX_INITIALIZER  { 0, {{ NULL, 0, 0, NULL, NULL, 0 }} }
+
+static __inline__ void mutex_lock(mutex_t* lock) {
+    if (!lock->init) {
+        lock->init = 1;
+        InitializeCriticalSection( lock->lock );
+        lock->init = 2;
+    } else while (lock->init != 2) {
+        Sleep(10);
+    }
+    EnterCriticalSection(lock->lock);
+}
+
+static __inline__ void mutex_unlock(mutex_t* lock) {
+    LeaveCriticalSection(lock->lock);
+}
+
+static __inline__ int mutex_init(mutex_t* lock) {
+    InitializeCriticalSection(lock->lock);
+    lock->init = 2;
+    return 0;
+}
+
+static __inline__ void mutex_destroy(mutex_t* lock) {
+    if (lock->init) {
+        lock->init = 0;
+        DeleteCriticalSection(lock->lock);
+    }
+}
+
+#endif // !defined(_WIN32)
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+
 #include <cutils/threads.h>
 #include <cutils/atomic.h>
 

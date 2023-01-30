@@ -20,6 +20,7 @@ $(call emugl-begin-static-library,libOpenglCodecCommon)
 LOCAL_SRC_FILES := $(commonSources)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"eglCodecCommon\"
+LOCAL_CFLAGS += -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 $(call emugl-export,SHARED_LIBRARIES,libcutils libutils liblog)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
  * Description:  GL2Encoder base class.
  */
 
@@ -447,7 +448,22 @@ typedef void (*glSamplerParameterIivEXT_proc_t) (uint32_t handle, GLuint sampler
 typedef void (*glSamplerParameterIuivEXT_proc_t) (uint32_t handle, GLuint sampler, GLenum pname, const GLuint *param);
 typedef void (*glGetSamplerParameterIivEXT_proc_t) (uint32_t handle, GLuint sampler, GLenum pname, GLint *params);
 typedef void (*glGetSamplerParameterIuivEXT_proc_t) (uint32_t handle, GLuint sampler, GLenum pname, GLuint *params);
-typedef void (*glUniformLayout_proc_t)(uint32_t handle, GLuint program);
+typedef void (*glMinSampleShading_proc_t)(uint32_t handle, GLfloat value);
+typedef void (*glFramebufferTexture_proc_t)(uint32_t handle, GLenum target, GLenum attachment, GLuint texture, GLint level);
+typedef void (*glPatchParameteri_proc_t)(uint32_t handle, GLenum pname, GLint value);
+typedef void (*glTexBuffer_proc_t)(uint32_t handle, GLenum target, GLenum internalFormat, GLuint buffer);
+typedef void (*glTexBufferRange_proc_t)(uint32_t handle, GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+typedef void (*glPrimitiveBoundingBox_proc_t)(uint32_t handle, GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+typedef void (*glTexStorage3DMultisample_proc_t)(uint32_t handle, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+typedef void (*glDrawElementsBaseVertexOffset_proc_t)(uint32_t handle, GLenum mode, GLsizei count, GLenum type, GLuint offset, GLint basevertex);
+typedef void (*glDrawElementsBaseVertexData_proc_t)(uint32_t handle, GLenum mode, GLsizei count, GLenum type, void *data, GLuint datalen, GLint basevertex);
+typedef void (*glDrawElementsInstancedBaseVertexDataAEMU_proc_t)(uint32_t handle, GLenum mode, GLsizei count, GLenum type,
+    const void *indices, GLsizei primcount, GLsizei datalen, GLint basevertex);
+typedef void (*glDrawElementsInstancedBaseVertexOffsetAEMU_proc_t)(uint32_t handle, GLenum mode, GLsizei count, GLenum type, GLuint offset,
+    GLsizei primcount, GLint basevertex);
+typedef void (*glGetnUniformfv_proc_t)(uint32_t handle, GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+typedef void (*glGetnUniformiv_proc_t)(uint32_t handle, GLuint program, GLint location, GLsizei bufSize, GLint *params);
+typedef void (*glGetnUniformuiv_proc_t) (uint32_t handle, GLuint program, GLint location, GLsizei bufSize, GLuint *params);
 
 class GL2EncoderBase {
 public:
@@ -888,7 +904,21 @@ public:
     static glDrawArraysIndirectOffsetAEMU_proc_t glDrawArraysIndirectOffsetAEMUFunc;
     static glDrawElementsIndirectDataAEMU_proc_t glDrawElementsIndirectDataAEMUFunc;
     static glDrawElementsIndirectOffsetAEMU_proc_t glDrawElementsIndirectOffsetAEMUFunc;
-    static glUniformLayout_proc_t glUniformLayoutFunc;
+    static glMinSampleShading_proc_t glMinSampleShadingFunc;
+    static glFramebufferTexture_proc_t glFramebufferTextureFunc;
+    static glPatchParameteri_proc_t glPatchParameteriFunc;
+    static glTexBuffer_proc_t glTexBufferFunc;
+    static glTexBufferRange_proc_t glTexBufferRangeFunc;
+    static glPrimitiveBoundingBox_proc_t glPrimitiveBoundingBoxFunc;
+    static glTexStorage3DMultisample_proc_t glTexStorage3DMultisampleFunc;
+    static glDrawElementsBaseVertexOffset_proc_t glDrawElementsBaseVertexOffsetFunc;
+    static glDrawElementsBaseVertexData_proc_t glDrawElementsBaseVertexDataFunc;
+    static glDrawElementsInstancedBaseVertexDataAEMU_proc_t glDrawElementsInstancedBaseVertexDataAEMUFunc;
+    static glDrawElementsInstancedBaseVertexOffsetAEMU_proc_t glDrawElementsInstancedBaseVertexOffsetAEMUFunc;
+    static glGetnUniformfv_proc_t glGetnUniformfvFunc;
+    static glGetnUniformiv_proc_t glGetnUniformivFunc;
+    static glGetnUniformuiv_proc_t glGetnUniformuivFunc;
+
     static void glActiveTexture_s(void *self, unsigned int texture);
     static void glAttachShader_s(void *self, GLuint program, GLuint shader);
     static void glBindAttribLocation_s(void *self, GLuint program, GLuint index, const GLchar *name);
@@ -1440,7 +1470,23 @@ public:
     static void glDrawElementsIndirectDataAEMU_s(void *self, GLenum mode, GLenum type, const void *indirect,
         GLuint datalen);
     static void glDrawElementsIndirectOffsetAEMU_s(void *self, GLenum mode, GLenum type, GLuint offset);
-    static void glUniformLayout_s(void *self, GLuint program);
+    static void glMinSampleShading_s(void *self, GLfloat);
+    static void glFramebufferTexture_s(void *self, GLenum target, GLenum attachment, GLuint texture, GLint level);
+    static void glPatchParameteri_s(void *self, GLenum pname, GLint value);
+    static void glTexBuffer_s(void *self, GLenum target, GLenum internalFormat, GLuint buffer);
+    static void glTexBufferRange_s(void *self, GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    static void glPrimitiveBoundingBox_s(void *self, GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
+    static void glTexStorage3DMultisample_s(void *self, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations);
+    static void glDrawElementsBaseVertexOffset_s(void *self, GLenum mode, GLsizei count, GLenum type, GLuint offset, GLint basevertex);
+    static void glDrawElementsBaseVertexData_s(void *self, GLenum mode, GLsizei count, GLenum type, void *data, GLuint datalen, GLint basevertex);
+    static void glDrawElementsInstancedBaseVertexDataAEMU_s(void *self, GLenum mode, GLsizei count, GLenum type,
+        const void *indices, GLsizei primcount, GLsizei datalen, GLint basevertex);
+    static void glDrawElementsInstancedBaseVertexOffsetAEMU_s(void *self, GLenum mode, GLsizei count, GLenum type, GLuint offset,
+        GLsizei primcount, GLint basevertex);
+    static void glGetnUniformfv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLfloat *params);
+    static void glGetnUniformiv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLint *params);
+    static void glGetnUniformuiv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLuint *params);
+
     glActiveTexture_client_proc_t glActiveTexture = nullptr;
     glAttachShader_client_proc_t glAttachShader = nullptr;
     glBindAttribLocation_client_proc_t glBindAttribLocation = nullptr;
@@ -1870,8 +1916,25 @@ public:
     glDrawArraysIndirectOffsetAEMU_client_proc_t glDrawArraysIndirectOffsetAEMU = nullptr;
     glDrawElementsIndirectDataAEMU_client_proc_t glDrawElementsIndirectDataAEMU = nullptr;
     glDrawElementsIndirectOffsetAEMU_client_proc_t glDrawElementsIndirectOffsetAEMU = nullptr;
-    glUniformLayout_client_proc_t glUniformLayout = nullptr;
-
+    glMinSampleShading_client_proc_t glMinSampleShading = nullptr;
+    glFramebufferTexture_client_proc_t glFramebufferTexture = nullptr;
+    glPatchParameteri_client_proc_t glPatchParameteri = nullptr;
+    glTexBuffer_client_proc_t glTexBuffer = nullptr;
+    glTexBufferRange_client_proc_t glTexBufferRange = nullptr;
+    glPrimitiveBoundingBox_client_proc_t glPrimitiveBoundingBox = nullptr;
+    glTexStorage3DMultisample_client_proc_t glTexStorage3DMultisample = nullptr;
+    glDrawElementsBaseVertex_client_proc_t glDrawElementsBaseVertex = nullptr;
+    glDrawElementsBaseVertexOffset_client_proc_t glDrawElementsBaseVertexOffset = nullptr;
+    glDrawElementsBaseVertexData_client_proc_t glDrawElementsBaseVertexData = nullptr;
+    glDrawRangeElementsBaseVertex_client_proc_t glDrawRangeElementsBaseVertex = nullptr;
+    glDrawElementsInstancedBaseVertex_client_proc_t glDrawElementsInstancedBaseVertex = nullptr;
+    glDrawElementsInstancedBaseVertexDataAEMU_client_proc_t glDrawElementsInstancedBaseVertexDataAEMU = nullptr;
+    glDrawElementsInstancedBaseVertexOffsetAEMU_client_proc_t glDrawElementsInstancedBaseVertexOffsetAEMU = nullptr;
+    glReadnPixels_client_proc_t glReadnPixels = nullptr;
+    glGetGraphicsResetStatus_client_proc_t glGetGraphicsResetStatus = nullptr;
+    glGetnUniformuiv_client_proc_t glGetnUniformuiv = nullptr;
+    glGetnUniformiv_client_proc_t glGetnUniformiv = nullptr;
+    glGetnUniformfv_client_proc_t glGetnUniformfv = nullptr;
 private:
     static bool m_isInit;
     uint32_t m_GLESv2Encoder = 0;

@@ -25,52 +25,32 @@
 #include <string>
 #include <memory>
 #include <mutex>
+#include "cutils/native_handle.h"
 
 class GLEncoder;
 struct gl_client_context_t;
 class GL2Encoder;
 struct gl2_client_context_t;
 
-// SyncImpl determines the presence of host/guest OpenGL fence sync
-// capabilities. It corresponds exactly to EGL_ANDROID_native_fence_sync
-// capability, but for the emulator, we need to make sure that
-// OpenGL pipe protocols match, so we use a special extension name
-// here.
-// SYNC_IMPL_NONE means that the native fence sync capability is
-// not present, and we will end up using the equivalent of glFinish
-// in order to preserve buffer swapping order.
-// SYNC_IMPL_NATIVE_SYNC means that we do have native fence sync
-// capability, and we will use a fence fd to synchronize buffer swaps.
-// enum SyncImpl {
-//     SYNC_IMPL_NONE = 0,
-//     SYNC_IMPL_NATIVE_SYNC_V2 = 1,
-//     SYNC_IMPL_NATIVE_SYNC_V3 = 2,
-// };
-
-// Interface:
-// Use the highest of v2 or v3 that show up, making us
-// SYNC_IMPL_NATIVE_SYNC_V2 or SYNC_IMPL_NATIVE_SYNC_V3.
-static const char kRCNativeSyncV2[] = "ANDROID_EMU_native_sync_v2";
-static const char kRCNativeSyncV3[] = "ANDROID_EMU_native_sync_v3";
-
-// DMA for OpenGL
-enum DmaImpl {
-    DMA_IMPL_NONE = 0,
-    DMA_IMPL_v1 = 1,
-};
-
-static const char kDmaExtStr_v1[] = "ANDROID_EMU_dma_v1";
-static const char kGLESMaxVersion_2[] = "ANDROID_EMU_gles_max_version_2";
-static const char kGLESMaxVersion_3_0[] = "ANDROID_EMU_gles_max_version_3_0";
-static const char kGLESMaxVersion_3_1[] = "ANDROID_EMU_gles_max_version_3_1";
-static const char kGLESMaxVersion_3_2[] = "ANDROID_EMU_gles_max_version_3_2";
-
-// No querying errors from host extension
-static const char kGLESNoHostError[] = "ANDROID_EMU_gles_no_host_error";
+namespace goldfish_vk {
+class VkEncoder;
+}
 
 typedef uint32_t (*GetStreamFunc)();
 typedef void (*ReleaseStreamFunc)(uint32_t streamHandle);
 typedef void (*WaitRebuildStateMachineFunc)(uint32_t streamHandle);
+
+// DMA for OpenGL
+class Gralloc {
+public:
+    virtual uint32_t createColorBuffer(
+        ExtendedRCEncoderContext* rcEnc, int width, int height, uint32_t glformat) = 0;
+    virtual uint32_t getHostHandle(native_handle_t const* handle) = 0;
+    virtual int getFormat(native_handle_t const* handle) = 0;
+    virtual size_t getAllocatedSize(native_handle_t const* handle) = 0;
+    virtual ~Gralloc() {}
+};
+
 
 struct EGLThreadInfo;
 
@@ -88,8 +68,10 @@ public:
     static WaitRebuildStateMachineFunc waitRebuildStateMachine;
     GLEncoder *glEncoder();
     GL2Encoder *gl2Encoder();
+    goldfish_vk::VkEncoder *vkEncoder();
     ExtendedRCEncoderContext *rcEncoder();
     ChecksumCalculator *checksumHelper() { return &m_checksumHelper; }
+	Gralloc *grallocHelper() { return m_grallocHelper; }
 
     void setGrallocOnly(bool gralloc_only) {
         m_grallocOnly = gralloc_only;
@@ -117,8 +99,10 @@ private:
     uint32_t m_streamHandle;
     GLEncoder   *m_glEnc;
     GL2Encoder  *m_gl2Enc;
+    goldfish_vk::VkEncoder  *m_vkEnc;
     ExtendedRCEncoderContext *m_rcEnc;
     ChecksumCalculator m_checksumHelper;
+	Gralloc *m_grallocHelper;
     std::string m_glExtensions;
     bool m_grallocOnly;
     int m_pipeFd;

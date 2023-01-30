@@ -369,6 +369,8 @@ void GLClientState::unBindBuffer(GLuint id) {
         m_drawIndirectBuffer = 0;
     if (m_shaderStorageBuffer == id)
         m_shaderStorageBuffer = 0;
+    if (m_textureBuffer == id)
+        m_textureBuffer = 0;
 
     sClearIndexedBufferBinding(id, m_indexedTransformFeedbackBuffers);
     sClearIndexedBufferBinding(id, m_indexedUniformBuffers);
@@ -416,6 +418,9 @@ int GLClientState::bindBuffer(GLenum target, GLuint id)
         break;
     case GL_SHADER_STORAGE_BUFFER:
         m_shaderStorageBuffer = id;
+        break;
+    case GL_TEXTURE_BUFFER:
+        m_textureBuffer = id;
         break;
     default:
         err = -1;
@@ -512,6 +517,9 @@ int GLClientState::getBuffer(GLenum target) {
             break;
         case GL_SHADER_STORAGE_BUFFER:
             ret = m_shaderStorageBuffer;
+            break;
+        case GL_TEXTURE_BUFFER:
+            ret = m_textureBuffer;
             break;
         default:
             ret = -1;
@@ -825,6 +833,9 @@ GLenum GLClientState::bindTexture(GLenum target, GLuint texture,
     case GL_TEXTURE_2D_MULTISAMPLE:
         m_tex.activeUnit->texture[TEXTURE_2D_MULTISAMPLE] = texture;
         break;
+    case GL_TEXTURE_CUBE_MAP_ARRAY:
+        m_tex.activeUnit->texture[TEXTURE_CUBE_MAP_ARRAY] = texture;
+        break;
     }
 
     if (firstUse) {
@@ -962,6 +973,8 @@ GLuint GLClientState::getBoundTexture(GLenum target) const
         return m_tex.activeUnit->texture[TEXTURE_3D];
     case GL_TEXTURE_2D_MULTISAMPLE:
         return m_tex.activeUnit->texture[TEXTURE_2D_MULTISAMPLE];
+    case GL_TEXTURE_CUBE_MAP_ARRAY:
+        return m_tex.activeUnit->texture[TEXTURE_CUBE_MAP_ARRAY];
     default:
         return 0;
     }

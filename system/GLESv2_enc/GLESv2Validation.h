@@ -70,7 +70,7 @@ bool isCubeMapTarget(GLenum target);
 bool pixelType(GL2Encoder* ctx, GLenum type);
 bool pixelFormat(GL2Encoder* ctx, GLenum format);
 
-bool pixelInternalFormat(GLenum internalformat);
+bool pixelInternalFormat(GL2Encoder* ctx, GLenum internalformat);
 
 bool shaderType(GL2Encoder* ctx, GLenum type);
 

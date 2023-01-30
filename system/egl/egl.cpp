@@ -1482,7 +1482,7 @@ EGLBoolean eglBindTexImage(EGLDisplay dpy, EGLSurface eglSurface, EGLint buffer)
     egl_pbuffer_surface_t* pbSurface = (egl_pbuffer_surface_t*)surface;
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc), pbSurface->getRcColorBuffer());
+    rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc), pbSurface->getRcColorBuffer(), 0);
 
     return GL_TRUE;
 }
@@ -1727,8 +1727,6 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     // thread can suddenly jump in any eglMakeCurrent
     setTlsDestructor((tlsDtorCallback)s_eglReleaseThreadImpl);
 
-    if ((read == EGL_NO_SURFACE && draw == EGL_NO_SURFACE) && (ctx != EGL_NO_CONTEXT))
-        setErrorReturn(EGL_BAD_MATCH, EGL_FALSE);
     if ((read != EGL_NO_SURFACE || draw != EGL_NO_SURFACE) && (ctx == EGL_NO_CONTEXT))
         setErrorReturn(EGL_BAD_MATCH, EGL_FALSE);
 
@@ -1763,6 +1761,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
 
         if (prevCtx->deletePending && prevCtx != context) {
             tInfo->currentContext = 0;
+	    prevCtx->flags = EGLContext_t::NEVER_CURRENT;
             eglDestroyContext(dpy, prevCtx);
         }
     }
@@ -1976,14 +1975,6 @@ EGLBoolean eglWaitGL()
     if (!tInfo || !tInfo->currentContext) {
         return EGL_FALSE;
     }
-
-    if (tInfo->currentContext->majorVersion > 1) {
-        s_display.gles2_iface()->finish();
-    }
-    else {
-        s_display.gles_iface()->finish();
-    }
-
     return EGL_TRUE;
 }
 

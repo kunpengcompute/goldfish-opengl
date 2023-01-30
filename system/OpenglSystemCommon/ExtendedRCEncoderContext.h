@@ -23,20 +23,7 @@
 #include <string>
 #include <memory>
 #include <mutex>
-
-enum SyncImpl {
-    SYNC_IMPL_NONE = 0,
-    SYNC_IMPL_NATIVE_SYNC_V2 = 1,
-    SYNC_IMPL_NATIVE_SYNC_V3 = 2,
-};
-
-// OpenGL ES max supported version 	19
-enum GLESMaxVersion {
-    GLES_MAX_VERSION_2 = 0,
-    GLES_MAX_VERSION_3_0 = 1,
-    GLES_MAX_VERSION_3_1 = 2,
-    GLES_MAX_VERSION_3_2 = 3,
-};
+#include "EmulatorFeatureInfo.h"
 
 typedef void (*setGLESMaxVersion_proc_t)(uint32_t handle, GLESMaxVersion ver);
 typedef GLESMaxVersion (*getGLESMaxVersion_proc_t)(uint32_t handle);
@@ -65,7 +52,7 @@ typedef int (*rcFlushWindowColorBuffer_proc_t) (uint32_t handle, uint32_t, EGLin
 typedef EGLint (*rcMakeCurrent_proc_t) (uint32_t handle, uint32_t, uint32_t, uint32_t);
 typedef void (*rcFBPost_proc_t) (uint32_t handle, uint32_t);
 typedef void (*rcFBSetSwapInterval_proc_t) (uint32_t handle, EGLint);
-typedef void (*rcBindTexture_proc_t) (uint32_t handle, uint32_t);
+typedef void (*rcBindTexture_proc_t) (uint32_t handle, uint32_t, uint32_t);
 typedef void (*rcBindRenderbuffer_proc_t) (uint32_t handle, uint32_t);
 typedef EGLint (*rcColorBufferCacheFlush_proc_t) (uint32_t handle, uint32_t, EGLint, int);
 typedef void (*rcReadColorBuffer_proc_t) (uint32_t handle, uint32_t, GLint, GLint, GLint, GLint, GLenum, GLenum, void*);
@@ -92,6 +79,31 @@ public:
     uint32_t GetRenderControlEncoder(void *self);
     bool CreateVmiRenderControlEncoder(uint32_t stream);
     void DeleteVmiRenderControlEncoder();
+
+    //void setSyncImpl(SyncImpl syncImpl) { m_featureInfo.syncImpl = syncImpl; }
+    void setDmaImpl(DmaImpl dmaImpl) { m_featureInfo.dmaImpl = dmaImpl; }
+    void setHostComposition(HostComposition hostComposition) {
+        m_featureInfo.hostComposition = hostComposition; }
+    //bool hasNativeSync() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V2; }
+    //bool hasNativeSyncV3() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V3; }
+    bool hasNativeSyncV4() const { return m_featureInfo.syncImpl >= SYNC_IMPL_NATIVE_SYNC_V4; }
+    bool hasHostCompositionV1() const {
+        return m_featureInfo.hostComposition == HOST_COMPOSITION_V1; }
+    bool hasHostCompositionV2() const {
+        return m_featureInfo.hostComposition == HOST_COMPOSITION_V2; }
+    bool hasYUVCache() const {
+        return m_featureInfo.hasYUVCache; }
+    bool hasAsyncUnmapBuffer() const {
+        return m_featureInfo.hasAsyncUnmapBuffer; }
+    DmaImpl getDmaVersion() const { return m_featureInfo.dmaImpl; }
+    //void setGLESMaxVersion(GLESMaxVersion ver) { m_featureInfo.glesMaxVersion = ver; }
+    //GLESMaxVersion getGLESMaxVersion() const { return m_featureInfo.glesMaxVersion; }
+    bool hasDirectMem() const {
+        return m_featureInfo.hasDirectMem;
+    }
+    const EmulatorFeatureInfo* featureInfo_const() const { return &m_featureInfo; }
+    EmulatorFeatureInfo* featureInfo() { return &m_featureInfo; }
+
 public:
     rcGetRendererVersion_proc_t rcGetRendererVersion;
     rcGetEGLVersion_proc_t rcGetEGLVersion;
@@ -141,6 +153,7 @@ private:
     uint32_t m_renderControlWrap = 0;
     static void *m_implLib;
     static std::mutex m_lock;
+    EmulatorFeatureInfo m_featureInfo;
 };
 
 #endif

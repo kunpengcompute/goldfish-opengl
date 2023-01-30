@@ -1,7 +1,9 @@
 #!/bin/bash
 # goldfish opengl build sh
+# Copyright © Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
 
 cur_file_path=$(cd $(dirname "${0}");pwd)
+cd "${cur_file_path}"
 
 error()
 {
@@ -32,19 +34,35 @@ goldfish_opengl_so_list=(
     vendor/lib64/libGLESv2_enc.so
     vendor/lib/libRenderControl_enc.so
     vendor/lib64/libRenderControl_enc.so
+    vendor/lib/hw/vulkan.radv.so
+    vendor/lib64/hw/vulkan.radv.so
+    vendor/lib/libvulkan_enc.so
+    vendor/lib64/libvulkan_enc.so
+    vendor/lib/libandroidemu.so
+    vendor/lib64/libandroidemu.so
 )
 
-setup_env()
+android9_link()
 {
-    export TOP=${AN_AOSPDIR}
-    export OUT_DIR=${AN_AOSPDIR}/out
-    export ANDROID_BUILD_TOP=${AN_AOSPDIR}
     cd ..
     rm -rf ${AN_AOSPDIR}/${android_goldfish_opengl_source_dirs}
     [ ${?} != 0 ] && error "Failed to clean link ${android_goldfish_opengl_source_dirs}" && return -1
     ln -vs ${cur_file_path} ${AN_AOSPDIR}
     [ ${?} != 0 ] && error "Failed to link ${link_dir} to ${AN_AOSPDIR}" && return -1
     cd -
+}
+
+setup_env()
+{
+    export TOP=${AN_AOSPDIR}
+    export OUT_DIR=${AN_AOSPDIR}/out
+    export ANDROID_BUILD_TOP=${AN_AOSPDIR}
+    if [ -z "${ANDROID_VERSION}" ];then
+        android9_link
+    else
+        [ ! -d ${AN_AOSPDIR}/VMIEngine/unpack_open_source ] && mkdir -p ${AN_AOSPDIR}/VMIEngine/unpack_open_source
+        rsync -azr --delete --exclude=".git" ${cur_file_path} ${AN_AOSPDIR}/VMIEngine/unpack_open_source
+    fi
 }
 
 package()
@@ -92,7 +110,10 @@ inc()
     cd ${AN_AOSPDIR}
     source build/envsetup.sh
     lunch aosp_arm64-eng
-    mmm ${android_goldfish_opengl_source_dirs} showcommands -j
+    if [ ! -z "${ANDROID_VERSION}" ];then
+        cd VMIEngine/unpack_open_source
+    fi
+    mmm ${android_goldfish_opengl_source_dirs} -j
     [ ${?} != 0 ] && error "Failed to incremental compile ${android_mesa_source_dirs}" && return -1
     cd -
     package
@@ -106,5 +127,7 @@ build()
 ACTION=$1; shift
 case "$ACTION" in
     build) build "$@";;
+    clean) clean "$@";;
+	inc) inc "$@";;
     *) error "input command[$ACTION] not support.";;
 esac

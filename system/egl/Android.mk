@@ -33,6 +33,7 @@ endif
 
 # Used to access the Bionic private OpenGL TLS slot
 LOCAL_C_INCLUDES += bionic/libc/private
+LOCAL_C_INCLUDES += bionic/libc
 
 $(call emugl-end-module)
 

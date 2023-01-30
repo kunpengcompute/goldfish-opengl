@@ -20,6 +20,13 @@
 #include "QemuPipeStream.h"
 #include "ThreadInfo.h"
 #include <cutils/log.h>
+#include "../../shared/gralloc_cb/include/gralloc_cb_bp.h"
+#include "../../system/vulkan_enc/VkEncoder.h"
+#include "../../system/vulkan_enc/SipcStream.h"
+#include "AddressSpaceStream.h"
+
+#include "gralloc_cb.h"
+using goldfish_vk::VkEncoder;
 
 #define STREAM_BUFFER_SIZE  (4*1024*1024)
 #define STREAM_PORT_NUM     22468
@@ -34,16 +41,76 @@ bool HostConnection::m_streamLoaded = false;
 std::mutex HostConnection::m_loaderLock {};
 std::unique_ptr<LoadSharedLib> HostConnection::m_loader = nullptr;
 
+class GoldfishGralloc : public Gralloc
+{
+public:
+    virtual uint32_t createColorBuffer(
+        ExtendedRCEncoderContext* rcEnc,
+        int width, int height, uint32_t glformat) {
+
+        GLenum type = GL_UNSIGNED_BYTE;
+        int32_t format = HAL_PIXEL_FORMAT_RGBA_8888;
+        switch (glformat) {
+            case GL_RGB:
+            case GL_RGB565_OES: {
+                format = HAL_PIXEL_FORMAT_RGBA_8888;
+                break;
+            }
+
+            case GL_RGBA:
+            case GL_RGB5_A1_OES:
+            case GL_RGBA4_OES: {
+                format = HAL_PIXEL_FORMAT_RGBA_8888;
+                break;
+            }
+
+            default: {
+                format = HAL_PIXEL_FORMAT_RGBA_8888;
+            }
+        }
+
+        return rcEnc->rcCreateColorBuffer(
+            rcEnc->GetRenderControlEncoder(rcEnc), width, height, glformat, type, format);
+    }
+
+    virtual uint32_t getHostHandle(native_handle_t const* handle)
+    {
+        // Current Gralloc module alloc cb_handle_t buffer, not cb_handle_t_v11.
+        // Should used cb_handle_t_v11::from(handle) to convert with struct cb_handle_t_v11
+        const cb_handle_t* cb = static_cast<const cb_handle_t*>(handle);
+        return cb->hostHandle;
+    }
+
+    virtual int getFormat(native_handle_t const* handle)
+    {
+        // Current Gralloc module alloc cb_handle_t buffer, not cb_handle_t_v11.
+        // Should used cb_handle_t_v11::from(handle) to convert with struct cb_handle_t_v11
+        const cb_handle_t* cb = static_cast<const cb_handle_t*>(handle);
+        return cb->format;
+    }
+
+    virtual size_t getAllocatedSize(native_handle_t const* handle)
+    {
+        // Current Gralloc module alloc cb_handle_t buffer, not cb_handle_t_v11.
+        // Should used cb_handle_t_v11::from(handle) to convert with struct cb_handle_t_v11
+        const cb_handle_t* cb = static_cast<const cb_handle_t*>(handle);
+        return cb->ashmemSize;
+    }
+};
+static GoldfishGralloc m_goldfishGralloc;
+
 HostConnection::HostConnection() :
     m_streamHandle(0),
     m_glEnc(NULL),
     m_gl2Enc(NULL),
+    m_vkEnc(NULL),
     m_rcEnc(NULL),
     m_checksumHelper(),
     m_glExtensions(),
     m_grallocOnly(true),
     m_noHostError(false),
-    m_iostream(NULL)
+    m_iostream(NULL),
+    m_grallocHelper(&m_goldfishGralloc)
 {
 }
 
@@ -143,6 +210,16 @@ GL2Encoder *HostConnection::gl2Encoder()
     }
     waitRebuildStateMachine(m_streamHandle);
     return m_gl2Enc;
+}
+
+VkEncoder *HostConnection::vkEncoder()
+{
+    if (!m_vkEnc) {
+        // 8MB is enough for send buffer, Avoid subsequent buffer reallocations
+        SipcStream* ioStream = new SipcStream(8 * 1024 * 1024);
+        m_vkEnc = new VkEncoder(ioStream);
+    }
+    return m_vkEnc;
 }
 
 ExtendedRCEncoderContext *HostConnection::rcEncoder()

@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
  * Description:  GL2Encoder base class.
  */
 #define LOG_TAG "GL2EncoderBase"
@@ -442,7 +443,20 @@ glDrawArraysIndirectDataAEMU_proc_t GL2EncoderBase::glDrawArraysIndirectDataAEMU
 glDrawArraysIndirectOffsetAEMU_proc_t GL2EncoderBase::glDrawArraysIndirectOffsetAEMUFunc = nullptr;
 glDrawElementsIndirectDataAEMU_proc_t GL2EncoderBase::glDrawElementsIndirectDataAEMUFunc = nullptr;
 glDrawElementsIndirectOffsetAEMU_proc_t GL2EncoderBase::glDrawElementsIndirectOffsetAEMUFunc = nullptr;
-glUniformLayout_proc_t GL2EncoderBase::glUniformLayoutFunc = nullptr;
+glMinSampleShading_proc_t GL2EncoderBase::glMinSampleShadingFunc = nullptr;
+glFramebufferTexture_proc_t GL2EncoderBase::glFramebufferTextureFunc = nullptr;
+glPatchParameteri_proc_t GL2EncoderBase::glPatchParameteriFunc = nullptr;
+glTexBuffer_proc_t GL2EncoderBase::glTexBufferFunc = nullptr;
+glTexBufferRange_proc_t GL2EncoderBase::glTexBufferRangeFunc = nullptr;
+glPrimitiveBoundingBox_proc_t GL2EncoderBase::glPrimitiveBoundingBoxFunc = nullptr;
+glTexStorage3DMultisample_proc_t GL2EncoderBase::glTexStorage3DMultisampleFunc = nullptr;
+glDrawElementsBaseVertexOffset_proc_t GL2EncoderBase::glDrawElementsBaseVertexOffsetFunc = nullptr;
+glDrawElementsBaseVertexData_proc_t GL2EncoderBase::glDrawElementsBaseVertexDataFunc = nullptr;
+glDrawElementsInstancedBaseVertexDataAEMU_proc_t GL2EncoderBase::glDrawElementsInstancedBaseVertexDataAEMUFunc = nullptr;
+glDrawElementsInstancedBaseVertexOffsetAEMU_proc_t GL2EncoderBase::glDrawElementsInstancedBaseVertexOffsetAEMUFunc = nullptr;
+glGetnUniformfv_proc_t GL2EncoderBase::glGetnUniformfvFunc = nullptr;
+glGetnUniformiv_proc_t GL2EncoderBase::glGetnUniformivFunc = nullptr;
+glGetnUniformuiv_proc_t GL2EncoderBase::glGetnUniformuivFunc = nullptr;
 bool GL2EncoderBase::m_isInit = false;
 std::mutex GL2EncoderBase::m_lock {};
 std::unique_ptr<LoadSharedLib> GL2EncoderBase::m_loader = nullptr;
@@ -878,7 +892,20 @@ GL2EncoderBase::GL2EncoderBase()
     glDrawArraysIndirectOffsetAEMU = glDrawArraysIndirectOffsetAEMU_s;
     glDrawElementsIndirectDataAEMU = glDrawElementsIndirectDataAEMU_s;
     glDrawElementsIndirectOffsetAEMU = glDrawElementsIndirectOffsetAEMU_s;
-    glUniformLayout = glUniformLayout_s;
+    glMinSampleShading = glMinSampleShading_s;
+    glFramebufferTexture = glFramebufferTexture_s;
+    glPatchParameteri = glPatchParameteri_s;
+    glTexBuffer = glTexBuffer_s;
+    glTexBufferRange = glTexBufferRange_s;
+    glPrimitiveBoundingBox = glPrimitiveBoundingBox_s;
+    glTexStorage3DMultisample = glTexStorage3DMultisample_s;
+    glDrawElementsBaseVertexOffset = glDrawElementsBaseVertexOffset_s;
+    glDrawElementsBaseVertexData = glDrawElementsBaseVertexData_s;
+    glDrawElementsInstancedBaseVertexDataAEMU = glDrawElementsInstancedBaseVertexDataAEMU_s;
+    glDrawElementsInstancedBaseVertexOffsetAEMU = glDrawElementsInstancedBaseVertexOffsetAEMU_s;
+    glGetnUniformfv = glGetnUniformfv_s;
+    glGetnUniformiv = glGetnUniformiv_s;
+    glGetnUniformuiv = glGetnUniformuiv_s;
     InitGLESv2Export();
 }
 
@@ -1472,7 +1499,20 @@ bool GL2EncoderBase::InitGLESv2Export()
         reinterpret_cast<decltype(glDrawElementsIndirectDataAEMUFunc)>(func("VmiGlDrawElementsIndirectDataAEMU"));
     glDrawElementsIndirectOffsetAEMUFunc =
         reinterpret_cast<decltype(glDrawElementsIndirectOffsetAEMUFunc)>(func("VmiGlDrawElementsIndirectOffsetAEMU"));
-    glUniformLayoutFunc = reinterpret_cast<decltype(glUniformLayoutFunc)>(func("VmiGlUniformLayout"));
+    glMinSampleShadingFunc = reinterpret_cast<decltype(glMinSampleShadingFunc)>(func("VmiGlMinSampleShading"));
+    glFramebufferTextureFunc = reinterpret_cast<decltype(glFramebufferTextureFunc)>(func("VmiGlFramebufferTexture"));
+    glPatchParameteriFunc = reinterpret_cast<decltype(glPatchParameteriFunc)>(func("VmiGlPatchParameteri"));
+    glTexBufferFunc = reinterpret_cast<decltype(glTexBufferFunc)>(func("VmiGlTexBuffer"));
+    glTexBufferRangeFunc = reinterpret_cast<decltype(glTexBufferRangeFunc)>(func("VmiTexBufferRange"));
+    glPrimitiveBoundingBoxFunc = reinterpret_cast<decltype(glPrimitiveBoundingBoxFunc)>(func("VmiGlPrimitiveBoundingBox"));
+    glTexStorage3DMultisampleFunc = reinterpret_cast<decltype(glTexStorage3DMultisampleFunc)>(func("VmiGlTexStorage3DMultisample"));
+    glDrawElementsBaseVertexOffsetFunc = reinterpret_cast<decltype(glDrawElementsBaseVertexOffsetFunc)>(func("VmiGlDrawElementsBaseVertexOffset"));
+    glDrawElementsBaseVertexDataFunc = reinterpret_cast<decltype(glDrawElementsBaseVertexDataFunc)>(func("VmiGlDrawElementsBaseVertexData"));
+    glDrawElementsInstancedBaseVertexDataAEMUFunc = reinterpret_cast<decltype(glDrawElementsInstancedBaseVertexDataAEMUFunc)>(func("VmiGlDrawElementsInstancedBaseVertexDataAEMU"));
+    glDrawElementsInstancedBaseVertexOffsetAEMUFunc = reinterpret_cast<decltype(glDrawElementsInstancedBaseVertexOffsetAEMUFunc)>(func("VmiGlDrawElementsInstancedBaseVertexOffsetAEMU"));
+    glGetnUniformfvFunc = reinterpret_cast<decltype(glGetnUniformfvFunc)>(func("VmiGlGetnUniformfv"));
+    glGetnUniformivFunc = reinterpret_cast<decltype(glGetnUniformivFunc)>(func("VmiGlGetnUniformiv"));
+    glGetnUniformuivFunc = reinterpret_cast<decltype(glGetnUniformuivFunc)>(func("VmiGlGetnUniformuiv"));
     m_isInit = true;
     ALOGD("GL2EncoderBase::InitGLESv2Export success!");
     return true;
@@ -4269,8 +4309,90 @@ void GL2EncoderBase::glDrawElementsIndirectOffsetAEMU_s(void *self, GLenum mode,
     ctx->glDrawElementsIndirectOffsetAEMUFunc(ctx->GetGLESv2Encoder(self), mode, type, offset);
 }
 
-void GL2EncoderBase::glUniformLayout_s(void *self, GLuint program)
+void GL2EncoderBase::glMinSampleShading_s(void *self, GLfloat value)
 {
     GET_CONTEXT;
-    ctx->glUniformLayoutFunc(ctx->GetGLESv2Encoder(self), program);
+    ctx->glMinSampleShadingFunc(ctx->GetGLESv2Encoder(self), value);
+}
+
+void GL2EncoderBase::glFramebufferTexture_s(void * self, GLenum target, GLenum attachment, GLuint texture, GLint level)
+{
+    GET_CONTEXT;
+    ctx->glFramebufferTextureFunc(ctx->GetGLESv2Encoder(self), target, attachment, texture, level);
+}
+
+void GL2EncoderBase::glPatchParameteri_s(void *self, GLenum pname, GLint value)
+{
+    GET_CONTEXT;
+    ctx->glPatchParameteriFunc(ctx->GetGLESv2Encoder(self), pname, value);
+}
+
+void GL2EncoderBase::glTexBuffer_s(void *self, GLenum target, GLenum internalFormat, GLuint buffer)
+{
+    GET_CONTEXT;
+    ctx->glTexBufferFunc(ctx->GetGLESv2Encoder(self), target, internalFormat, buffer);
+}
+
+void GL2EncoderBase::glTexBufferRange_s(void *self, GLenum target, GLenum internalFormat, GLuint buffer, GLintptr offset, GLsizeiptr size)
+{
+    GET_CONTEXT;
+    ctx->glTexBufferRangeFunc(ctx->GetGLESv2Encoder(self), target, internalFormat, buffer, offset, size);
+}
+
+void GL2EncoderBase::glPrimitiveBoundingBox_s(void *self, GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW)
+{
+    GET_CONTEXT;
+    ctx->glPrimitiveBoundingBoxFunc(ctx->GetGLESv2Encoder(self), minX, minY, minZ, minW, maxX, maxY, maxZ, maxW);
+}
+
+void GL2EncoderBase::glTexStorage3DMultisample_s(void *self, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
+{
+    GET_CONTEXT;
+    ctx->glTexStorage3DMultisampleFunc(ctx->GetGLESv2Encoder(self), target, samples, internalformat, width, height, depth, fixedsamplelocations);
+}
+
+void GL2EncoderBase::glDrawElementsBaseVertexOffset_s(void *self, GLenum mode, GLsizei count, GLenum type, GLuint offset, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsBaseVertexOffsetFunc(ctx->GetGLESv2Encoder(self), mode, count, type, offset, basevertex);
+}
+
+void GL2EncoderBase::glDrawElementsBaseVertexData_s(void *self, GLenum mode, GLsizei count, GLenum type, void *data, GLuint datalen, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsBaseVertexDataFunc(ctx->GetGLESv2Encoder(self), mode, count, type, data, datalen, basevertex);
+}
+
+void GL2EncoderBase::glDrawElementsInstancedBaseVertexDataAEMU_s(void *self, GLenum mode, GLsizei count, GLenum type,
+    const void *indices, GLsizei primcount, GLsizei datalen, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsInstancedBaseVertexDataAEMUFunc(ctx->GetGLESv2Encoder(self), mode, count, type,
+        indices, primcount, datalen, basevertex);
+}
+
+void GL2EncoderBase::glDrawElementsInstancedBaseVertexOffsetAEMU_s(void *self, GLenum mode, GLsizei count, GLenum type, GLuint offset,
+    GLsizei primcount, GLint basevertex)
+{
+    GET_CONTEXT;
+    ctx->glDrawElementsInstancedBaseVertexOffsetAEMUFunc(ctx->GetGLESv2Encoder(self), mode, count, type,
+        offset, primcount, basevertex);
+}
+
+void GL2EncoderBase::glGetnUniformfv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLfloat *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformfvFunc(ctx->GetGLESv2Encoder(self), program, location, bufSize, params);
+}
+
+void GL2EncoderBase::glGetnUniformiv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLint *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformivFunc(ctx->GetGLESv2Encoder(self), program, location, bufSize, params);
+}
+
+void GL2EncoderBase::glGetnUniformuiv_s(void *self, GLuint program, GLint location, GLsizei bufSize, GLuint *params)
+{
+    GET_CONTEXT;
+    ctx->glGetnUniformuivFunc(ctx->GetGLESv2Encoder(self), program, location, bufSize, params);
 }

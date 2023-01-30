@@ -48,7 +48,11 @@ bool bufferTarget(GL2Encoder* ctx, GLenum target) {
     case GL_DRAW_INDIRECT_BUFFER: // Indirect command arguments
     case GL_SHADER_STORAGE_BUFFER: // Read-write storage for shaders
         return glesMajorVersion >= 3 && glesMinorVersion >= 1;
+    case GL_TEXTURE_BUFFER:
+        return (glesMajorVersion >= 3 && glesMinorVersion >= 2) ||
+            ctx->hasExtension("GL_EXT_texture_buffer");
     default:
+        ALOGE("Buffer target error:%#x", target);
         return false;
     }
 }
@@ -66,6 +70,7 @@ bool bufferParam(GL2Encoder* ctx, GLenum pname) {
     case GL_BUFFER_MAP_OFFSET:
         return glesMajorVersion >= 3;
     default:
+        ALOGE("Buffer param error:%#x", pname);
         return false;
     }
 }
@@ -86,6 +91,7 @@ bool pixelStoreParam(GL2Encoder* ctx, GLenum param) {
     case GL_PACK_SKIP_ROWS:
         return glesMajorVersion >= 3;
     default:
+        ALOGE("Pixel store param error:%#x", param);
         return false;
     }
 }
@@ -105,6 +111,7 @@ bool pixelStoreValue(GLenum param, GLint value) {
     case GL_PACK_SKIP_ROWS:
         return value >= 0;
     default:
+        ALOGE("Pixel storeValue error:%#x", param);
         return false;
     }
 }
@@ -181,6 +188,7 @@ bool rboFormat(GL2Encoder* ctx, GLenum internalformat) {
         // Everything else: still not OK,
         // and they need the GL_INVALID_ENUM
     }
+    ALOGE("RBO format error:%#x", internalformat);
     return false;
 }
 
@@ -193,6 +201,7 @@ bool framebufferTarget(GL2Encoder* ctx, GLenum target) {
     case GL_READ_FRAMEBUFFER:
         return glesMajorVersion >= 3;
     }
+    ALOGE("Framebuffer target error:%#x", target);
     return false;
 }
 
@@ -221,6 +230,7 @@ bool framebufferAttachment(GL2Encoder* ctx, GLenum attachment) {
     case GL_DEPTH_STENCIL_ATTACHMENT:
         return glesMajorVersion >= 3;
     }
+    ALOGE("Framebuffer attachment error:%#x", attachment);
     return false;
 }
 
@@ -239,6 +249,7 @@ bool readPixelsFormat(GLenum format) {
     case GL_ALPHA:
         return true;
     }
+    ALOGE("Read pixels format error:%#x", format);
     return false;
 }
 
@@ -258,6 +269,7 @@ bool readPixelsType(GLenum format) {
     case GL_UNSIGNED_INT_5_9_9_9_REV:
         return true;
     }
+    ALOGE("Read pixels type error:%#x", format);
     return false;
 }
 
@@ -284,6 +296,9 @@ bool vertexAttribType(GL2Encoder* ctx, GLenum type)
     case GL_INT_2_10_10_10_REV:
     case GL_UNSIGNED_INT_2_10_10_10_REV:
         retval = glesMajorVersion >= 3;
+        break;
+    default:
+        ALOGE("Vertex attrib type error:%#x", type);
         break;
     }
     return retval;
@@ -348,9 +363,20 @@ bool textureTarget(GL2Encoder* ctx, GLenum target) {
     case GL_TEXTURE_3D:
         return glesMajorVersion >= 3;
     case GL_TEXTURE_2D_MULTISAMPLE:
-        return glesMajorVersion >= 3 &&
-               glesMinorVersion >= 1;
+    case GL_TEXTURE_CUBE_MAP_ARRAY:
+        return (glesMajorVersion >= 3 &&
+                glesMinorVersion >= 2) ||
+                ctx->hasExtension("GL_EXT_texture_cube_map_array");
+    case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+        return (glesMajorVersion >= 3 &&
+                glesMinorVersion >= 2) ||
+                ctx->hasExtension("GL_OES_texture_storage_multisample_2d_array");
+    case GL_TEXTURE_BUFFER:
+        return (glesMajorVersion >= 3 &&
+                glesMinorVersion >= 2) ||
+                ctx->hasExtension("GL_EXT_texture_buffer");
     default:
+        ALOGE("Texture target error:%#x", target);
         break;
     }
     return false;
@@ -695,6 +721,7 @@ bool pixelType(GL2Encoder* ctx, GLenum type) {
         case GL_FLOAT:
             return true;
         }
+        ALOGE("Pixel type error:%#x", type);
         return false;
     }
 
@@ -713,6 +740,7 @@ bool pixelType(GL2Encoder* ctx, GLenum type) {
 
 bool pixelFormat(GL2Encoder* ctx, GLenum format) {
     int glesMajorVersion = ctx->majorVersion();
+    int glesMinorVersion = ctx->minorVersion();
     if (glesMajorVersion < 3) {
         switch (format) {
             case GL_DEPTH_COMPONENT:
@@ -738,9 +766,13 @@ bool pixelFormat(GL2Encoder* ctx, GLenum format) {
     switch (format) {
         LIST_VALID_TEXFORMATS(GLES3_FORMAT_CASE)
             return glesMajorVersion >= 3;
+        case GL_STENCIL_INDEX:
+            return (glesMajorVersion >= 3 && glesMinorVersion >= 2) ||
+                ctx->hasExtension("GL_OES_texture_stencil8");
         default:
             break;
     }
+    ALOGE("Pixel format error:%#x", format);
     return false;
 }
 #define LIST_VALID_TEX_INTERNALFORMATS(f) \
@@ -843,16 +875,22 @@ bool pixelFormat(GL2Encoder* ctx, GLenum format) {
     f(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT) \
     f(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT) \
 
-bool pixelInternalFormat(GLenum internalformat) {
+bool pixelInternalFormat(GL2Encoder* ctx, GLenum internalformat) {
+    int glesMajorVersion = ctx->majorVersion();
+    int glesMinorVersion = ctx->minorVersion();
 #define VALID_INTERNAL_FORMAT(format) \
     case format: \
         return true; \
 
     switch (internalformat) {
     LIST_VALID_TEX_INTERNALFORMATS(VALID_INTERNAL_FORMAT)
+    case GL_STENCIL_INDEX8:
+        return (glesMajorVersion >= 3 && glesMinorVersion >= 2) ||
+            ctx->hasExtension("GL_OES_texture_stencil8");
     default:
         break;
     }
+    ALOGE("Pixel internal format error:%#x", internalformat);
     return false;
 }
 
@@ -864,8 +902,12 @@ bool shaderType(GL2Encoder* ctx, GLenum type) {
     case GL_FRAGMENT_SHADER:
         return true;
     case GL_COMPUTE_SHADER:
+    case GL_GEOMETRY_SHADER:
+    case GL_TESS_CONTROL_SHADER:
+    case GL_TESS_EVALUATION_SHADER:
         return glesMajorVersion >= 3 && glesMinorVersion >= 1;
     }
+    ALOGE("Shader type error:%#x", type);
     return false;
 }
 
@@ -876,8 +918,10 @@ bool internalFormatTarget(GL2Encoder* ctx, GLenum target) {
     case GL_RENDERBUFFER:
         return true;
     case GL_TEXTURE_2D_MULTISAMPLE:
+    case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
         return glesMajorVersion >= 3 && glesMinorVersion >= 1;
     }
+    ALOGE("Internal format target error:%#x", target);
     return false;
 }
 

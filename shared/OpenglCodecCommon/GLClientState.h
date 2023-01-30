@@ -28,6 +28,7 @@
 #include <GLES/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <GLES3/gl32.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -449,6 +450,7 @@ private:
     GLuint m_dispatchIndirectBuffer;
     GLuint m_drawIndirectBuffer;
     GLuint m_shaderStorageBuffer;
+    GLuint m_textureBuffer;
 
     bool m_transformFeedbackActiveUnpaused;
     bool m_transformFeedbackActive;
@@ -480,6 +482,7 @@ private:
         TEXTURE_2D_ARRAY = 3,
         TEXTURE_3D = 4,
         TEXTURE_2D_MULTISAMPLE = 5,
+        TEXTURE_CUBE_MAP_ARRAY = 6,
         TEXTURE_TARGET_COUNT
     };
     struct TextureUnit {

@@ -17,6 +17,7 @@
 #include <string.h>
 #include "ErrorLog.h"
 #include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 
 size_t glSizeof(GLenum type)
@@ -328,6 +329,8 @@ size_t glUtilsParamSize(GLenum param)
     case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
     case GL_MAX_RENDERBUFFER_SIZE:
     case GL_MAX_TEXTURE_IMAGE_UNITS:
+    case GL_MAX_VERTEX_ATTRIB_BINDINGS:
+    case GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS:
     case GL_REQUIRED_TEXTURE_IMAGE_UNITS_OES:
     case GL_FRAGMENT_SHADER_DERIVATIVE_HINT_OES:
     case GL_LINE_WIDTH:
@@ -376,6 +379,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_UNIFORM_BUFFER_BINDING:
     case GL_CONTEXT_ROBUST_ACCESS_EXT:
     case GL_READ_FRAMEBUFFER_BINDING:
+    case GL_MAX_SAMPLE_MASK_WORDS:
         s = 1;
         break;
     case GL_ALIASED_LINE_WIDTH_RANGE:
@@ -412,6 +416,9 @@ size_t glUtilsParamSize(GLenum param)
     case GL_AMBIENT_AND_DIFFUSE:
     case GL_BLEND_COLOR:
         s =  4;
+        break;
+    case GL_PRIMITIVE_BOUNDING_BOX_EXT:
+        s = 8;
         break;
     case GL_MODELVIEW_MATRIX:
     case GL_PROJECTION_MATRIX:

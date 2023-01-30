@@ -7,6 +7,7 @@
 # Also define BUILD_EMULATOR_OPENGL_DRIVER to 'true' to build the gralloc
 # stuff as well.
 #
+BUILD_EMULATOR_OPENGL=true
 ifeq (true,$(BUILD_EMULATOR_OPENGL))
 
 # Top-level for all modules
@@ -94,7 +95,16 @@ include $(EMUGL_PATH)/shared/OpenglCodecCommon/Android.mk
 include $(EMUGL_PATH)/system/GLESv1_enc/Android.mk
 include $(EMUGL_PATH)/system/GLESv2_enc/Android.mk
 include $(EMUGL_PATH)/system/renderControl_enc/Android.mk
+
+EMUGL_COMMON_CFLAGS += -DGOLDFISH_VULKAN
+include $(EMUGL_PATH)/android-emu/Android.mk
+include $(EMUGL_PATH)/shared/GoldfishAddressSpace/Android.mk
+include $(EMUGL_PATH)/shared/gralloc_cb/Android.mk
+include $(EMUGL_PATH)/system/vulkan_enc/Android.mk
+
 include $(EMUGL_PATH)/system/OpenglSystemCommon/Android.mk
+
+include $(EMUGL_PATH)/system/vulkan/Android.mk
 
 # System shared libraries
 include $(EMUGL_PATH)/system/GLESv1/Android.mk
