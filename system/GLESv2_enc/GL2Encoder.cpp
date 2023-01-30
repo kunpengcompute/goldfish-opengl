@@ -1283,8 +1283,7 @@ void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum
     bool adjustIndices = true;
     if (ctx->m_state->currentIndexVbo() != 0) {
         if (!has_client_vertex_arrays) {
-            // 此处将第三个参数由false改成true，用于修复云游戏场景断线重连部分游戏黑屏、白屏问题
-            ctx->sendVertexAttributes(0, maxIndex + 1, true);
+            ctx->sendVertexAttributes(0, maxIndex + 1, false);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
             ctx->glDrawElementsOffset(ctx, mode, count, type, offset);
             adjustIndices = false;
@@ -5526,8 +5525,7 @@ void GL2Encoder::s_glDrawElementsBaseVertex(void *self, GLenum mode, GLsizei cou
     bool adjustIndices = true;
     if (ctx->m_state->currentIndexVbo() != 0) {
         if (!has_client_vertex_arrays) {
-            // 此处将第三个参数由false改成true，用于修复云游戏场景断线重连部分游戏黑屏、白屏问题
-            ctx->sendVertexAttributes(0, maxIndex + basevertex + 1, true);
+            ctx->sendVertexAttributes(0, maxIndex + basevertex + 1, false);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
             ctx->glDrawElementsBaseVertexOffset(ctx, mode, count, type, offset, basevertex);
             adjustIndices = false;

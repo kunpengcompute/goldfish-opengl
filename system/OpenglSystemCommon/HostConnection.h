@@ -26,6 +26,8 @@
 #include <memory>
 #include <mutex>
 #include "cutils/native_handle.h"
+#include "TimeRecord.h"
+#include "TimeRecordHelp.h"
 
 class GLEncoder;
 struct gl_client_context_t;
@@ -39,6 +41,7 @@ class VkEncoder;
 typedef uint32_t (*GetStreamFunc)();
 typedef void (*ReleaseStreamFunc)(uint32_t streamHandle);
 typedef void (*WaitRebuildStateMachineFunc)(uint32_t streamHandle);
+typedef uint32_t (*GetOpSizeFunc)(uint32_t streamHandle);
 
 // DMA for OpenGL
 class Gralloc {
@@ -65,6 +68,7 @@ public:
     bool initStreamExport();
     static GetStreamFunc getStream;
     static ReleaseStreamFunc releaseStream;
+    static GetOpSizeFunc getOpSize;
     static WaitRebuildStateMachineFunc waitRebuildStateMachine;
     GLEncoder *glEncoder();
     GL2Encoder *gl2Encoder();
@@ -80,6 +84,15 @@ public:
     bool isGrallocOnly() const { return m_grallocOnly; }
 
     int getPipeFd() const { return m_pipeFd; }
+#if IS_TIME_RECORD_OPEN
+    TimeRecord& UpdateCallInfo() {
+        return m_timeRecord;
+    }
+#endif
+
+    uint32_t getHandle() {
+        return m_streamHandle;
+    }
 
 private:
     HostConnection();
@@ -107,6 +120,9 @@ private:
     bool m_grallocOnly;
     int m_pipeFd;
     bool m_noHostError;
+#if IS_TIME_RECORD_OPEN
+    TimeRecord m_timeRecord;
+#endif
     static std::unique_ptr<LoadSharedLib> m_loader;
     static bool m_streamLoaded;
     static std::mutex m_loaderLock;

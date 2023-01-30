@@ -30,6 +30,7 @@
 #include "eglContext.h"
 #include "ClientAPIExts.h"
 #include "EGLImage.h"
+#include "TimeRecordHelp.h"
 
 #include "GLEncoder.h"
 #ifdef WITH_GLES2
@@ -121,6 +122,7 @@ const char *  eglStrError(EGLint err)
     }
 
 #define VALIDATE_DISPLAY(dpy,ret) \
+    RECORD_TIME(10000); \
     if ((dpy) != (EGLDisplay)&s_display) { \
         RETURN_ERROR(ret, EGL_BAD_DISPLAY);    \
     }
@@ -402,8 +404,15 @@ EGLBoolean egl_window_surface_t::init()
         ALOGE("rcCreateWindowSurface returned 0");
         return EGL_FALSE;
     }
+    cb_handle_t* cb = (cb_handle_t *)(buffer->handle);
+    VmiProcessLock processLock;
+    uint32_t order = 0;
+    {
+        VmiAutoLock lock(cb->orderMutex);
+        order = cb->IncOrder();
+    }
     rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
-        ((cb_handle_t *)(buffer->handle))->hostHandle);
+        ((cb_handle_t *)(buffer->handle))->hostHandle, order);
 
     return EGL_TRUE;
 }
@@ -528,15 +537,24 @@ EGLBoolean egl_window_surface_t::swapBuffers()
     eglWaitClient();
     nativeWindow->queueBuffer(nativeWindow, buffer);
 #else
-    if (rcEnc->hasNativeSync(rcEnc->GetRenderControlEncoder(rcEnc))) {
-        rcEnc->rcFlushWindowColorBufferAsync(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, nullptr, 0);
-        //createGoldfishOpenGLNativeSync(&presentFenceFd);
-    } else {
-        rcEnc->rcFlushWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, nullptr, 0);
-        // equivalent to glFinish if no native sync
-        eglWaitClient();
+    {
+        cb_handle_t* cb = (cb_handle_t *)(buffer->handle);
+        VmiProcessLock processLock;
+        uint32_t flushCount = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            flushCount = cb->IncOrder();
+        }
+        if (rcEnc->hasNativeSync(rcEnc->GetRenderControlEncoder(rcEnc))) {
+            rcEnc->rcFlushWindowColorBufferAsync(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, cb->hostHandle, flushCount, nullptr, 0);
+            //createGoldfishOpenGLNativeSync(&presentFenceFd);
+        } else {
+            rcEnc->rcFlushWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
+                cb->hostHandle, flushCount, nullptr, 0);
+            // equivalent to glFinish if no native sync
+            eglWaitClient();
+        }
     }
-
     DPRINT("queueBuffer with fence %d", presentFenceFd);
     nativeWindow->queueBuffer(nativeWindow, buffer, presentFenceFd);
 #endif
@@ -561,10 +579,17 @@ EGLBoolean egl_window_surface_t::swapBuffers()
         close(acquireFenceFd);
     }
 #endif
-
-    rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
-            ((cb_handle_t *)(buffer->handle))->hostHandle);
-
+    {
+        cb_handle_t* cb = (cb_handle_t *)(buffer->handle);
+        VmiProcessLock processLock;
+        uint32_t setWindowCount = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            setWindowCount = cb->IncOrder();
+        }
+        rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
+                ((cb_handle_t *)(buffer->handle))->hostHandle, setWindowCount);
+    }
     setWidth(buffer->width);
     setHeight(buffer->height);
 
@@ -589,15 +614,24 @@ EGLBoolean egl_window_surface_t::swapBuffers(EGLint *rects, EGLint n_rects)
     eglWaitClient();
     nativeWindow->queueBuffer(nativeWindow, buffer);
 #else
-    if (rcEnc->hasNativeSync(rcEnc->GetRenderControlEncoder(rcEnc))) {
-        rcEnc->rcFlushWindowColorBufferAsync(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, rects, n_rects);
-        //createGoldfishOpenGLNativeSync(&presentFenceFd);
-    } else {
-        rcEnc->rcFlushWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, rects, n_rects);
-        // equivalent to glFinish if no native sync
-        eglWaitClient();
+    {
+        cb_handle_t* cb = (cb_handle_t *)(buffer->handle);
+        VmiProcessLock processLock;
+        uint32_t flushCount = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            flushCount = cb->IncOrder();
+        }
+        if (rcEnc->hasNativeSync(rcEnc->GetRenderControlEncoder(rcEnc))) {
+            rcEnc->rcFlushWindowColorBufferAsync(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, cb->hostHandle, flushCount,
+                rects, n_rects);
+        } else {
+            rcEnc->rcFlushWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
+                cb->hostHandle, flushCount, rects, n_rects);
+            // equivalent to glFinish if no native sync
+            eglWaitClient();
+        }
     }
-
     DPRINT("queueBuffer with fence %d", presentFenceFd);
     nativeWindow->queueBuffer(nativeWindow, buffer, presentFenceFd);
 #endif
@@ -622,10 +656,17 @@ EGLBoolean egl_window_surface_t::swapBuffers(EGLint *rects, EGLint n_rects)
         close(acquireFenceFd);
     }
 #endif
-
-    rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
-        ((cb_handle_t *)(buffer->handle))->hostHandle);
-
+    {
+        cb_handle_t* cb = (cb_handle_t *)(buffer->handle);
+        VmiProcessLock processLock;
+        uint32_t setWindowCount = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            setWindowCount = cb->IncOrder();
+        }
+        rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface,
+            ((cb_handle_t *)(buffer->handle))->hostHandle, setWindowCount);
+    }
     setWidth(buffer->width);
     setHeight(buffer->height);
 
@@ -668,7 +709,7 @@ egl_pbuffer_surface_t::~egl_pbuffer_surface_t()
 {
     DEFINE_HOST_CONNECTION;
     if (rcEnc) {
-        if (rcColorBuffer) rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcColorBuffer);
+        if (rcColorBuffer) rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcColorBuffer, 0);
         if (rcSurface)     rcEnc->rcDestroyWindowSurface(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface);
     }
 }
@@ -739,7 +780,7 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
         return EGL_FALSE;
     }
 
-    rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, rcColorBuffer);
+    rcEnc->rcSetWindowColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), rcSurface, rcColorBuffer, 0);
 
     return EGL_TRUE;
 }
@@ -1482,7 +1523,7 @@ EGLBoolean eglBindTexImage(EGLDisplay dpy, EGLSurface eglSurface, EGLint buffer)
     egl_pbuffer_surface_t* pbSurface = (egl_pbuffer_surface_t*)surface;
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc), pbSurface->getRcColorBuffer(), 0);
+    rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc), pbSurface->getRcColorBuffer(), 0, 0);
 
     return GL_TRUE;
 }
@@ -1773,6 +1814,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     }
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+    VmiProcessLock processLock;
     if (rcEnc->rcMakeCurrent(rcEnc->GetRenderControlEncoder(rcEnc), ctxHandle, drawHandle, readHandle) == EGL_FALSE) {
         ALOGE("rcMakeCurrent returned EGL_FALSE");
         setErrorReturn(EGL_BAD_CONTEXT, EGL_FALSE);

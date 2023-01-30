@@ -15,7 +15,10 @@ LOCAL_SRC_FILES := \
     HostConnection.cpp \
     ExtendedRCEncoderContext.cpp \
     QemuPipeStream.cpp \
-    ThreadInfo.cpp
+    ThreadInfo.cpp \
+    VmiProcessLock.cpp \
+    TimeRecord.cpp \
+    TimeRecordHelp.cpp
 
 ifdef IS_AT_LEAST_OPD1
 LOCAL_HEADER_LIBRARIES += libnativebase_headers

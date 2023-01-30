@@ -28,7 +28,7 @@ public:
         ApiInitializer *self = (ApiInitializer *)userData;
         void *ptr = self->getProc(name);
         if (ptr == nullptr) {
-            ALOGE("Failed to get func:%s", name);
+            ALOGE("Failed to get func:%s, reson:%s", name, dlerror());
             return reinterpret_cast<void *>(self->m_notSupportFunc);
         }
         return self->getProc(name);

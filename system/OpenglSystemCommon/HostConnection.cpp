@@ -37,6 +37,7 @@ using goldfish_vk::VkEncoder;
 GetStreamFunc HostConnection::getStream = nullptr;
 ReleaseStreamFunc HostConnection::releaseStream = nullptr;
 WaitRebuildStateMachineFunc HostConnection::waitRebuildStateMachine = nullptr;
+GetOpSizeFunc HostConnection::getOpSize = nullptr;
 bool HostConnection::m_streamLoaded = false;
 std::mutex HostConnection::m_loaderLock {};
 std::unique_ptr<LoadSharedLib> HostConnection::m_loader = nullptr;
@@ -116,8 +117,6 @@ HostConnection::HostConnection() :
 
 HostConnection::~HostConnection()
 {
-    releaseStream(m_streamHandle);
-    m_streamHandle = 0;
     delete m_glEnc;
     m_glEnc = nullptr;
     delete m_gl2Enc;
@@ -126,6 +125,9 @@ HostConnection::~HostConnection()
     m_rcEnc = nullptr;
     delete m_iostream;
     m_iostream = nullptr;
+    // stream对象应该最后析构，因为m_gl2Enc、m_rcEnc等依赖stream对象，stream对象应该最晚析构
+    releaseStream(m_streamHandle);
+    m_streamHandle = 0;
 }
 
 HostConnection *HostConnection::get() {
@@ -365,6 +367,11 @@ bool HostConnection::initStreamExport() {
     if (releaseStream == nullptr) {
         ALOGE("Failed to find RelaseStream Api!");
         return false;
+    }
+    // getOpSize为非必要接口，用来获取本次指令网络包数据大小，平时关闭
+    getOpSize = reinterpret_cast<decltype(getOpSize)>(m_loader->GetProcAddress("GetOpSize"));
+    if (getOpSize == nullptr) {
+        ALOGE("Failed to find GetOpSize Api!");
     }
     waitRebuildStateMachine = reinterpret_cast<decltype(waitRebuildStateMachine)>(m_loader->
         GetProcAddress("WaitRebuildStateMachine"));

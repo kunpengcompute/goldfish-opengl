@@ -23,10 +23,11 @@
 #include "gralloc_cb.h"
 #include "ThreadInfo.h"
 #include "EGLImage.h"
+#include "TimeRecordHelp.h"
 
 //XXX: fix this macro to get the context from fast tls path
-#define GET_CONTEXT GL2Encoder * ctx = getEGLThreadInfo()->hostConn->gl2Encoder();
-
+#define GET_CONTEXT RECORD_TIME(1000);GL2Encoder * ctx = getEGLThreadInfo()->hostConn->gl2Encoder();
+#define GET_CONTEXT2 RECORD_TIME(0);GL2Encoder * ctx = getEGLThreadInfo()->hostConn->gl2Encoder();
 #include "gl2_entry.cpp"
 
 //The functions table
@@ -71,7 +72,7 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
             return;
         }
 
-        GET_CONTEXT;
+        GET_CONTEXT2;
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
 
         ctx->override2DTextureTarget(target);
@@ -81,12 +82,21 @@ void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
             ALOGE("Failed to gl egl image to texture, get cb failed");
             return;
         }
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
+            if (cb->canBePosted()) { // 给SurfaceFlinger结束的预留一个order
+                cb->IncOrder();
+            }
+        }
         rcEnc->rcBindTexture(rcEnc->GetRenderControlEncoder(rcEnc),
-            cb->hostHandle, uint32_t(cb->canBePosted()));
+            cb->hostHandle, order, uint32_t(cb->canBePosted()));
         ctx->restore2DTextureTarget(target);
     }
     else {
-        GET_CONTEXT;
+        GET_CONTEXT2;
         ctx->override2DTextureTarget(target);
         ctx->associateEGLImage(target, hostImage);
         ctx->m_glEGLImageTargetTexture2DOES_enc(self, target, hostImage);
@@ -115,11 +125,18 @@ void glEGLImageTargetRenderbufferStorageOES(void *self, GLenum target, GLeglImag
         }
 
         DEFINE_AND_VALIDATE_HOST_CONNECTION();
+        cb_handle_t* cb = (cb_handle_t *)(native_buffer->handle);
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
+        }
         rcEnc->rcBindRenderbuffer(rcEnc->GetRenderControlEncoder(rcEnc),
-            ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+            ((cb_handle_t *)(native_buffer->handle))->hostHandle, order);
     } else {
         GLeglImageOES hostImage = reinterpret_cast<GLeglImageOES>((intptr_t)image->host_egl_image);
-        GET_CONTEXT;
+        GET_CONTEXT2;
         ctx->m_glEGLImageTargetRenderbufferStorageOES_enc(self, target, hostImage);
     }
 
@@ -164,7 +181,7 @@ const GLubyte *my_glGetString (void *self, GLenum name)
             }
             break;
         default:
-            GET_CONTEXT;
+            GET_CONTEXT2;
             ctx->setError(GL_INVALID_ENUM);
             break;
     }
@@ -173,7 +190,7 @@ const GLubyte *my_glGetString (void *self, GLenum name)
 
 void init()
 {
-    GET_CONTEXT;
+    GET_CONTEXT2;
     ctx->m_glEGLImageTargetTexture2DOES_enc = ctx->glEGLImageTargetTexture2DOES;
     ctx->glEGLImageTargetTexture2DOES = &glEGLImageTargetTexture2DOES;
     ctx->m_glEGLImageTargetRenderbufferStorageOES_enc = ctx->glEGLImageTargetRenderbufferStorageOES;

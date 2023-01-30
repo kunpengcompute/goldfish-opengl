@@ -20,8 +20,11 @@
 #include <hardware/hardware.h>
 #include <hardware/gralloc.h>
 #include <cutils/native_handle.h>
+#include <utils/Mutex.h>
+#include <log/log.h>
 
 #include "goldfish_dma.h"
+#include "VmiProcessLock.h"
 
 #define BUFFER_HANDLE_MAGIC ((int)0xabfabfab)
 #define CB_HANDLE_NUM_INTS(nfds) (int)((sizeof(cb_handle_t) - (nfds)*sizeof(int)) / sizeof(int))
@@ -32,6 +35,24 @@ enum EmulatorFrameworkFormat {
     FRAMEWORK_FORMAT_GL_COMPATIBLE = 0,
     FRAMEWORK_FORMAT_YV12 = 1,
     FRAMEWORK_FORMAT_YUV_420_888 = 2,
+};
+
+class VmiAutoLock {
+public:
+    explicit VmiAutoLock(android::Mutex* mutex) : m_lock(mutex) {
+        m_status = m_lock->timedLock(200000000); // 200ms
+        if (m_status != 0) {
+            ALOGE("Failed to lock, status:%d", m_status);
+        }
+    }
+    ~VmiAutoLock() {
+        if (m_status == 0) {
+            m_lock->unlock();
+        }
+    }
+private:
+    android::Mutex* m_lock;
+    int m_status = 0;
 };
 
 //
@@ -101,6 +122,34 @@ struct cb_handle_t : public native_handle {
         return (0 != (usage & GRALLOC_USAGE_HW_FB));
     }
 
+    void InitOrder() {
+        uint32_t* order = GetOrderPointer();
+        if (order != nullptr) {
+            *order = 1;
+        }
+    }
+
+    uint32_t IncOrder() {
+        uint32_t* order = GetOrderPointer();
+        if (order != nullptr) {
+            if (*order == UINT32_MAX) {
+                *order = 1;
+                return 1;
+            }
+            return ++*order;
+        } else {
+            return 0;
+        }
+    }
+
+    uint32_t* GetOrderPointer() {
+        if (ashmemBase == 0) {
+            return nullptr;
+        }
+        uint32_t* orderRef = (uint32_t*)ashmemBase;
+        return orderRef;
+    }
+
     // file-descriptors
     int fd;  // ashmem fd (-1 of ashmem region did not allocated, i.e. no SW access needed)
     int dmafd; // goldfish dma fd.
@@ -132,6 +181,7 @@ struct cb_handle_t : public native_handle {
     goldfish_dma_context goldfish_dma;
     uint32_t goldfish_dma_buf_size;
     EmulatorFrameworkFormat emuFrameworkFormat;
+    android::Mutex* orderMutex;
 };
 
 

@@ -30,6 +30,9 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <utils/Mutex.h>
+#include "TimeRecordHelp.h"
+#define RECORD_TIME_GRALLOC RECORD_TIME(20000)
 
 /* Set to 1 or 2 to enable debug traces */
 #define DEBUG  0
@@ -59,10 +62,13 @@ int32_t* getOpenCountPtr(cb_handle_t* cb) {
 }
 
 uint32_t getAshmemColorOffset(cb_handle_t* cb) {
-    uint32_t res = 0;
-    if (cb->canBePosted()) res = sizeof(intptr_t);
-    if (isHidlGralloc) res = sizeof(intptr_t) * 2;
+    uint32_t res = sizeof(uint32_t) + sizeof(android::Mutex);
     return res;
+}
+
+void* getMutexPtr(cb_handle_t* cb) {
+    uint32_t res = sizeof(uint32_t);
+    return (void*)(cb->ashmemBase + res);
 }
 
 namespace {
@@ -229,7 +235,7 @@ static int map_buffer(cb_handle_t *cb, void **vaddr)
 
     cb->ashmemBase = intptr_t(addr);
     cb->ashmemBasePid = getpid();
-
+    cb->orderMutex = (android::Mutex*)getMutexPtr(cb);
     *vaddr = addr;
     return 0;
 }
@@ -282,6 +288,7 @@ static int gralloc_alloc(alloc_device_t* dev,
                          int w, int h, int format, int usage,
                          buffer_handle_t* pHandle, int* pStride)
 {
+    RECORD_TIME_GRALLOC;
     ALOGD("gralloc_alloc w=%d h=%d usage=0x%x format=0x%x\n", w, h, usage, format);
 
     gralloc_device_t *grdev = (gralloc_device_t *)dev;
@@ -473,19 +480,7 @@ static int gralloc_alloc(alloc_device_t* dev,
                                 GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK))
 #endif // PLATFORM_SDK_VERSION
                       ;
-
-    if (isHidlGralloc) {
-        if (needHostCb || (usage & GRALLOC_USAGE_HW_FB)) {
-            // keep space for postCounter
-            // AND openCounter for all host cb
-            ashmem_size += sizeof(uint32_t) * 2;
-        }
-    } else {
-        if (usage & GRALLOC_USAGE_HW_FB) {
-            // keep space for postCounter
-            ashmem_size += sizeof(uint32_t) * 1;
-        }
-    }
+    ashmem_size += sizeof(uint32_t) + sizeof(pthread_mutex_t);
 
     // API26 always expect at least one file descriptor is associated with
     // one color buffer
@@ -543,15 +538,20 @@ static int gralloc_alloc(alloc_device_t* dev,
         }
         ALOGD("gralloc_alloc cb:%p colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
         cb->setFd(fd);
+        cb->orderMutex = new(getMutexPtr(cb)) android::Mutex(android::Mutex::SHARED);
     }
     if (needHostCb) {
+        VmiProcessLock processLock;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            cb->InitOrder();
+        }
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         if (hostCon && rcEnc) {
             cb->hostHandle =
                 rcEnc->rcCreateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), w, h, glFormat, glType, format);
             ALOGD("Created host ColorBuffer 0x%x\n", cb->hostHandle);
         }
-
         if (!cb->hostHandle) {
             // Could not create colorbuffer on host !!!
             close(fd);
@@ -559,7 +559,6 @@ static int gralloc_alloc(alloc_device_t* dev,
             ALOGE("%s: failed to create host cb! -EIO", __FUNCTION__);
             return -EIO;
         }
-        if (isHidlGralloc) { *getOpenCountPtr(cb) = 1; }
     }
 
     //
@@ -592,6 +591,7 @@ static int gralloc_alloc(alloc_device_t* dev,
 static int gralloc_free(alloc_device_t* dev,
                         buffer_handle_t handle)
 {
+    RECORD_TIME_GRALLOC;
     cb_handle_t *cb = (cb_handle_t *)handle;
     DBG("gralloc_free cb:%p", cb);
     if (!cb_handle_t::validate((cb_handle_t*)cb)) {
@@ -600,16 +600,15 @@ static int gralloc_free(alloc_device_t* dev,
     }
 
     if (cb->hostHandle != 0) {
-        int32_t openCount = 1;
-        int32_t* openCountPtr = &openCount;
-
-        if (isHidlGralloc) {
-            openCountPtr = getOpenCountPtr(cb);
-            *openCountPtr -= 1;
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
         }
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Closing host ColorBuffer 0x%x\n", cb->hostHandle);
-        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
+        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, order);
     }
 
     //
@@ -679,6 +678,7 @@ static int fb_compositionComplete(struct framebuffer_device_t* dev)
 //
 static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
 {
+    RECORD_TIME_GRALLOC;
     fb_device_t *fbdev = (fb_device_t *)dev;
     cb_handle_t *cb = (cb_handle_t *)buffer;
 
@@ -688,17 +688,13 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
 
     // Make sure we have host connection
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
-
-    // increment the post count of the buffer
-    intptr_t *postCountPtr = (intptr_t *)cb->ashmemBase;
-    if (!postCountPtr) {
-        // This should not happen
-        return -EINVAL;
+    VmiProcessLock processLock;
+    uint32_t order = 0;
+    {
+        VmiAutoLock lock(cb->orderMutex);
+        order = cb->IncOrder();
     }
-    (*postCountPtr)++;
-
-    // send post request to host
-    rcEnc->rcFBPost(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
+    rcEnc->rcFBPost(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, order);
 
     return 0;
 }
@@ -761,6 +757,7 @@ static int fb_close(struct hw_device_t *dev)
 static int gralloc_register_buffer(gralloc_module_t const* module,
                                    buffer_handle_t handle)
 {
+    RECORD_TIME_GRALLOC;
     pthread_once(&sFallbackOnce, fallback_init);
     if (sFallback != NULL) {
         return sFallback->registerBuffer(sFallback, handle);
@@ -776,12 +773,6 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
         return -EINVAL;
     }
 
-    if (cb->hostHandle != 0) {
-        DEFINE_AND_VALIDATE_HOST_CONNECTION;
-        D("Opening host cb:%p ColorBuffer 0x%x", cb, cb->hostHandle);
-        rcEnc->rcOpenColorBuffer2(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
-    }
-
     //
     // if the color buffer has ashmem region and it is not mapped in this
     // process map it now.
@@ -795,11 +786,17 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
         }
         D("gralloc_register_buffer cb:%p, colorbuffer:0x%x, create base:0x%x", cb, cb->hostHandle, cb->ashmemBase);
         cb->mappedPid = getpid();
-        if (isHidlGralloc) {
-            int32_t* openCountPtr = getOpenCountPtr(cb);
-            *openCountPtr += 1;
+    }
+    if (cb->hostHandle != 0) {
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
         }
-
+        DEFINE_AND_VALIDATE_HOST_CONNECTION;
+        D("Opening host cb:%p ColorBuffer 0x%x", cb, cb->hostHandle);
+        rcEnc->rcOpenColorBuffer2(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, order);
     }
 	if (cb->ashmemSize > 0) {
         GET_ASHMEM_REGION(cb);
@@ -811,6 +808,7 @@ static int gralloc_register_buffer(gralloc_module_t const* module,
 static int gralloc_unregister_buffer(gralloc_module_t const* module,
                                      buffer_handle_t handle)
 {
+    RECORD_TIME_GRALLOC;
     if (sFallback != NULL) {
         return sFallback->unregisterBuffer(sFallback, handle);
     }
@@ -824,13 +822,15 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
     }
 
     if (cb->hostHandle != 0) {
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
+        }
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
         D("Closing host cb:%p, ColorBuffer 0x%x", cb, cb->hostHandle);
-        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle);
-		if (isHidlGralloc) {
-            int32_t* openCountPtr = getOpenCountPtr(cb);
-            (*openCountPtr)--;
-		}
+        rcEnc->rcCloseColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, order);
     }
 
     //
@@ -985,6 +985,7 @@ static int gralloc_lock(gralloc_module_t const* module,
                         int l, int t, int w, int h,
                         void** vaddr)
 {
+    RECORD_TIME_GRALLOC;
     if (sFallback != NULL) {
         return sFallback->lock(sFallback, handle, usage, l, t, w, h, vaddr);
     }
@@ -1087,7 +1088,13 @@ static int gralloc_lock(gralloc_module_t const* module,
                 rgb_addr = tmpBuf;
             }
             D("gralloc_lock read back color buffer %d %d\n", cb->width, cb->height);
-            rcEnc->rcReadColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, 0, 0, cb->width, cb->height,
+            VmiProcessLock processLock;
+            uint32_t order = 0;
+            {
+                VmiAutoLock lock(cb->orderMutex);
+                order = cb->IncOrder();
+            }
+            rcEnc->rcReadColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc), cb->hostHandle, order, 0, 0, cb->width, cb->height,
                 cb->glFormat, cb->glType, rgb_addr);
             if (tmpBuf) {
                 if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YV12) {
@@ -1262,6 +1269,7 @@ static void yuv420p_to_rgb888(char* dest, char* src, int width, int height,
 static int gralloc_unlock(gralloc_module_t const* module,
                           buffer_handle_t handle)
 {
+    RECORD_TIME_GRALLOC;
     if (sFallback != NULL) {
         return sFallback->unlock(sFallback, handle);
     }
@@ -1273,12 +1281,17 @@ static int gralloc_unlock(gralloc_module_t const* module,
         ALOGD("%s: invalid gr or cb handle. -EINVAL", __FUNCTION__);
         return -EINVAL;
     }
-
     //
     // if buffer was locked for s/w write, we need to update the host with
     // the updated data
     //
     if (cb->hostHandle) {
+        VmiProcessLock processLock;
+        uint32_t order = 0;
+        {
+            VmiAutoLock lock(cb->orderMutex);
+            order = cb->IncOrder();
+        }
 
         // Make sure we have host connection
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
@@ -1308,7 +1321,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
             }
 
             rcEnc->rcUpdateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc),
-                                       cb->hostHandle,
+                                       cb->hostHandle, order,
                                        cb->lockedLeft, cb->lockedTop,
                                        cb->lockedWidth, cb->lockedHeight,
                                        cb->glFormat, cb->glType,
@@ -1333,7 +1346,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
             }
 
             rcEnc->rcUpdateColorBuffer(rcEnc->GetRenderControlEncoder(rcEnc),
-                                       cb->hostHandle, 0, 0,
+                                       cb->hostHandle, order, 0, 0,
                                        cb->width, cb->height,
                                        cb->glFormat, cb->glType,
                                        rgb_addr);
