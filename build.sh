@@ -85,6 +85,11 @@ package()
         cp -d ${source_symbol_path} ${symbol_target_path}
         [ ${?} != 0 ] && error "Failed to copy ${so_name} to ${symbol_target_path}"
     done
+    cd ${output_dir}/vendor/lib/egl/
+    ln -s libEGL_emulation.so libEGL.so
+    ln -s libGLESv1_CM_emulation.so libGLESv1_CM.so
+    ln -s libGLESv2_emulation.so libGLESv2.so
+    cd -
     if [ -z "${MODULE_OUTPUT_DIR}" ];then
         cd output
         tar zcvf GoldfishOpengl.tar.gz system vendor

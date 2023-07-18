@@ -1208,6 +1208,9 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
     SET_ERROR_IF(count < 0, GL_INVALID_VALUE);
+    const GLenum framebufferStatus = ctx->m_state->getCheckFramebufferStatus(GL_FRAMEBUFFER);
+    SET_ERROR_IF(framebufferStatus != GL_NONE && framebufferStatus != GL_FRAMEBUFFER_COMPLETE,
+        GL_INVALID_FRAMEBUFFER_OPERATION);
 
     bool has_client_vertex_arrays = false;
     bool has_indirect_arrays = false;
@@ -2516,7 +2519,8 @@ void GL2Encoder::s_glRenderbufferStorage(void* self,
     GLint maxRenderbuffersize;
 
     ctx->glGetIntegerv(ctx, GL_MAX_RENDERBUFFER_SIZE, &maxRenderbuffersize);
-    SET_ERROR_IF(width > maxRenderbuffersize || height > maxRenderbuffersize, GL_INVALID_VALUE);
+    SET_ERROR_IF(width < 0 || width > maxRenderbuffersize || height < 0 || height > maxRenderbuffersize,
+        GL_INVALID_VALUE);
     SET_ERROR_IF(target != GL_RENDERBUFFER, GL_INVALID_ENUM);
     SET_ERROR_IF(
         !GLESv2Validation::rboFormat(ctx, internalformat),
@@ -2537,6 +2541,7 @@ void GL2Encoder::s_glFramebufferRenderbuffer(void* self,
 
     SET_ERROR_IF(!GLESv2Validation::framebufferTarget(ctx, target), GL_INVALID_ENUM);
     SET_ERROR_IF(!GLESv2Validation::framebufferAttachment(ctx, attachment), GL_INVALID_ENUM);
+    SET_ERROR_IF((renderbuffertarget != GL_RENDERBUFFER), GL_INVALID_ENUM);
 
     state->attachRbo(target, attachment, renderbuffer);
 
@@ -5361,7 +5366,7 @@ void GL2Encoder::s_glDrawElementsIndirect(void* self, GLenum mode, GLenum type, 
     if (ctx->boundBuffer(GL_DRAW_INDIRECT_BUFFER)) {
         BufferData* buf = ctx->getBufferData(GL_DRAW_INDIRECT_BUFFER);
         if (buf) {
-            SET_ERROR_IF((GLuint)(uintptr_t)indirect + indirectStructSize > buf->m_size, GL_INVALID_OPERATION);
+            SET_ERROR_IF((GLsizeiptr)(uintptr_t)indirect + indirectStructSize > buf->m_size, GL_INVALID_OPERATION);
         }
         ctx->glDrawElementsIndirectOffsetAEMU(ctx, mode, type, (uintptr_t)indirect);
     } else {
@@ -5784,6 +5789,7 @@ void GL2Encoder::s_glGetnUniformuiv(void *self, GLuint program, GLint location, 
 void GL2Encoder::s_glViewport(void *self, GLint x, GLint y, GLsizei width, GLsizei height)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(width < 0 || height < 0, GL_INVALID_VALUE);
     ctx->m_glViewport_enc(self, x, y, width, height);
     static std::string processName = GL2Encoder::GetProcessName();
     if (processName == "org.cocos2d.examplecases") {
